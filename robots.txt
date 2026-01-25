@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Sitemap location
+Sitemap: https://vermaaccounting.ca/sitemap.xml
+
+# Allow all main pages
+Allow: /
+Allow: /services
+Allow: /resources
+Allow: /contact
+Allow: /about

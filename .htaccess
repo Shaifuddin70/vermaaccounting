@@ -1,0 +1,42 @@
+# MAMP .htaccess Configuration
+# Enable URL rewriting for clean URLs
+
+RewriteEngine On
+
+# Redirect index.php to root (remove index from URL)
+RewriteCond %{THE_REQUEST} /index\.php [NC]
+RewriteRule ^index\.php$ / [R=301,L]
+
+# Redirect /index to root
+RewriteCond %{REQUEST_URI} ^/index/?$
+RewriteRule ^(.*)$ / [R=301,L]
+
+# Clean URLs - Remove .php extension
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^\.]+)$ $1.php [NC,L]
+
+# Redirect .php extension to clean URLs
+RewriteCond %{THE_REQUEST} /([^.]+)\.php [NC]
+RewriteRule ^ /%1 [NC,L,R=301]
+
+# Custom Error Pages
+ErrorDocument 404 /index.php
+ErrorDocument 403 /index.php
+ErrorDocument 500 /index.php
+
+# SEO redirects
+RewriteCond %{REQUEST_URI} ^/home/?$
+RewriteRule ^(.*)$ / [R=301,L]
+
+RewriteCond %{REQUEST_URI} ^/contact-us/?$
+RewriteRule ^(.*)$ /contact [R=301,L]
+
+RewriteCond %{REQUEST_URI} ^/our-services/?$
+RewriteRule ^(.*)$ /services [R=301,L]
+
+RewriteCond %{REQUEST_URI} ^/about-us/?$
+RewriteRule ^(.*)$ /about [R=301,L]
+
+# Set default charset
+AddDefaultCharset UTF-8
