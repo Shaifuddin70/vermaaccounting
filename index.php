@@ -218,7 +218,7 @@
       <div class="row mt-4">
         <div class="col-lg-4 col-md-6 mb-5">
           <div class="services scroll-animate-scale">
-            <a class="services-thumbnail" href="/services#bookkeeping">
+            <a class="services-thumbnail" href="/bookkeeping">
               <img
                 class="thumb"
                 src="/images/book-keeping.jpg"
@@ -237,7 +237,7 @@
 
         <div class="col-lg-4 col-md-6 mb-5">
           <div class="services scroll-animate-scale">
-            <a class="services-thumbnail" href="/services#accounting">
+            <a class="services-thumbnail" href="/accounting">
               <img
                 class="thumb"
                 src="/images/financial-accounting.jpg"
@@ -255,7 +255,7 @@
 
         <div class="col-lg-4 col-md-6 mb-5">
           <div class="services scroll-animate-scale">
-            <a class="services-thumbnail" href="/services#payroll">
+            <a class="services-thumbnail" href="/payroll">
               <img
                 class="thumb"
                 src="/images/payroll.jpg"
@@ -273,7 +273,7 @@
 
         <div class="col-lg-4 col-md-6 mb-5 mb-lg-0">
           <div class="services scroll-animate-scale">
-            <a class="services-thumbnail" href="/services#personal-tax">
+            <a class="services-thumbnail" href="/personal-tax">
               <img
                 class="thumb"
                 src="/images/personal-tax.jpg"
@@ -291,7 +291,7 @@
 
         <div class="col-lg-4 col-md-6 mb-5 mb-md-0">
           <div class="services scroll-animate-scale">
-            <a class="services-thumbnail" href="/services#corporate-tax">
+            <a class="services-thumbnail" href="/corporate-tax">
               <img
                 class="thumb"
                 src="/images/corporate-tax.jpg"
@@ -311,7 +311,7 @@
           <div class="services scroll-animate-scale">
             <a
               class="services-thumbnail"
-              href="/services#business-registration">
+              href="/business-registration">
               <img
                 class="thumb"
                 src="/images/business-registration.jpg"

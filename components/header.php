@@ -186,14 +186,13 @@
               <span class="verma-arrow">▼</span>
             </a>
             <div class="verma-submenu-items">
-              <a href="/services#accounting" class="verma-submenu-link">Accounting</a>
-              <a href="/services#bookkeeping" class="verma-submenu-link">Bookkeeping</a>
-              <a href="/services#payroll" class="verma-submenu-link">Payroll</a>
-              <a href="/services#personal-tax" class="verma-submenu-link">Personal Tax</a>
-              <a href="/services#corporate-tax" class="verma-submenu-link">Corporate Tax</a>
-              <a
-                href="/services#business-registration"
-                class="verma-submenu-link">Business Registration</a>
+              <a href="/services" class="verma-submenu-link verma-submenu-all d-lg-none">View All Services</a>
+              <a href="/accounting" class="verma-submenu-link">Accounting</a>
+              <a href="/bookkeeping" class="verma-submenu-link">Bookkeeping</a>
+              <a href="/payroll" class="verma-submenu-link">Payroll</a>
+              <a href="/personal-tax" class="verma-submenu-link">Personal Tax</a>
+              <a href="/corporate-tax" class="verma-submenu-link">Corporate Tax</a>
+              <a href="/business-registration" class="verma-submenu-link">Business Registration</a>
               <a href="/loan" class="verma-submenu-link">Business Loans</a>
             </div>
           </div>

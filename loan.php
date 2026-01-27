@@ -5,8 +5,8 @@
   <!-- Page Header -->
   <section class="page-header">
     <div class="container">
-      <h1>Business Loans in Canada | Small Business & Commercial Financing</h1>
-      <p>Looking for business loans in Canada? We help startups, small businesses, and established companies secure fast, flexible, and affordable business financing across Canada. Whether you need working capital, expansion funding, or startup financing, we connect you with the right business loan solution.</p>
+      <h1>Business Loans in Canada | Small Business & Commercial Financing | Expert Loan Services</h1>
+      <p>Looking for business loans in Canada? We help startups, small businesses, and established companies secure fast, flexible, and affordable business financing across Canada. Whether you need working capital, expansion funding, or startup financing, we connect you with the right business loan solution. Serving businesses across Ontario, Toronto, Vancouver, Montreal, and all of Canada.</p>
     </div>
   </section>
 
@@ -97,16 +97,19 @@
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-            <h2 class="section-title">Why Choose Us for Business Loans?</h2>
+            <h2 class="section-title">Why Choose Us for Business Loans in Canada?</h2>
+            <p>
+              As a trusted financial services provider in Canada, we help businesses across Ontario and throughout Canada secure the financing they need to grow and succeed. Our experienced loan specialists understand the Canadian lending landscape and work with multiple lenders to find the best options for your business.
+            </p>
             <ul class="ul-list">
-              <li> Access to multiple business lenders across Canada</li>
-              <li> Competitive interest rates and flexible terms</li>
-              <li> Fast business loan approvals</li>
-              <li> Minimal paperwork</li>
-              <li> Solutions for average or low credit</li>
-              <li> Personalized business financing guidance</li>
+              <li><strong>Access to Multiple Lenders:</strong> We have relationships with multiple business lenders across Canada, giving you access to a wide range of loan options and competitive rates.</li>
+              <li><strong>Competitive Interest Rates:</strong> We compare lenders to find the best interest rates and flexible terms for your business. Our business loan services help you secure affordable financing.</li>
+              <li><strong>Fast Approvals:</strong> Many clients receive funding within a few business days. Our streamlined process and lender relationships help speed up the approval process.</li>
+              <li><strong>Minimal Paperwork:</strong> We handle most of the documentation and paperwork, making the loan application process as simple as possible for you.</li>
+              <li><strong>Solutions for All Credit Levels:</strong> We work with lenders who consider factors beyond just credit score, helping businesses with average or low credit secure financing.</li>
+              <li><strong>Personalized Guidance:</strong> We provide personalized business financing guidance, helping you understand your options and choose the best loan for your situation.</li>
             </ul>
-            <p>We compare lenders to find the best business loan option for your situation — not just the fastest one.</p>
+            <p>We compare lenders to find the best business loan option for your situation — not just the fastest one. Our goal is to help you secure financing that supports your business growth.</p>
           </div>
         </div>
       </div>
@@ -158,8 +161,192 @@
               <li>Lender matching</li>
               <li>Approval and funding</li>
             </ul>
-            <p>Many clients receive funding within a few business days.</p>
+            <p>Many clients receive funding within a few business days. Our streamlined process and strong lender relationships help expedite the approval and funding process.</p>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Industries We Serve -->
+  <section class="common-section">
+    <div class="container">
+      <div class="row align-items-center">
+        <div class="col-lg-6">
+          <div class="img-box scroll-animate-left">
+            <img src="images/business-growth.jpg" alt="Business Loans for Various Industries" />
+          </div>
+        </div>
+        <div class="col-lg-6">
+          <div class="scroll-animate-right">
+            <h2 class="section-title">Business Loans for All Industries in Canada</h2>
+            <p>
+              Our business loan services are designed to help businesses across diverse industries throughout Canada secure the financing they need. We understand that each industry has unique financing requirements and work with lenders who specialize in different sectors.
+            </p>
+            <ul class="ul-list">
+              <li>
+                <strong>Retail Business Loans:</strong> We help retail businesses in Canada secure financing for inventory, store improvements, equipment, and expansion. Our business loan services understand the seasonal nature of retail businesses.
+              </li>
+              <li>
+                <strong>Restaurant & Hospitality Loans:</strong> For restaurants, cafes, and hospitality businesses, we help secure financing for equipment, renovations, working capital, and expansion. Our loan services understand the unique needs of the hospitality industry.
+              </li>
+              <li>
+                <strong>Manufacturing Business Loans:</strong> We help manufacturing companies secure financing for equipment, machinery, facility expansion, and working capital. Our business loan services support manufacturing growth across Canada.
+              </li>
+              <li>
+                <strong>Technology & Startup Loans:</strong> For technology companies and startups, we help secure financing even with limited operating history. Our business loan services work with lenders who understand startup financing needs.
+              </li>
+              <li>
+                <strong>Professional Services Loans:</strong> We help professional services firms including law firms, consulting companies, and healthcare practices secure financing for expansion, equipment, and working capital.
+              </li>
+              <li>
+                <strong>Construction & Contracting Loans:</strong> For construction and contracting businesses, we help secure financing for equipment, vehicles, project financing, and working capital. Our loan services understand the project-based nature of these businesses.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits Section -->
+  <section class="common-section">
+    <div class="container">
+      <h2 class="section-title text-center mb-5">Benefits of Our Business Loan Services</h2>
+      <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item">
+            <h4>Access to Multiple Lenders</h4>
+            <p>
+              We work with multiple business lenders across Canada, giving you access to a wide range of loan options, rates, and terms. Our business loan services help you find the best financing solution.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item">
+            <h4>Fast Funding</h4>
+            <p>
+              Many clients receive funding within a few business days. Our streamlined application process and lender relationships help expedite approval and funding.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item">
+            <h4>Flexible Terms</h4>
+            <p>
+              We help you secure business loans with flexible repayment terms that fit your cash flow. Our loan services work with lenders who offer customizable terms.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item">
+            <h4>Solutions for All Credit Levels</h4>
+            <p>
+              We work with lenders who consider factors beyond credit score, helping businesses with average or low credit secure financing. Our business loan services find solutions for all situations.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item">
+            <h4>Expert Guidance</h4>
+            <p>
+              Get personalized guidance throughout the loan application process. Our business loan services help you understand your options and make informed decisions.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item">
+            <h4>Free Consultation</h4>
+            <p>
+              We offer free business loan consultations to review your needs, assess your eligibility, and help you understand your financing options. Our loan services start with no obligation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Other Services -->
+  <?php 
+  $current_service = 'loan';
+  include 'components/other-services.php'; 
+  ?>
+
+  <!-- FAQ Section -->
+  <section class="faq-section common-section">
+    <div class="container">
+      <div class="section-header scroll-animate">
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <p class="section-subtitle">Common questions about our business loan services.</p>
+      </div>
+
+      <div class="faq-item scroll-animate">
+        <button class="faq-question" onclick="toggleFAQ(this)">
+          <span>What types of business loans do you help with?</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>We help with small business loans, startup business loans, working capital loans, equipment and asset financing, commercial and expansion loans, and government-backed business loans. We connect you with the right financing solution for your needs.</p>
+        </div>
+      </div>
+
+      <div class="faq-item scroll-animate">
+        <button class="faq-question" onclick="toggleFAQ(this)">
+          <span>Who is eligible for business loans in Canada?</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Our business loan services are available for small businesses, corporations, sole proprietors, partnerships, startups, self-employed professionals, and new immigrants. Even if you were declined by a bank, alternative financing options may still be available.</p>
+        </div>
+      </div>
+
+      <div class="faq-item scroll-animate">
+        <button class="faq-question" onclick="toggleFAQ(this)">
+          <span>What do lenders look at when reviewing loan applications?</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Lenders typically review business revenue and cash flow, personal and business credit scores, time in business, industry type, and the purpose of the loan. We guide you through every step to improve your approval chances.</p>
+        </div>
+      </div>
+
+      <div class="faq-item scroll-animate">
+        <button class="faq-question" onclick="toggleFAQ(this)">
+          <span>How long does the loan application process take?</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Many clients receive funding within a few business days. The process includes a free consultation, document and eligibility review, lender matching, and approval and funding. We work efficiently to get you funded quickly.</p>
+        </div>
+      </div>
+
+      <div class="faq-item scroll-animate">
+        <button class="faq-question" onclick="toggleFAQ(this)">
+          <span>Can startups get business loans?</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>Yes, we assist entrepreneurs in accessing startup business loans in Canada, even with limited operating history. Options are available for new immigrants and first-time business owners. We have access to lenders who specialize in startup financing.</p>
+        </div>
+      </div>
+
+      <div class="faq-item scroll-animate">
+        <button class="faq-question" onclick="toggleFAQ(this)">
+          <span>What if I have average or low credit?</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>We offer solutions for average or low credit. We work with multiple lenders across Canada and can find financing options that consider factors beyond just credit score, such as business revenue and cash flow.</p>
+        </div>
+      </div>
+
+      <div class="faq-item scroll-animate">
+        <button class="faq-question" onclick="toggleFAQ(this)">
+          <span>Do you charge fees for loan consultation?</span>
+          <i class="fas fa-chevron-down"></i>
+        </button>
+        <div class="faq-answer">
+          <p>No, we offer free business loan consultations. We'll review your documents, assess your eligibility, and help match you with the right lenders at no cost to you.</p>
         </div>
       </div>
     </div>
@@ -215,6 +402,92 @@
 </main>
 
 <?php include 'components/footer.php'; ?>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Service",
+  "serviceType": "Business Loan Services",
+  "provider": {
+    "@type": "AccountingService",
+    "name": "Verma Accounting & Financial Services",
+    "url": "https://vermaaccounting.ca/loan",
+    "telephone": "613-318-6478",
+    "email": "info@vermaaccounting.ca",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "CA",
+      "addressRegion": "ON",
+      "addressLocality": "London"
+    },
+    "areaServed": {
+      "@type": "Country",
+      "name": "Canada"
+    }
+  },
+  "description": "Professional business loan services in Canada including small business loans, startup loans, working capital loans, equipment financing, commercial loans, and government-backed loans. Expert loan specialists serving businesses across Ontario and Canada.",
+  "offers": {
+    "@type": "Offer",
+    "description": "Comprehensive business loan services for businesses in Canada"
+  }
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [{
+    "@type": "Question",
+    "name": "What types of business loans do you help with?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "We help with small business loans, startup business loans, working capital loans, equipment and asset financing, commercial and expansion loans, and government-backed business loans. We connect you with the right financing solution for your needs."
+    }
+  }, {
+    "@type": "Question",
+    "name": "Who is eligible for business loans in Canada?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Our business loan services are available for small businesses, corporations, sole proprietors, partnerships, startups, self-employed professionals, and new immigrants. Even if you were declined by a bank, alternative financing options may still be available."
+    }
+  }, {
+    "@type": "Question",
+    "name": "What do lenders look at when reviewing loan applications?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Lenders typically review business revenue and cash flow, personal and business credit scores, time in business, industry type, and the purpose of the loan. We guide you through every step to improve your approval chances."
+    }
+  }, {
+    "@type": "Question",
+    "name": "How long does the loan application process take?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Many clients receive funding within a few business days. The process includes a free consultation, document and eligibility review, lender matching, and approval and funding. We work efficiently to get you funded quickly."
+    }
+  }, {
+    "@type": "Question",
+    "name": "Can startups get business loans?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "Yes, we assist entrepreneurs in accessing startup business loans in Canada, even with limited operating history. Options are available for new immigrants and first-time business owners. We have access to lenders who specialize in startup financing."
+    }
+  }, {
+    "@type": "Question",
+    "name": "What if I have average or low credit?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "We offer solutions for average or low credit. We work with multiple lenders across Canada and can find financing options that consider factors beyond just credit score, such as business revenue and cash flow."
+    }
+  }, {
+    "@type": "Question",
+    "name": "Do you charge fees for loan consultation?",
+    "acceptedAnswer": {
+      "@type": "Answer",
+      "text": "No, we offer free business loan consultations. We'll review your documents, assess your eligibility, and help match you with the right lenders at no cost to you."
+    }
+  }]
+}
+</script>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {

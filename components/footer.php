@@ -42,12 +42,12 @@
        <div class="footer-section">
          <h3 class="footer-heading">Our Services</h3>
          <ul class="footer-links">
-           <li><a href="services#accounting"><i class="fas fa-angle-right"></i> Accounting</a></li>
-           <li><a href="services#bookkeeping"><i class="fas fa-angle-right"></i> Bookkeeping</a></li>
-           <li><a href="services#payroll"><i class="fas fa-angle-right"></i> Payroll</a></li>
-           <li><a href="services#personal-tax"><i class="fas fa-angle-right"></i> Personal Tax</a></li>
-           <li><a href="services#corporate-tax"><i class="fas fa-angle-right"></i> Corporate Tax</a></li>
-           <li><a href="services#business-registration"><i class="fas fa-angle-right"></i> Business Registration</a></li>
+           <li><a href="accounting"><i class="fas fa-angle-right"></i> Accounting</a></li>
+           <li><a href="bookkeeping"><i class="fas fa-angle-right"></i> Bookkeeping</a></li>
+           <li><a href="payroll"><i class="fas fa-angle-right"></i> Payroll</a></li>
+           <li><a href="personal-tax"><i class="fas fa-angle-right"></i> Personal Tax</a></li>
+           <li><a href="corporate-tax"><i class="fas fa-angle-right"></i> Corporate Tax</a></li>
+           <li><a href="business-registration"><i class="fas fa-angle-right"></i> Business Registration</a></li>
            <li><a href="loan"><i class="fas fa-angle-right"></i> Business Loans</a></li>
          </ul>
        </div>
@@ -110,6 +110,11 @@
 
  </div>
 
+ <!-- Scroll Up Button -->
+ <button class="scroll-up-btn" id="scrollUpBtn" aria-label="Scroll to top" title="Scroll to top">
+   <i class="fas fa-chevron-up"></i>
+ </button>
+
  <script>
    (function() {
      const fab = document.getElementById('socialFab');
@@ -156,6 +161,28 @@
          closeFab();
        });
      });
+   })();
+
+   // Scroll Up Button
+   (function() {
+     const scrollUpBtn = document.getElementById('scrollUpBtn');
+     if (!scrollUpBtn) return;
+
+     function toggleScrollUp() {
+       if (window.scrollY > 300) {
+         scrollUpBtn.classList.add('visible');
+       } else {
+         scrollUpBtn.classList.remove('visible');
+       }
+     }
+
+     function scrollToTop() {
+       window.scrollTo({ top: 0, behavior: 'smooth' });
+     }
+
+     window.addEventListener('scroll', toggleScrollUp, { passive: true });
+     scrollUpBtn.addEventListener('click', scrollToTop);
+     toggleScrollUp(); // Initial check
    })();
  </script>
  <script>

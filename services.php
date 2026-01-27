@@ -96,6 +96,9 @@
             </p>
           </div>
         </div>
+        <div class="text-center mt-4">
+          <a href="bookkeeping" class="cta-button primary">Learn More About Bookkeeping</a>
+        </div>
       </div>
 
       <!-- Financial Accounting Service -->
@@ -129,6 +132,9 @@
               for strategic business planning.
             </p>
           </div>
+        </div>
+        <div class="text-center mt-4">
+          <a href="accounting" class="cta-button primary">Learn More About Financial Accounting</a>
         </div>
       </div>
 
@@ -164,6 +170,9 @@
             </p>
           </div>
         </div>
+        <div class="text-center mt-4">
+          <a href="payroll" class="cta-button primary">Learn More About Payroll</a>
+        </div>
       </div>
 
       <!-- Personal Tax Service -->
@@ -197,6 +206,9 @@
               Agency on your behalf.
             </p>
           </div>
+        </div>
+        <div class="text-center mt-4">
+          <a href="personal-tax" class="cta-button primary">Learn More About Personal Tax</a>
         </div>
       </div>
 
@@ -232,6 +244,9 @@
             </p>
           </div>
         </div>
+        <div class="text-center mt-4">
+          <a href="corporate-tax" class="cta-button primary">Learn More About Corporate Tax</a>
+        </div>
       </div>
 
       <!-- Business Registration Service -->
@@ -265,6 +280,60 @@
               and other business structures.
             </p>
           </div>
+        </div>
+        <div class="text-center mt-4">
+          <a href="business-registration" class="cta-button primary">Learn More About Business Registration</a>
+        </div>
+      </div>
+
+      <!-- Business Loans Service -->
+      <div class="service-item scroll-animate-scale" id="loan">
+        <h2>Business Loans</h2>
+        <p class="service-subtitle">Fast, flexible, and affordable business financing across Canada.</p>
+        <p>
+          Looking for business loans in Canada? We help startups, small businesses, and established companies secure fast, flexible, and affordable business financing across Canada. Whether you need working capital, expansion funding, or startup financing, we connect you with the right business loan solution.
+        </p>
+
+        <div class="service-features">
+          <div class="feature-item">
+            <h4>Small Business Loans Canada</h4>
+            <p>
+              Our small business loans are ideal for covering day-to-day expenses such as payroll, inventory, rent, marketing, and operational costs. Flexible repayment terms and competitive rates available.
+            </p>
+          </div>
+          <div class="feature-item">
+            <h4>Startup Business Loans Canada</h4>
+            <p>
+              Starting a new business? We assist entrepreneurs in accessing startup business loans in Canada, even with limited operating history. Options available for new immigrants and first-time business owners.
+            </p>
+          </div>
+          <div class="feature-item">
+            <h4>Working Capital Loans</h4>
+            <p>
+              Working capital financing helps manage cash flow gaps, seasonal expenses, and short-term business needs without disrupting operations.
+            </p>
+          </div>
+          <div class="feature-item">
+            <h4>Equipment & Asset Financing</h4>
+            <p>
+              Finance vehicles, machinery, technology, or tools with equipment financing in Canada while preserving your working capital.
+            </p>
+          </div>
+          <div class="feature-item">
+            <h4>Commercial & Expansion Loans</h4>
+            <p>
+              Planning business growth, renovations, or a new location? Our commercial business loans in Canada support long-term expansion and large investments.
+            </p>
+          </div>
+          <div class="feature-item">
+            <h4>Government-Backed Business Loans</h4>
+            <p>
+              We help eligible businesses apply for government business loan programs in Canada, offering lower interest rates and longer repayment terms.
+            </p>
+          </div>
+        </div>
+        <div class="text-center mt-4">
+          <a href="loan" class="cta-button primary">Learn More About Business Loans</a>
         </div>
       </div>
     </div>

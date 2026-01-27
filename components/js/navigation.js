@@ -212,24 +212,27 @@ function initMobileMenu() {
     });
   }
 
-  // Handle mobile dropdown functionality
+  // Handle mobile dropdown functionality (only on mobile - on desktop, allow link to navigate to /services)
   const dropdownToggle = navLinks.querySelector(".verma-toggle");
   const navDropdown = navLinks.querySelector(".verma-submenu");
 
   if (dropdownToggle && navDropdown) {
     dropdownToggle.addEventListener("click", function (e) {
-      e.preventDefault();
-      e.stopPropagation();
+      // Only prevent navigation when on mobile - let desktop users click through to /services
+      if (window.innerWidth <= 768) {
+        e.preventDefault();
+        e.stopPropagation();
 
-      // Toggle dropdown
-      navDropdown.classList.toggle("active");
+        // Toggle dropdown
+        navDropdown.classList.toggle("active");
 
-      // Rotate arrow
-      const arrow = dropdownToggle.querySelector(".verma-arrow");
-      if (arrow) {
-        arrow.style.transform = navDropdown.classList.contains("active")
-          ? "rotate(180deg)"
-          : "rotate(0deg)";
+        // Rotate arrow
+        const arrow = dropdownToggle.querySelector(".verma-arrow");
+        if (arrow) {
+          arrow.style.transform = navDropdown.classList.contains("active")
+            ? "rotate(180deg)"
+            : "rotate(0deg)";
+        }
       }
     });
   }
