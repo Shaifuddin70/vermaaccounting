@@ -104,7 +104,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-left">
-            <img src="images/expert-help.jpg" alt="Professional Financial Accounting Services Canada" />
+            <img src="images/tax-discussion.jpg" alt="Professional Financial Accounting Services Canada" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -131,7 +131,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 ">
           <div class="img-box scroll-animate-right">
-            <img src="images/business-growth.jpg" alt="Financial Accounting for Various Industries" />
+            <img src="images/smart-calculation.jpg" alt="Financial Accounting for Various Industries" />
           </div>
         </div>
         <div class="col-lg-6">

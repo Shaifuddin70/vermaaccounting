@@ -84,7 +84,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/expert-help.jpg" alt="Professional Corporate Tax Services Canada" />
+            <img src="images/perfect-numbers.jpg" alt="Professional Corporate Tax Services Canada" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -114,7 +114,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6">
           <div class="img-box scroll-animate-left">
-            <img src="images/business-growth.jpg" alt="Corporate Tax Services for Various Business Types" />
+            <img src="images/about-us.jpg" alt="Corporate Tax Services for Various Business Types" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -209,7 +209,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/document.jpg" alt="CRA Compliant Corporate Tax Services" />
+            <img src="images/business-loan.jpg" alt="CRA Compliant Corporate Tax Services" />
           </div>
         </div>
         <div class="col-lg-6">

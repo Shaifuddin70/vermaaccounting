@@ -84,7 +84,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6">
           <div class="img-box scroll-animate-left">
-            <img src="images/expert-help.jpg" alt="Professional Business Registration Services Canada" />
+            <img src="images/tax-discussion.jpg" alt="Professional Business Registration Services Canada" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -212,7 +212,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6">
           <div class="img-box scroll-animate-left">
-            <img src="images/document.jpg" alt="CRA Compliant Business Registration" />
+            <img src="images/smart-calculation.jpg" alt="CRA Compliant Business Registration" />
           </div>
         </div>
         <div class="col-lg-6">

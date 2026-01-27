@@ -84,7 +84,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/expert-help.jpg" alt="Professional Bookkeeping Services Canada" />
+            <img src="images/calculation.jpg" alt="Professional Bookkeeping Services Canada" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -114,7 +114,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6">
           <div class="img-box scroll-animate-left">
-            <img src="images/business-growth.jpg" alt="Bookkeeping Services for Various Industries" />
+            <img src="images/happy-client.jpg" alt="Bookkeeping Services for Various Industries" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -209,7 +209,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/document.jpg" alt="CRA Compliant Bookkeeping Services" />
+            <img src="images/perfect-numbers.jpg" alt="CRA Compliant Bookkeeping Services" />
           </div>
         </div>
         <div class="col-lg-6">

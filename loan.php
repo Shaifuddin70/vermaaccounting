@@ -174,7 +174,7 @@
       <div class="row align-items-center">
         <div class="col-lg-6">
           <div class="img-box scroll-animate-left">
-            <img src="images/business-growth.jpg" alt="Business Loans for Various Industries" />
+            <img src="images/tax-advisor.jpg" alt="Business Loans for Various Industries" />
           </div>
         </div>
         <div class="col-lg-6">

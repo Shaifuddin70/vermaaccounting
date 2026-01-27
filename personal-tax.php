@@ -84,7 +84,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6">
           <div class="img-box scroll-animate-left">
-            <img src="images/expert-help.jpg" alt="Professional Personal Tax Services Canada" />
+            <img src="images/calculation.jpg" alt="Professional Personal Tax Services Canada" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -114,7 +114,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/business-growth.jpg" alt="Personal Tax Services for Various Situations" />
+            <img src="images/happy-client.jpg" alt="Personal Tax Services for Various Situations" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -212,7 +212,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6">
           <div class="img-box scroll-animate-left">
-            <img src="images/document.jpg" alt="CRA Compliant Personal Tax Services" />
+            <img src="images/tax-discussion.jpg" alt="CRA Compliant Personal Tax Services" />
           </div>
         </div>
         <div class="col-lg-6">
