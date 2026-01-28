@@ -89,6 +89,10 @@
   <!-- Why Choose Us -->
   <section class="common-section">
     <div class="container">
+        <h2 class="section-title">Why Choose Us for Business Loans in Canada?</h2>
+            <p>
+              As a trusted financial services provider in Canada, we help businesses across Ontario and throughout Canada secure the financing they need to grow and succeed. Our experienced loan specialists understand the Canadian lending landscape and work with multiple lenders to find the best options for your business.
+            </p>
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
@@ -97,10 +101,7 @@
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-            <h2 class="section-title">Why Choose Us for Business Loans in Canada?</h2>
-            <p>
-              As a trusted financial services provider in Canada, we help businesses across Ontario and throughout Canada secure the financing they need to grow and succeed. Our experienced loan specialists understand the Canadian lending landscape and work with multiple lenders to find the best options for your business.
-            </p>
+          
             <ul class="ul-list">
               <li><strong>Access to Multiple Lenders:</strong> We have relationships with multiple business lenders across Canada, giving you access to a wide range of loan options and competitive rates.</li>
               <li><strong>Competitive Interest Rates:</strong> We compare lenders to find the best interest rates and flexible terms for your business. Our business loan services help you secure affordable financing.</li>
@@ -109,8 +110,7 @@
               <li><strong>Solutions for All Credit Levels:</strong> We work with lenders who consider factors beyond just credit score, helping businesses with average or low credit secure financing.</li>
               <li><strong>Personalized Guidance:</strong> We provide personalized business financing guidance, helping you understand your options and choose the best loan for your situation.</li>
             </ul>
-            <p>We compare lenders to find the best business loan option for your situation — not just the fastest one. Our goal is to help you secure financing that supports your business growth.</p>
-          </div>
+            </div>
         </div>
       </div>
     </div>
@@ -168,47 +168,63 @@
     </div>
   </section>
 
-  <!-- Industries We Serve -->
-  <section class="common-section">
+  <section class="common-section text-center">
     <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6">
-          <div class="img-box scroll-animate-left">
-            <img src="images/tax-advisor.jpg" alt="Business Loans for Various Industries" />
-          </div>
+      <h2 class="section-title">Business Loans for All Industries in Canada</h2>
+      <p class="mb-5">
+        Our business loan services are designed to help businesses across diverse industries throughout Canada secure the financing they need. We understand that each industry has unique financing requirements and work with lenders who specialize in different sectors.
+      </p>
+      
+      <div class="service-features">
+        <div class="feature-item">
+          <h4>Retail Business Loans</h4>
+          <p>
+            We help retail businesses in Canada secure financing for inventory, store improvements, equipment, and expansion. Our business loan services understand the seasonal nature of retail businesses.
+          </p>
         </div>
-        <div class="col-lg-6">
-          <div class="scroll-animate-right">
-            <h2 class="section-title">Business Loans for All Industries in Canada</h2>
-            <p>
-              Our business loan services are designed to help businesses across diverse industries throughout Canada secure the financing they need. We understand that each industry has unique financing requirements and work with lenders who specialize in different sectors.
-            </p>
-            <ul class="ul-list">
-              <li>
-                <strong>Retail Business Loans:</strong> We help retail businesses in Canada secure financing for inventory, store improvements, equipment, and expansion. Our business loan services understand the seasonal nature of retail businesses.
-              </li>
-              <li>
-                <strong>Restaurant & Hospitality Loans:</strong> For restaurants, cafes, and hospitality businesses, we help secure financing for equipment, renovations, working capital, and expansion. Our loan services understand the unique needs of the hospitality industry.
-              </li>
-              <li>
-                <strong>Manufacturing Business Loans:</strong> We help manufacturing companies secure financing for equipment, machinery, facility expansion, and working capital. Our business loan services support manufacturing growth across Canada.
-              </li>
-              <li>
-                <strong>Technology & Startup Loans:</strong> For technology companies and startups, we help secure financing even with limited operating history. Our business loan services work with lenders who understand startup financing needs.
-              </li>
-              <li>
-                <strong>Professional Services Loans:</strong> We help professional services firms including law firms, consulting companies, and healthcare practices secure financing for expansion, equipment, and working capital.
-              </li>
-              <li>
-                <strong>Construction & Contracting Loans:</strong> For construction and contracting businesses, we help secure financing for equipment, vehicles, project financing, and working capital. Our loan services understand the project-based nature of these businesses.
-              </li>
-            </ul>
-          </div>
+        
+        <div class="feature-item">
+          <h4>Restaurant & Hospitality Loans</h4>
+          <p>
+            For restaurants, cafes, and hospitality businesses, we help secure financing for equipment, renovations, working capital, and expansion. Our loan services understand the unique needs of the hospitality industry.
+          </p>
+        </div>
+        
+        <div class="feature-item">
+          <h4>Manufacturing Business Loans</h4>
+          <p>
+            We help manufacturing companies secure financing for equipment, machinery, facility expansion, and working capital. Our business loan services support manufacturing growth across Canada.
+          </p>
+        </div>
+        
+        <div class="feature-item">
+          <h4>Technology & Startup Loans</h4>
+          <p>
+            For technology companies and startups, we help secure financing even with limited operating history. Our business loan services work with lenders who understand startup financing needs.
+          </p>
+        </div>
+        
+        <div class="feature-item">
+          <h4>Professional Services Loans</h4>
+          <p>
+            We help professional services firms including law firms, consulting companies, and healthcare practices secure financing for expansion, equipment, and working capital.
+          </p>
+        </div>
+        
+        <div class="feature-item">
+          <h4>Construction & Contracting Loans</h4>
+          <p>
+            For construction and contracting businesses, we help secure financing for equipment, vehicles, project financing, and working capital. Our loan services understand the project-based nature of these businesses.
+          </p>
         </div>
       </div>
     </div>
   </section>
-
+  <!-- Other Services -->
+  <?php 
+  $current_service = 'loan';
+  include 'components/other-services.php'; 
+  ?>
   <!-- Benefits Section -->
   <section class="common-section">
     <div class="container">
@@ -266,14 +282,10 @@
     </div>
   </section>
 
-  <!-- Other Services -->
-  <?php 
-  $current_service = 'loan';
-  include 'components/other-services.php'; 
-  ?>
+
 
   <!-- FAQ Section -->
-  <section class="faq-section common-section">
+  <section class="common-section">
     <div class="container">
       <div class="section-header scroll-animate">
         <h2 class="section-title">Frequently Asked Questions</h2>

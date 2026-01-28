@@ -81,6 +81,11 @@ include 'components/header.php';
   <!-- Why Choose Our Bookkeeping Services -->
   <section class="common-section">
     <div class="container">
+       <h2 class="section-title">Why Choose Our Bookkeeping Services in Canada</h2>
+            <p>
+              As a trusted accounting firm in Canada, we provide comprehensive bookkeeping services that help businesses across Ontario and throughout Canada maintain accurate financial records. Our experienced bookkeepers understand Canadian accounting standards and CRA requirements, ensuring your books are always compliant and audit-ready.
+            </p>
+            
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
@@ -89,11 +94,7 @@ include 'components/header.php';
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-            <h2 class="section-title">Why Choose Our Bookkeeping Services in Canada</h2>
-            <p>
-              As a trusted accounting firm in Canada, we provide comprehensive bookkeeping services that help businesses across Ontario and throughout Canada maintain accurate financial records. Our experienced bookkeepers understand Canadian accounting standards and CRA requirements, ensuring your books are always compliant and audit-ready.
-            </p>
-            <p>
+           <p>
               Whether you're a small business owner in Toronto managing daily transactions, a growing company in Vancouver tracking expenses, or an established business in Montreal needing organized financial records, our bookkeeping services are designed to keep your finances in perfect order.
             </p>
             <ul class="ul-list">
@@ -206,6 +207,10 @@ include 'components/header.php';
   <!-- CRA Compliance & Best Practices -->
   <section class="common-section">
     <div class="container">
+       <h2 class="section-title">CRA Compliance & Bookkeeping Best Practices</h2>
+            <p>
+              All our bookkeeping services are performed in strict accordance with Canadian accounting standards and CRA requirements. We ensure your financial records meet all regulatory standards and are prepared for tax reporting, audits, and compliance reviews.
+            </p>
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
@@ -214,22 +219,19 @@ include 'components/header.php';
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-            <h2 class="section-title">CRA Compliance & Bookkeeping Best Practices</h2>
-            <p>
-              All our bookkeeping services are performed in strict accordance with Canadian accounting standards and CRA requirements. We ensure your financial records meet all regulatory standards and are prepared for tax reporting, audits, and compliance reviews.
-            </p>
-            <p>
+           
+           <ul class="ul-list"> <li>
               <strong>CRA Compliance:</strong> We ensure all bookkeeping records meet CRA requirements for tax reporting, GST/HST tracking, payroll documentation, and business expense categorization. Our bookkeepers stay current with all changes to Canadian tax laws and accounting standards.
-            </p>
-            <p>
+            </li>
+            <li>
               <strong>Proper Documentation:</strong> Our bookkeeping services maintain organized documentation including receipts, invoices, bank statements, and transaction records. We ensure all documentation is properly stored and easily accessible for audits or reviews.
-            </p>
-            <p>
+            </li>
+            <li>
               <strong>Regular Reconciliation:</strong> We perform monthly bank and credit card reconciliations to ensure every transaction is accurately recorded. This process helps identify discrepancies early and maintains the integrity of your financial records.
-            </p>
-            <p>
+            </li>
+            <li>
               <strong>Expense Categorization:</strong> We properly categorize all business expenses according to CRA guidelines, ensuring you can claim all eligible deductions while maintaining compliance. Our bookkeeping services help maximize your tax benefits while staying within regulations.
-            </p>
+            </li></ul>
           </div>
         </div>
       </div>
