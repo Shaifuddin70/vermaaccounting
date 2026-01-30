@@ -3,10 +3,21 @@
 <!-- Main Content -->
 <main class="main-content">
   <!-- Page Header -->
-  <section class="page-header">
+  <section class="common-section">
     <div class="container">
-      <h1>Business Loans in Canada | Small Business & Commercial Financing | Expert Loan Services</h1>
-      <p>Looking for business loans in Canada? We help startups, small businesses, and established companies secure fast, flexible, and affordable business financing across Canada. Whether you need working capital, expansion funding, or startup financing, we connect you with the right business loan solution. Serving businesses across Ontario, Toronto, Vancouver, Montreal, and all of Canada.</p>
+      <div class="row align-items-center">
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right"><img src="images/rishab-verma-3.jpg" alt="Rishab Verma" /></div>
+        </div>
+        <div class="col-lg-6">
+          <h1 class="section-title">Business Loans in Canada | Small Business & Commercial Financing | Expert Loan Services</h1>
+          <p>Looking for business loans in Canada? We help startups, small businesses, and established companies secure fast, flexible, and affordable business financing across Canada. Whether you need working capital, expansion funding, or startup financing, we connect you with the right business loan solution. Serving businesses across Ontario, Toronto, Vancouver, Montreal, and all of Canada.</p>
+          <div class="cta-buttons left">
+            <a href="/contact" class="cta-button primary">Get Free Consultation</a>
+            <a href="tel:613-318-6478" class="cta-button orange"><i class="fas fa-phone"></i> 613-318-6478</a>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 

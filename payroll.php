@@ -1,15 +1,26 @@
-<?php 
+<?php
 $current_service = 'payroll';
-include 'components/header.php'; 
+include 'components/header.php';
 ?>
 
 <!-- Main Content -->
 <main class="main-content">
   <!-- Page Header -->
-  <section class="page-header">
+  <section class="common-section">
     <div class="container">
-      <h1>Professional Payroll Management Services in Canada | Expert Payroll Processing</h1>
-      <p>Accurate payments, compliant filings. Simplify payroll with precise calculations, on-time processing, and full CRA compliance — so your team is always paid right. Serving businesses across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive payroll services.</p>
+      <div class="row align-items-center">
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right"><img src="images/rishab-verma-2.jpg" alt="Rishab Verma" /></div>
+        </div>
+        <div class="col-lg-6">
+          <h1 class="section-title">Professional Payroll Management Services in Canada | Expert Payroll Processing</h1>
+          <p>Accurate payments, compliant filings. Simplify payroll with precise calculations, on-time processing, and full CRA compliance — so your team is always paid right. Serving businesses across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive payroll services.</p>
+          <div class="cta-buttons left">
+            <a href="/contact" class="cta-button primary">Get Free Consultation</a>
+            <a href="tel:613-318-6478" class="cta-button orange"><i class="fas fa-phone"></i> 613-318-6478</a>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -81,6 +92,10 @@ include 'components/header.php';
   <!-- Why Choose Our Payroll Services -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title">Why Choose Our Payroll Management Services in Canada</h2>
+      <p>
+        As a trusted accounting firm in Canada, we provide comprehensive payroll management services that help businesses across Ontario and throughout Canada process employee payments accurately and on time. Our experienced payroll specialists understand Canadian payroll regulations, CRA requirements, and provincial employment standards.
+      </p>
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
@@ -89,10 +104,7 @@ include 'components/header.php';
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-            <h2 class="section-title">Why Choose Our Payroll Management Services in Canada</h2>
-            <p>
-              As a trusted accounting firm in Canada, we provide comprehensive payroll management services that help businesses across Ontario and throughout Canada process employee payments accurately and on time. Our experienced payroll specialists understand Canadian payroll regulations, CRA requirements, and provincial employment standards.
-            </p>
+
             <p>
               Whether you're a small business in Toronto with a few employees, a growing company in Vancouver managing a larger team, or an established corporation in Montreal with complex payroll needs, our payroll services ensure your employees are paid correctly while maintaining full CRA compliance.
             </p>
@@ -108,36 +120,89 @@ include 'components/header.php';
     </div>
   </section>
 
-  <!-- Industries We Serve -->
+  <!-- Industries We Serve / Payroll for All Business Types -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title text-center mb-4">Payroll Services for All Business Types</h2>
+      <p class="text-center mb-5 mx-auto" style="max-width: 720px;">
+        Our payroll management services are designed to meet the unique needs of businesses across diverse industries throughout Canada. We understand that each business type has specific payroll requirements and employee structures.
+      </p>
+      <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Small Business Payroll</h4>
+            <p>
+              We provide specialized payroll services for small businesses in Canada, handling everything from basic salary payments to complex overtime calculations and benefit deductions.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Retail & Hospitality Payroll</h4>
+            <p>
+              For retail and hospitality businesses, we handle variable schedules, shift differentials, tips, and commission calculations. Our payroll services accommodate the unique needs of these industries.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Professional Services Payroll</h4>
+            <p>
+              We specialize in payroll for professional services firms including law firms, consulting companies, and healthcare practices, handling both employee and contractor payments.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Manufacturing & Construction Payroll</h4>
+            <p>
+              We provide payroll services for manufacturing and construction companies, handling union dues, certified payroll, and complex overtime calculations.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Multi-Location Payroll</h4>
+            <p>
+              For businesses with multiple locations across Canada, we handle payroll for all locations, ensuring compliance with provincial regulations and CRA requirements.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- CRA Compliance & Best Practices -->
+  <section class="common-section">
+    <div class="container">
+      <h2 class="section-title">CRA Compliance & Payroll Best Practices</h2>
+      <p>
+        All our payroll management services are performed in strict accordance with Canadian payroll regulations and CRA requirements. We ensure your payroll meets all regulatory standards and is prepared for audits and compliance reviews.
+      </p>
       <div class="row align-items-center">
-        <div class="col-lg-6">
-          <div class="img-box scroll-animate-left">
-            <img src="images/tax-advisor.jpg" alt="Payroll Services for Various Industries" />
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right">
+            <img src="images/smart-calculation.jpg" alt="CRA Compliant Payroll Services" />
           </div>
         </div>
         <div class="col-lg-6">
-          <div class="scroll-animate-right">
-            <h2 class="section-title">Payroll Services for All Business Types</h2>
-            <p>
-              Our payroll management services are designed to meet the unique needs of businesses across diverse industries throughout Canada. We understand that each business type has specific payroll requirements and employee structures.
-            </p>
+          <div class="scroll-animate-left">
             <ul class="ul-list">
+
               <li>
-                <strong>Small Business Payroll:</strong> We provide specialized payroll services for small businesses in Canada, handling everything from basic salary payments to complex overtime calculations and benefit deductions.
+                <strong>Source Deduction Compliance:</strong> We properly calculate and timely remit all income tax, CPP, and EI deductions to CRA according to current rates and regulations.<br>
+                Our payroll services ensure you never miss a remittance deadline.
               </li>
               <li>
-                <strong>Retail & Hospitality Payroll:</strong> For retail and hospitality businesses, we handle variable schedules, shift differentials, tips, and commission calculations. Our payroll services accommodate the unique needs of these industries.
+                <strong>Provincial Compliance:</strong> We stay current with provincial employment standards, minimum wage requirements, and provincial tax regulations.<br>
+                Our payroll services ensure compliance with both federal and provincial requirements.
               </li>
               <li>
-                <strong>Professional Services Payroll:</strong> We specialize in payroll for professional services firms including law firms, consulting companies, and healthcare practices, handling both employee and contractor payments.
+                <strong>Record Keeping:</strong> Our payroll services maintain organized documentation including paystubs, payroll registers, and remittance records.<br>
+                We ensure all records are properly stored and easily accessible for audits or reviews.
               </li>
               <li>
-                <strong>Manufacturing & Construction Payroll:</strong> We provide payroll services for manufacturing and construction companies, handling union dues, certified payroll, and complex overtime calculations.
-              </li>
-              <li>
-                <strong>Multi-Location Payroll:</strong> For businesses with multiple locations across Canada, we handle payroll for all locations, ensuring compliance with provincial regulations and CRA requirements.
+                <strong>Tax Slip Accuracy:</strong> We ensure all T4 and T5 slips are accurate and submitted to CRA on time.<br>
+                Our payroll services help prevent errors that could result in penalties or employee issues.
               </li>
             </ul>
           </div>
@@ -145,7 +210,6 @@ include 'components/header.php';
       </div>
     </div>
   </section>
-
   <!-- Benefits Section -->
   <section class="common-section">
     <div class="container">
@@ -203,38 +267,7 @@ include 'components/header.php';
     </div>
   </section>
 
-  <!-- CRA Compliance & Best Practices -->
-  <section class="common-section">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6 order-lg-last">
-          <div class="img-box scroll-animate-right">
-            <img src="images/smart-calculation.jpg" alt="CRA Compliant Payroll Services" />
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="scroll-animate-left">
-            <h2 class="section-title">CRA Compliance & Payroll Best Practices</h2>
-            <p>
-              All our payroll management services are performed in strict accordance with Canadian payroll regulations and CRA requirements. We ensure your payroll meets all regulatory standards and is prepared for audits and compliance reviews.
-            </p>
-            <p>
-              <strong>Source Deduction Compliance:</strong> We properly calculate and timely remit all income tax, CPP, and EI deductions to CRA according to current rates and regulations. Our payroll services ensure you never miss a remittance deadline.
-            </p>
-            <p>
-              <strong>Provincial Compliance:</strong> We stay current with provincial employment standards, minimum wage requirements, and provincial tax regulations. Our payroll services ensure compliance with both federal and provincial requirements.
-            </p>
-            <p>
-              <strong>Record Keeping:</strong> Our payroll services maintain organized documentation including paystubs, payroll registers, and remittance records. We ensure all records are properly stored and easily accessible for audits or reviews.
-            </p>
-            <p>
-              <strong>Tax Slip Accuracy:</strong> We ensure all T4 and T5 slips are accurate and submitted to CRA on time. Our payroll services help prevent errors that could result in penalties or employee issues.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+
 
   <!-- Other Services -->
   <?php include 'components/other-services.php'; ?>
@@ -354,87 +387,90 @@ include 'components/header.php';
 <?php include 'components/footer.php'; ?>
 
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "serviceType": "Payroll Management Services",
-  "provider": {
-    "@type": "AccountingService",
-    "name": "Verma Accounting & Financial Services",
-    "url": "https://vermaaccounting.ca/payroll",
-    "telephone": "613-318-6478",
-    "email": "info@vermaaccounting.ca",
-    "address": {
-      "@type": "PostalAddress",
-      "addressCountry": "CA",
-      "addressRegion": "ON",
-      "addressLocality": "London"
+  {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "serviceType": "Payroll Management Services",
+    "provider": {
+      "@type": "AccountingService",
+      "name": "Verma Accounting & Financial Services",
+      "url": "https://vermaaccounting.ca/payroll",
+      "telephone": "613-318-6478",
+      "email": "info@vermaaccounting.ca",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "CA",
+        "addressRegion": "ON",
+        "addressLocality": "London"
+      },
+      "areaServed": {
+        "@type": "Country",
+        "name": "Canada"
+      }
     },
-    "areaServed": {
-      "@type": "Country",
-      "name": "Canada"
+    "description": "Professional payroll management services in Canada including payroll processing, paystub generation, source deduction remittance, T4/T5 preparation, and CRA compliance. Expert payroll specialists serving businesses across Ontario and Canada.",
+    "offers": {
+      "@type": "Offer",
+      "description": "Comprehensive payroll management services for businesses in Canada"
     }
-  },
-  "description": "Professional payroll management services in Canada including payroll processing, paystub generation, source deduction remittance, T4/T5 preparation, and CRA compliance. Expert payroll specialists serving businesses across Ontario and Canada.",
-  "offers": {
-    "@type": "Offer",
-    "description": "Comprehensive payroll management services for businesses in Canada"
   }
-}
 </script>
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [{
-    "@type": "Question",
-    "name": "What payroll services do you provide?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "We provide comprehensive payroll services including payroll processing, paystub generation, source deduction remittance (income tax, CPP, EI), and T4/T5 preparation and submission for all employees and contractors."
-    }
-  }, {
-    "@type": "Question",
-    "name": "How do you ensure CRA compliance for payroll?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "We properly calculate and timely remit all income tax, CPP, and EI deductions to CRA. Our payroll services ensure full compliance with Canadian payroll regulations and requirements."
-    }
-  }, {
-    "@type": "Question",
-    "name": "Do you handle T4 and T5 preparation?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Yes, we provide comprehensive T4 and T5 preparation and submission for all employees and contractors. We ensure all tax slips are accurate and submitted to CRA on time."
-    }
-  }, {
-    "@type": "Question",
-    "name": "How often do you process payroll?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "We can process payroll weekly, bi-weekly, semi-monthly, or monthly depending on your business needs. We ensure all employees are paid accurately and on time."
-    }
-  }, {
-    "@type": "Question",
-    "name": "What information do you need to process payroll?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "We need employee information, hours worked, salary details, and any deductions or benefits. We'll guide you on what information is needed and can work with your existing systems."
-    }
-  }, {
-    "@type": "Question",
-    "name": "Can you handle payroll for contractors?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Yes, we can process payments for contractors and prepare T4A slips as required. We ensure proper documentation and compliance for all types of workers."
-    }
-  }]
-}
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": "What payroll services do you provide?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We provide comprehensive payroll services including payroll processing, paystub generation, source deduction remittance (income tax, CPP, EI), and T4/T5 preparation and submission for all employees and contractors."
+      }
+    }, {
+      "@type": "Question",
+      "name": "How do you ensure CRA compliance for payroll?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We properly calculate and timely remit all income tax, CPP, and EI deductions to CRA. Our payroll services ensure full compliance with Canadian payroll regulations and requirements."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Do you handle T4 and T5 preparation?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, we provide comprehensive T4 and T5 preparation and submission for all employees and contractors. We ensure all tax slips are accurate and submitted to CRA on time."
+      }
+    }, {
+      "@type": "Question",
+      "name": "How often do you process payroll?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We can process payroll weekly, bi-weekly, semi-monthly, or monthly depending on your business needs. We ensure all employees are paid accurately and on time."
+      }
+    }, {
+      "@type": "Question",
+      "name": "What information do you need to process payroll?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We need employee information, hours worked, salary details, and any deductions or benefits. We'll guide you on what information is needed and can work with your existing systems."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Can you handle payroll for contractors?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, we can process payments for contractors and prepare T4A slips as required. We ensure proper documentation and compliance for all types of workers."
+      }
+    }]
+  }
 </script>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {

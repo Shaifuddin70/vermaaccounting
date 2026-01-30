@@ -6,10 +6,21 @@ include 'components/header.php';
 <!-- Main Content -->
 <main class="main-content">
   <!-- Page Header -->
-  <section class="page-header">
+  <section class="common-section">
     <div class="container">
-      <h1>Professional Corporate Tax Services in Canada | Expert T2 Tax Preparers</h1>
-      <p>Strategic filing for stronger profits. Corporate tax planning that protects your earnings, reduces liabilities, and keeps your business fully compliant year-round. Serving corporations across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive corporate tax services.</p>
+      <div class="row align-items-center">
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right"><img src="images/rishab-verma-1.jpg" alt="Rishab Verma" /></div>
+        </div>
+        <div class="col-lg-6">
+          <h1 class="section-title">Professional Corporate Tax Services in Canada | Expert T2 Tax Preparers</h1>
+          <p>Strategic filing for stronger profits. Corporate tax planning that protects your earnings, reduces liabilities, and keeps your business fully compliant year-round. Serving corporations across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive corporate tax services.</p>
+          <div class="cta-buttons left">
+            <a href="/contact" class="cta-button primary">Get Free Consultation</a>
+            <a href="tel:613-318-6478" class="cta-button orange"><i class="fas fa-phone"></i> 613-318-6478</a>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -81,6 +92,10 @@ include 'components/header.php';
   <!-- Why Choose Our Corporate Tax Services -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title">Why Choose Our Corporate Tax Services in Canada</h2>
+      <p>
+        As a trusted accounting firm in Canada, we provide comprehensive corporate tax services that help businesses across Ontario and throughout Canada minimize tax liability while maintaining full CRA compliance. Our experienced corporate tax specialists understand Canadian corporate tax laws, T2 filing requirements, and strategic tax planning opportunities.
+      </p>
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
@@ -89,10 +104,6 @@ include 'components/header.php';
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-            <h2 class="section-title">Why Choose Our Corporate Tax Services in Canada</h2>
-            <p>
-              As a trusted accounting firm in Canada, we provide comprehensive corporate tax services that help businesses across Ontario and throughout Canada minimize tax liability while maintaining full CRA compliance. Our experienced corporate tax specialists understand Canadian corporate tax laws, T2 filing requirements, and strategic tax planning opportunities.
-            </p>
             <p>
               Whether you're a small corporation in Toronto, a growing company in Vancouver, or an established corporation in Montreal with complex tax needs, our corporate tax services ensure your business maximizes tax savings while staying compliant with all CRA requirements.
             </p>
@@ -108,38 +119,85 @@ include 'components/header.php';
     </div>
   </section>
 
-  <!-- Corporate Types We Serve -->
+  <!-- Corporate Tax Services for All Business Types -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title text-center mb-4">Corporate Tax Services for All Business Types</h2>
+      <p class="text-center mb-5 mx-auto" style="max-width: 720px;">
+        Our corporate tax services are designed to meet the unique needs of corporations across diverse industries and business structures throughout Canada. We understand that each corporation has specific tax considerations and planning opportunities.
+      </p>
+      <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Small Business Corporations</h4>
+            <p>
+              We provide specialized corporate tax services for small business corporations, helping you take advantage of the small business deduction and other tax benefits available to smaller corporations.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Canadian-Controlled Private Corporations (CCPC)</h4>
+            <p>
+              For CCPCs, we handle the enhanced tax benefits including the small business deduction, SR&ED credits, and other incentives available to Canadian-controlled corporations.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Public Corporations</h4>
+            <p>
+              We provide corporate tax services for public corporations, handling complex tax situations, inter-corporate transactions, and compliance with public company tax requirements.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Multi-Entity Corporations</h4>
+            <p>
+              For corporations with multiple entities or subsidiaries, we handle consolidated tax planning, inter-company transactions, and complex corporate tax structures.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Professional Corporations</h4>
+            <p>
+              We specialize in corporate tax services for professional corporations including medical, legal, and accounting practices, handling the unique tax considerations of professional services.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CRA Compliance & Tax Strategies -->
+  <section class="common-section">
+    <div class="container">
+      <h2 class="section-title">CRA Compliance & Corporate Tax Strategies</h2>
+      <p>
+        All our corporate tax services are performed in strict accordance with Canadian corporate tax laws and CRA requirements. We ensure your T2 return meets all regulatory standards and is prepared for any CRA review or audit.
+      </p>
       <div class="row align-items-center">
-        <div class="col-lg-6">
-          <div class="img-box scroll-animate-left">
-            <img src="images/about-us.jpg" alt="Corporate Tax Services for Various Business Types" />
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right">
+            <img src="images/business-loan.jpg" alt="CRA Compliant Corporate Tax Services" />
           </div>
         </div>
         <div class="col-lg-6">
-          <div class="scroll-animate-right">
-            <h2 class="section-title">Corporate Tax Services for All Business Types</h2>
+          <div class="scroll-animate-left">
             <p>
-              Our corporate tax services are designed to meet the unique needs of corporations across diverse industries and business structures throughout Canada. We understand that each corporation has specific tax considerations and planning opportunities.
+              <strong>Available Corporate Tax Credits:</strong> We help you identify and claim all eligible corporate tax credits including Scientific Research and Experimental Development (SR&ED) credits, small business deduction, investment tax credits, and other incentives available to Canadian corporations.
             </p>
-            <ul class="ul-list">
-              <li>
-                <strong>Small Business Corporations:</strong> We provide specialized corporate tax services for small business corporations, helping you take advantage of the small business deduction and other tax benefits available to smaller corporations.
-              </li>
-              <li>
-                <strong>Canadian-Controlled Private Corporations (CCPC):</strong> For CCPCs, we handle the enhanced tax benefits including the small business deduction, SR&ED credits, and other incentives available to Canadian-controlled corporations.
-              </li>
-              <li>
-                <strong>Public Corporations:</strong> We provide corporate tax services for public corporations, handling complex tax situations, inter-corporate transactions, and compliance with public company tax requirements.
-              </li>
-              <li>
-                <strong>Multi-Entity Corporations:</strong> For corporations with multiple entities or subsidiaries, we handle consolidated tax planning, inter-company transactions, and complex corporate tax structures.
-              </li>
-              <li>
-                <strong>Professional Corporations:</strong> We specialize in corporate tax services for professional corporations including medical, legal, and accounting practices, handling the unique tax considerations of professional services.
-              </li>
-            </ul>
+            <p>
+              <strong>Deduction Optimization:</strong> Our corporate tax services help you maximize eligible deductions including capital cost allowance, business expenses, interest expenses, and other deductions that can reduce your corporate tax liability.
+            </p>
+            <p>
+              <strong>Tax Planning Strategies:</strong> We provide strategic tax planning including income splitting, dividend planning, capital gains planning, and other strategies that can help optimize your corporate tax position while maintaining compliance.
+            </p>
+            <p>
+              <strong>Fiscal Year-End Planning:</strong> We help you choose the optimal fiscal year-end and plan transactions around year-end to optimize your tax position. Our corporate tax services help you time transactions for maximum tax benefit.
+            </p>
           </div>
         </div>
       </div>
@@ -196,39 +254,6 @@ include 'components/header.php';
             <h4>Strategic Business Decisions</h4>
             <p>
               Our corporate tax services provide insights that help you make informed business decisions about investments, expenses, and business structure that can optimize your tax position.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CRA Compliance & Tax Strategies -->
-  <section class="common-section">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6 order-lg-last">
-          <div class="img-box scroll-animate-right">
-            <img src="images/business-loan.jpg" alt="CRA Compliant Corporate Tax Services" />
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="scroll-animate-left">
-            <h2 class="section-title">CRA Compliance & Corporate Tax Strategies</h2>
-            <p>
-              All our corporate tax services are performed in strict accordance with Canadian corporate tax laws and CRA requirements. We ensure your T2 return meets all regulatory standards and is prepared for any CRA review or audit.
-            </p>
-            <p>
-              <strong>Available Corporate Tax Credits:</strong> We help you identify and claim all eligible corporate tax credits including Scientific Research and Experimental Development (SR&ED) credits, small business deduction, investment tax credits, and other incentives available to Canadian corporations.
-            </p>
-            <p>
-              <strong>Deduction Optimization:</strong> Our corporate tax services help you maximize eligible deductions including capital cost allowance, business expenses, interest expenses, and other deductions that can reduce your corporate tax liability.
-            </p>
-            <p>
-              <strong>Tax Planning Strategies:</strong> We provide strategic tax planning including income splitting, dividend planning, capital gains planning, and other strategies that can help optimize your corporate tax position while maintaining compliance.
-            </p>
-            <p>
-              <strong>Fiscal Year-End Planning:</strong> We help you choose the optimal fiscal year-end and plan transactions around year-end to optimize your tax position. Our corporate tax services help you time transactions for maximum tax benefit.
             </p>
           </div>
         </div>

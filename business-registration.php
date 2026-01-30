@@ -6,10 +6,21 @@ include 'components/header.php';
 <!-- Main Content -->
 <main class="main-content">
   <!-- Page Header -->
-  <section class="page-header">
+  <section class="common-section">
     <div class="container">
-      <h1>Professional Business Registration Services in Canada | Expert Business Setup</h1>
-      <p>Start right, grow strong. We handle CRA business numbers, GST/HST registration, and provincial filings so you can focus on launching your business. Serving entrepreneurs across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive business registration services.</p>
+      <div class="row align-items-center">
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right"><img src="images/rishab-verma-2.jpg" alt="Rishab Verma" /></div>
+        </div>
+        <div class="col-lg-6">
+          <h1 class="section-title">Professional Business Registration Services in Canada | Expert Business Setup</h1>
+          <p>Start right, grow strong. We handle CRA business numbers, GST/HST registration, and provincial filings so you can focus on launching your business. Serving entrepreneurs across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive business registration services.</p>
+          <div class="cta-buttons left">
+            <a href="/contact" class="cta-button primary">Get Free Consultation</a>
+            <a href="tel:613-318-6478" class="cta-button orange"><i class="fas fa-phone"></i> 613-318-6478</a>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -81,18 +92,18 @@ include 'components/header.php';
   <!-- Why Choose Our Business Registration Services -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title">Why Choose Our Business Registration Services in Canada</h2>
+      <p>
+        As a trusted accounting firm in Canada, we provide comprehensive business registration services that help entrepreneurs and business owners across Ontario and throughout Canada properly register their businesses and ensure compliance from day one. Our experienced team understands all the requirements for business registration in Canada.
+      </p>
       <div class="row align-items-center">
-        <div class="col-lg-6">
-          <div class="img-box scroll-animate-left">
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right">
             <img src="images/tax-discussion.jpg" alt="Professional Business Registration Services Canada" />
           </div>
         </div>
         <div class="col-lg-6">
-          <div class="scroll-animate-right">
-            <h2 class="section-title">Why Choose Our Business Registration Services in Canada</h2>
-            <p>
-              As a trusted accounting firm in Canada, we provide comprehensive business registration services that help entrepreneurs and business owners across Ontario and throughout Canada properly register their businesses and ensure compliance from day one. Our experienced team understands all the requirements for business registration in Canada.
-            </p>
+          <div class="scroll-animate-left">
             <p>
               Whether you're starting a new business in Toronto, expanding to Vancouver, or launching a corporation in Montreal, our business registration services ensure your business is properly registered with all necessary authorities and ready to operate legally.
             </p>
@@ -108,41 +119,93 @@ include 'components/header.php';
     </div>
   </section>
 
-  <!-- Business Types We Register -->
+  <!-- Business Registration Services for All Business Types -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title text-center mb-4">Business Registration Services for All Business Types</h2>
+      <p class="text-center mb-5 mx-auto" style="max-width: 720px;">
+        Our business registration services are designed to help entrepreneurs register all types of businesses throughout Canada. We understand the unique requirements for each business structure and ensure proper registration.
+      </p>
+      <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Sole Proprietorship Registration</h4>
+            <p>
+              We help sole proprietors register their business name, obtain a CRA business number, and register for GST/HST if required. Our business registration services ensure you're set up correctly from the start.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Partnership Registration</h4>
+            <p>
+              For partnerships, we handle partnership registration, business name registration, CRA business number setup, and ensure all partners are properly registered.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Corporation Registration</h4>
+            <p>
+              We provide complete incorporation services including federal or provincial incorporation, articles of incorporation, corporate name registration, and all necessary documentation.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>GST/HST Registration</h4>
+            <p>
+              We help determine if GST/HST registration is required and handle the registration process. Our business registration services ensure you're compliant with sales tax requirements.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Payroll Account Setup</h4>
+            <p>
+              If you have employees, we set up your payroll account with CRA and ensure you're ready to process payroll from day one. Our business registration services include all necessary account setups.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Provincial Business Registration</h4>
+            <p>
+              We handle provincial business name registration, provincial tax registrations, and ensure compliance with all provincial business requirements.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CRA Compliance & Registration Process -->
+  <section class="common-section">
+    <div class="container">
+      <h2 class="section-title">CRA Compliance & Business Registration Process</h2>
+      <p>
+        All our business registration services are performed in strict accordance with CRA requirements and Canadian business registration regulations. We ensure your business is registered correctly and meets all compliance standards.
+      </p>
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/business-growth.jpg" alt="Business Registration for Various Business Types" />
+            <img src="images/smart-calculation.jpg" alt="CRA Compliant Business Registration" />
           </div>
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-            <h2 class="section-title">Business Registration Services for All Business Types</h2>
             <p>
-              Our business registration services are designed to help entrepreneurs register all types of businesses throughout Canada. We understand the unique requirements for each business structure and ensure proper registration.
+              <strong>CRA Business Number:</strong> We help you obtain your CRA business number, which is required for GST/HST registration, payroll accounts, and corporate tax accounts. Our business registration services ensure you get this essential identifier.
             </p>
-            <ul class="ul-list">
-              <li>
-                <strong>Sole Proprietorship Registration:</strong> We help sole proprietors register their business name, obtain a CRA business number, and register for GST/HST if required. Our business registration services ensure you're set up correctly from the start.
-              </li>
-              <li>
-                <strong>Partnership Registration:</strong> For partnerships, we handle partnership registration, business name registration, CRA business number setup, and ensure all partners are properly registered.
-              </li>
-              <li>
-                <strong>Corporation Registration:</strong> We provide complete incorporation services including federal or provincial incorporation, articles of incorporation, corporate name registration, and all necessary documentation.
-              </li>
-              <li>
-                <strong>GST/HST Registration:</strong> We help determine if GST/HST registration is required and handle the registration process. Our business registration services ensure you're compliant with sales tax requirements.
-              </li>
-              <li>
-                <strong>Payroll Account Setup:</strong> If you have employees, we set up your payroll account with CRA and ensure you're ready to process payroll from day one. Our business registration services include all necessary account setups.
-              </li>
-              <li>
-                <strong>Provincial Business Registration:</strong> We handle provincial business name registration, provincial tax registrations, and ensure compliance with all provincial business requirements.
-              </li>
-            </ul>
+            <p>
+              <strong>GST/HST Registration Requirements:</strong> We help determine if your business needs to register for GST/HST (required if annual revenues exceed $30,000) and handle the registration process. Our business registration services ensure compliance with sales tax requirements.
+            </p>
+            <p>
+              <strong>Provincial Registration:</strong> We handle provincial business name registration and ensure compliance with provincial business requirements. Our business registration services cover both federal and provincial registrations.
+            </p>
+            <p>
+              <strong>Registration Documentation:</strong> We prepare all necessary documentation for business registration and ensure everything is properly filed. Our business registration services maintain organized records for your business.
+            </p>
           </div>
         </div>
       </div>
@@ -199,39 +262,6 @@ include 'components/header.php';
             <h4>Ongoing Support</h4>
             <p>
               After registration, we provide ongoing support and guidance on compliance requirements. Our business registration services help you stay compliant as your business grows.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CRA Compliance & Registration Process -->
-  <section class="common-section">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6">
-          <div class="img-box scroll-animate-left">
-            <img src="images/smart-calculation.jpg" alt="CRA Compliant Business Registration" />
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="scroll-animate-right">
-            <h2 class="section-title">CRA Compliance & Business Registration Process</h2>
-            <p>
-              All our business registration services are performed in strict accordance with CRA requirements and Canadian business registration regulations. We ensure your business is registered correctly and meets all compliance standards.
-            </p>
-            <p>
-              <strong>CRA Business Number:</strong> We help you obtain your CRA business number, which is required for GST/HST registration, payroll accounts, and corporate tax accounts. Our business registration services ensure you get this essential identifier.
-            </p>
-            <p>
-              <strong>GST/HST Registration Requirements:</strong> We help determine if your business needs to register for GST/HST (required if annual revenues exceed $30,000) and handle the registration process. Our business registration services ensure compliance with sales tax requirements.
-            </p>
-            <p>
-              <strong>Provincial Registration:</strong> We handle provincial business name registration and ensure compliance with provincial business requirements. Our business registration services cover both federal and provincial registrations.
-            </p>
-            <p>
-              <strong>Registration Documentation:</strong> We prepare all necessary documentation for business registration and ensure everything is properly filed. Our business registration services maintain organized records for your business.
             </p>
           </div>
         </div>

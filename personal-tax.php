@@ -6,10 +6,21 @@ include 'components/header.php';
 <!-- Main Content -->
 <main class="main-content">
   <!-- Page Header -->
-  <section class="page-header">
+  <section class="common-section">
     <div class="container">
-      <h1>Professional Personal Tax Services in Canada | Expert Tax Preparers</h1>
-      <p>Maximize refunds. Minimize stress. We prepare and file personal income taxes with precision, ensuring compliance and uncovering eligible credits for better returns. Serving individuals across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive personal tax services.</p>
+      <div class="row align-items-center">
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right"><img src="images/rishab-verma-3.jpg" alt="Rishab Verma" /></div>
+        </div>
+        <div class="col-lg-6">
+          <h1 class="section-title">Professional Personal Tax Services in Canada | Expert Tax Preparers</h1>
+          <p>Maximize refunds. Minimize stress. We prepare and file personal income taxes with precision, ensuring compliance and uncovering eligible credits for better returns. Serving individuals across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive personal tax services.</p>
+          <div class="cta-buttons left">
+            <a href="/contact" class="cta-button primary">Get Free Consultation</a>
+            <a href="tel:613-318-6478" class="cta-button orange"><i class="fas fa-phone"></i> 613-318-6478</a>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -81,18 +92,18 @@ include 'components/header.php';
   <!-- Why Choose Our Personal Tax Services -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title">Why Choose Our Personal Tax Services in Canada</h2>
+      <p>
+        As a trusted accounting firm in Canada, we provide comprehensive personal tax services that help individuals across Ontario and throughout Canada maximize their tax refunds while ensuring full CRA compliance. Our experienced tax preparers understand Canadian tax laws, credits, and deductions, ensuring you claim everything you're entitled to.
+      </p>
       <div class="row align-items-center">
-        <div class="col-lg-6">
-          <div class="img-box scroll-animate-left">
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right">
             <img src="images/calculation.jpg" alt="Professional Personal Tax Services Canada" />
           </div>
         </div>
         <div class="col-lg-6">
-          <div class="scroll-animate-right">
-            <h2 class="section-title">Why Choose Our Personal Tax Services in Canada</h2>
-            <p>
-              As a trusted accounting firm in Canada, we provide comprehensive personal tax services that help individuals across Ontario and throughout Canada maximize their tax refunds while ensuring full CRA compliance. Our experienced tax preparers understand Canadian tax laws, credits, and deductions, ensuring you claim everything you're entitled to.
-            </p>
+          <div class="scroll-animate-left">
             <p>
               Whether you're a salaried employee in Toronto, a self-employed professional in Vancouver, a new immigrant in Montreal, or a retiree anywhere in Canada, our personal tax services are designed to help you navigate the complexities of Canadian tax filing and maximize your refund.
             </p>
@@ -108,41 +119,93 @@ include 'components/header.php';
     </div>
   </section>
 
-  <!-- Tax Situations We Handle -->
+  <!-- Personal Tax Services for All Situations -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title text-center mb-4">Personal Tax Services for All Situations</h2>
+      <p class="text-center mb-5 mx-auto" style="max-width: 720px;">
+        Our personal tax services are designed to meet the unique needs of individuals across diverse situations throughout Canada. We understand that each person's tax situation is different and requires personalized attention.
+      </p>
+      <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Employee Tax Filing</h4>
+            <p>
+              We provide personal tax services for salaried employees, handling T4 slips, employment expenses, and all standard deductions. Our tax services ensure you claim all eligible employment-related deductions.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Self-Employed Tax Filing</h4>
+            <p>
+              For self-employed individuals, we handle business income reporting, expense deductions, GST/HST considerations, and home office deductions. Our personal tax services help maximize your deductions while staying compliant.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Investment Income Tax Filing</h4>
+            <p>
+              We handle tax filing for individuals with investment income including T5 slips, capital gains, dividends, and interest income. Our tax services ensure proper reporting and optimization of investment-related tax benefits.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Rental Income Tax Filing</h4>
+            <p>
+              For property owners, we handle rental income reporting, expense deductions, capital cost allowance, and property-related tax considerations. Our personal tax services help maximize your rental property deductions.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>New Immigrant Tax Filing</h4>
+            <p>
+              We provide specialized personal tax services for new immigrants to Canada, helping them understand Canadian tax obligations, claim eligible credits, and file their first Canadian tax returns.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Retiree Tax Filing</h4>
+            <p>
+              For retirees, we handle pension income, RRSP/RRIF withdrawals, Old Age Security, CPP benefits, and retirement-related tax considerations. Our tax services help optimize your retirement income tax situation.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CRA Compliance & Tax Credits -->
+  <section class="common-section">
+    <div class="container">
+      <h2 class="section-title">CRA Compliance & Available Tax Credits</h2>
+      <p>
+        All our personal tax services are performed in strict accordance with Canadian tax laws and CRA requirements. We ensure your tax return meets all regulatory standards and is prepared for any CRA review or audit.
+      </p>
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/happy-client.jpg" alt="Personal Tax Services for Various Situations" />
+            <img src="images/tax-discussion.jpg" alt="CRA Compliant Personal Tax Services" />
           </div>
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-            <h2 class="section-title">Personal Tax Services for All Situations</h2>
             <p>
-              Our personal tax services are designed to meet the unique needs of individuals across diverse situations throughout Canada. We understand that each person's tax situation is different and requires personalized attention.
+              <strong>Common Tax Credits We Help You Claim:</strong> We identify and optimize all eligible tax credits including the Canada Child Benefit, GST/HST credit, medical expense tax credit, charitable donation tax credit, tuition tax credit, disability tax credit, and many more.
             </p>
-            <ul class="ul-list">
-              <li>
-                <strong>Employee Tax Filing:</strong> We provide personal tax services for salaried employees, handling T4 slips, employment expenses, and all standard deductions. Our tax services ensure you claim all eligible employment-related deductions.
-              </li>
-              <li>
-                <strong>Self-Employed Tax Filing:</strong> For self-employed individuals, we handle business income reporting, expense deductions, GST/HST considerations, and home office deductions. Our personal tax services help maximize your deductions while staying compliant.
-              </li>
-              <li>
-                <strong>Investment Income Tax Filing:</strong> We handle tax filing for individuals with investment income including T5 slips, capital gains, dividends, and interest income. Our tax services ensure proper reporting and optimization of investment-related tax benefits.
-              </li>
-              <li>
-                <strong>Rental Income Tax Filing:</strong> For property owners, we handle rental income reporting, expense deductions, capital cost allowance, and property-related tax considerations. Our personal tax services help maximize your rental property deductions.
-              </li>
-              <li>
-                <strong>New Immigrant Tax Filing:</strong> We provide specialized personal tax services for new immigrants to Canada, helping them understand Canadian tax obligations, claim eligible credits, and file their first Canadian tax returns.
-              </li>
-              <li>
-                <strong>Retiree Tax Filing:</strong> For retirees, we handle pension income, RRSP/RRIF withdrawals, Old Age Security, CPP benefits, and retirement-related tax considerations. Our tax services help optimize your retirement income tax situation.
-              </li>
-            </ul>
+            <p>
+              <strong>Deduction Optimization:</strong> Our personal tax services help you claim all eligible deductions including RRSP contributions, employment expenses, moving expenses, child care expenses, and other deductions you may be entitled to.
+            </p>
+            <p>
+              <strong>Provincial Tax Credits:</strong> We ensure you claim all eligible provincial tax credits and benefits available in your province, whether you're in Ontario, British Columbia, Quebec, or any other province.
+            </p>
+            <p>
+              <strong>Tax Return Accuracy:</strong> We double-check all calculations, ensure proper documentation, and verify that your return is complete and accurate before filing. Our personal tax services help prevent errors that could result in penalties or delays.
+            </p>
           </div>
         </div>
       </div>
@@ -199,39 +262,6 @@ include 'components/header.php';
             <h4>Tax Planning Advice</h4>
             <p>
               Beyond tax filing, we provide tax planning advice to help you make decisions throughout the year that can reduce your tax liability. Our personal tax services help you plan ahead.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- CRA Compliance & Tax Credits -->
-  <section class="common-section">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6">
-          <div class="img-box scroll-animate-left">
-            <img src="images/tax-discussion.jpg" alt="CRA Compliant Personal Tax Services" />
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="scroll-animate-right">
-            <h2 class="section-title">CRA Compliance & Available Tax Credits</h2>
-            <p>
-              All our personal tax services are performed in strict accordance with Canadian tax laws and CRA requirements. We ensure your tax return meets all regulatory standards and is prepared for any CRA review or audit.
-            </p>
-            <p>
-              <strong>Common Tax Credits We Help You Claim:</strong> We identify and optimize all eligible tax credits including the Canada Child Benefit, GST/HST credit, medical expense tax credit, charitable donation tax credit, tuition tax credit, disability tax credit, and many more.
-            </p>
-            <p>
-              <strong>Deduction Optimization:</strong> Our personal tax services help you claim all eligible deductions including RRSP contributions, employment expenses, moving expenses, child care expenses, and other deductions you may be entitled to.
-            </p>
-            <p>
-              <strong>Provincial Tax Credits:</strong> We ensure you claim all eligible provincial tax credits and benefits available in your province, whether you're in Ontario, British Columbia, Quebec, or any other province.
-            </p>
-            <p>
-              <strong>Tax Return Accuracy:</strong> We double-check all calculations, ensure proper documentation, and verify that your return is complete and accurate before filing. Our personal tax services help prevent errors that could result in penalties or delays.
             </p>
           </div>
         </div>

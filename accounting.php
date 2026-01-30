@@ -125,31 +125,66 @@ include 'components/header.php';
     </div>
   </section>
 
-  <!-- Industries We Serve -->
+  <!-- Financial Accounting Services for All Industries -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title text-center mb-4">Financial Accounting Services for All Industries</h2>
+      <p class="text-center mb-5 mx-auto" style="max-width: 720px;">
+        Our financial accounting services are tailored to meet the unique needs of businesses across diverse industries throughout Canada. We understand that each industry has specific accounting requirements and regulatory considerations.
+      </p>
+      <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Small Business Accounting</h4>
+            <p>
+              We provide specialized financial accounting services for small businesses in Canada, helping entrepreneurs understand their financial health and make informed decisions for growth.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Corporate Accounting</h4>
+            <p>
+              For larger corporations, we offer comprehensive financial accounting services including consolidated financial statements, multi-entity reporting, and complex financial analysis.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Industry-Specific Expertise</h4>
+            <p>
+              Our accounting team has experience serving retail businesses, professional services firms, manufacturing companies, technology startups, healthcare practices, and many other industries across Ontario and Canada.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Accounting Standards & Compliance -->
+  <section class="common-section">
+    <div class="container">
+      <h2 class="section-title">Canadian Accounting Standards & CRA Compliance</h2>
+      <p>
+        All our financial accounting services are performed in strict accordance with Canadian accounting standards, including International Financial Reporting Standards (IFRS) for public companies and Accounting Standards for Private Enterprises (ASPE) for private companies.
+      </p>
       <div class="row align-items-center">
-        <div class="col-lg-6 ">
+        <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/smart-calculation.jpg" alt="Financial Accounting for Various Industries" />
+            <img src="images/business-loan.jpg" alt="CRA Compliant Financial Accounting" />
           </div>
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-            <h2 class="section-title">Financial Accounting Services for All Industries</h2>
-            <p>
-              Our financial accounting services are tailored to meet the unique needs of businesses across diverse industries throughout Canada. We understand that each industry has specific accounting requirements and regulatory considerations.
-            </p>
             <ul class="ul-list">
-
               <li>
-                <strong>Small Business Accounting:</strong> We provide specialized financial accounting services for small businesses in Canada, helping entrepreneurs understand their financial health and make informed decisions for growth.
+                <strong>CRA Compliance:</strong> We ensure all financial statements and accounting records meet CRA requirements for tax reporting, audits, and regulatory compliance. Our certified accountants stay current with all changes to Canadian tax laws and accounting standards.
               </li>
               <li>
-                <strong>Corporate Accounting:</strong> For larger corporations, we offer comprehensive financial accounting services including consolidated financial statements, multi-entity reporting, and complex financial analysis.
+                <strong>Audit-Ready Financial Statements:</strong> Our financial accounting services prepare your records to be audit-ready at all times. We maintain organized documentation, proper reconciliations, and complete financial records that stand up to scrutiny.
               </li>
               <li>
-                <strong>Industry-Specific Expertise:</strong> Our accounting team has experience serving retail businesses, professional services firms, manufacturing companies, technology startups, healthcare practices, and many other industries across Ontario and Canada.
+                <strong>Regulatory Reporting:</strong> Whether you need financial statements for lenders, investors, regulatory bodies, or internal management, our accounting services ensure all reports meet the required standards and formats.
               </li>
             </ul>
           </div>
@@ -209,39 +244,6 @@ include 'components/header.php';
             <p>
               Professional financial statements build confidence with investors, lenders, partners, and other stakeholders. Our accounting services help you present your business in the best light.
             </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Accounting Standards & Compliance -->
-  <section class="common-section">
-    <div class="container">
-      <h2 class="section-title">Canadian Accounting Standards & CRA Compliance</h2>
-      <div class="row align-items-center">
-        <div class="col-lg-6 order-lg-last">
-          <div class="img-box scroll-animate-left">
-            <img src="images/business-loan.jpg" alt="CRA Compliant Financial Accounting" />
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="scroll-animate-right">
-
-            <p>
-              All our financial accounting services are performed in strict accordance with Canadian accounting standards, including International Financial Reporting Standards (IFRS) for public companies and Accounting Standards for Private Enterprises (ASPE) for private companies.
-            </p>
-            <ul class="ul-list">
-              <li>
-                <strong>CRA Compliance:</strong> We ensure all financial statements and accounting records meet CRA requirements for tax reporting, audits, and regulatory compliance. Our certified accountants stay current with all changes to Canadian tax laws and accounting standards.
-              </li>
-              <li>
-                <strong>Audit-Ready Financial Statements:</strong> Our financial accounting services prepare your records to be audit-ready at all times. We maintain organized documentation, proper reconciliations, and complete financial records that stand up to scrutiny.
-              </li>
-              <li>
-                <strong>Regulatory Reporting:</strong> Whether you need financial statements for lenders, investors, regulatory bodies, or internal management, our accounting services ensure all reports meet the required standards and formats.
-              </li>
-            </ul>
           </div>
         </div>
       </div>

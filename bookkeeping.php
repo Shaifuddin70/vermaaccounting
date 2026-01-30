@@ -1,15 +1,26 @@
-<?php 
+<?php
 $current_service = 'bookkeeping';
-include 'components/header.php'; 
+include 'components/header.php';
 ?>
 
 <!-- Main Content -->
 <main class="main-content">
   <!-- Page Header -->
-  <section class="page-header">
+  <section class="common-section">
     <div class="container">
-      <h1>Professional Bookkeeping Services in Canada | Expert Bookkeepers</h1>
-      <p>Organized records. Clear insights. Smart growth. We keep your books accurate, up-to-date, and audit-ready so you always know where your finances stand. Serving businesses across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive bookkeeping services.</p>
+      <div class="row align-items-center">
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right"><img src="images/rishab-verma-1.jpg" alt="Rishab Verma" /></div>
+        </div>
+        <div class="col-lg-6">
+          <h1 class="section-title">Professional Bookkeeping Services in Canada | Expert Bookkeepers</h1>
+          <p>Organized records. Clear insights. Smart growth. We keep your books accurate, up-to-date, and audit-ready so you always know where your finances stand. Serving businesses across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive bookkeeping services.</p>
+          <div class="cta-buttons left">
+            <a href="/contact" class="cta-button primary">Get Free Consultation</a>
+            <a href="tel:613-318-6478" class="cta-button orange"><i class="fas fa-phone"></i> 613-318-6478</a>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -81,11 +92,11 @@ include 'components/header.php';
   <!-- Why Choose Our Bookkeeping Services -->
   <section class="common-section">
     <div class="container">
-       <h2 class="section-title">Why Choose Our Bookkeeping Services in Canada</h2>
-            <p>
-              As a trusted accounting firm in Canada, we provide comprehensive bookkeeping services that help businesses across Ontario and throughout Canada maintain accurate financial records. Our experienced bookkeepers understand Canadian accounting standards and CRA requirements, ensuring your books are always compliant and audit-ready.
-            </p>
-            
+      <h2 class="section-title">Why Choose Our Bookkeeping Services in Canada</h2>
+      <p>
+        As a trusted accounting firm in Canada, we provide comprehensive bookkeeping services that help businesses across Ontario and throughout Canada maintain accurate financial records. Our experienced bookkeepers understand Canadian accounting standards and CRA requirements, ensuring your books are always compliant and audit-ready.
+      </p>
+
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
@@ -94,7 +105,7 @@ include 'components/header.php';
         </div>
         <div class="col-lg-6">
           <div class="scroll-animate-left">
-           <p>
+            <p>
               Whether you're a small business owner in Toronto managing daily transactions, a growing company in Vancouver tracking expenses, or an established business in Montreal needing organized financial records, our bookkeeping services are designed to keep your finances in perfect order.
             </p>
             <ul class="ul-list">
@@ -109,36 +120,85 @@ include 'components/header.php';
     </div>
   </section>
 
-  <!-- Industries We Serve -->
+  <!-- Industries We Serve / Bookkeeping for All Business Types -->
   <section class="common-section">
     <div class="container">
+      <h2 class="section-title text-center mb-4">Bookkeeping Services for All Business Types</h2>
+      <p class="text-center mb-5 mx-auto" style="max-width: 720px;">
+        Our bookkeeping services are tailored to meet the unique needs of businesses across diverse industries throughout Canada. We understand that each business type has specific bookkeeping requirements and transaction patterns.
+      </p>
+      <div class="row">
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Small Business Bookkeeping</h4>
+            <p>
+              We provide specialized bookkeeping services for small businesses in Canada, helping entrepreneurs maintain organized records, track expenses, and prepare for tax season. Our small business bookkeeping services are affordable and efficient.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Retail Business Bookkeeping</h4>
+            <p>
+              For retail businesses, we handle inventory tracking, sales recording, supplier payments, and daily transaction management. Our bookkeeping services ensure accurate point-of-sale reconciliation and inventory management.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Professional Services Bookkeeping</h4>
+            <p>
+              We specialize in bookkeeping for professional services firms including law firms, consulting companies, marketing agencies, and healthcare practices. We understand the unique billing and expense patterns of service-based businesses.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>E-commerce Bookkeeping</h4>
+            <p>
+              For online businesses, we handle multi-channel sales tracking, payment processor reconciliation, shipping costs, and international transaction recording. Our bookkeeping services keep pace with the fast-moving e-commerce environment.
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-4">
+          <div class="feature-item scroll-animate">
+            <h4>Manufacturing & Construction Bookkeeping</h4>
+            <p>
+              We provide bookkeeping services for manufacturing and construction companies, handling job costing, material tracking, equipment expenses, and project-based accounting.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- CRA Compliance & Best Practices -->
+  <section class="common-section">
+    <div class="container">
+      <h2 class="section-title">CRA Compliance & Bookkeeping Best Practices</h2>
+      <p>
+        All our bookkeeping services are performed in strict accordance with Canadian accounting standards and CRA requirements. We ensure your financial records meet all regulatory standards and are prepared for tax reporting, audits, and compliance reviews.
+      </p>
       <div class="row align-items-center">
-        <div class="col-lg-6">
-          <div class="img-box scroll-animate-left">
+        <div class="col-lg-6 order-lg-last">
+          <div class="img-box scroll-animate-right">
             <img src="images/happy-client.jpg" alt="Bookkeeping Services for Various Industries" />
           </div>
         </div>
         <div class="col-lg-6">
-          <div class="scroll-animate-right">
-            <h2 class="section-title">Bookkeeping Services for All Business Types</h2>
-            <p>
-              Our bookkeeping services are tailored to meet the unique needs of businesses across diverse industries throughout Canada. We understand that each business type has specific bookkeeping requirements and transaction patterns.
-            </p>
+          <div class="scroll-animate-left">
+
             <ul class="ul-list">
               <li>
-                <strong>Small Business Bookkeeping:</strong> We provide specialized bookkeeping services for small businesses in Canada, helping entrepreneurs maintain organized records, track expenses, and prepare for tax season. Our small business bookkeeping services are affordable and efficient.
+                <strong>CRA Compliance:</strong> We ensure all bookkeeping records meet CRA requirements for tax reporting, GST/HST tracking, payroll documentation, and business expense categorization. Our bookkeepers stay current with all changes to Canadian tax laws and accounting standards.
               </li>
               <li>
-                <strong>Retail Business Bookkeeping:</strong> For retail businesses, we handle inventory tracking, sales recording, supplier payments, and daily transaction management. Our bookkeeping services ensure accurate point-of-sale reconciliation and inventory management.
+                <strong>Proper Documentation:</strong> Our bookkeeping services maintain organized documentation including receipts, invoices, bank statements, and transaction records. We ensure all documentation is properly stored and easily accessible for audits or reviews.
               </li>
               <li>
-                <strong>Professional Services Bookkeeping:</strong> We specialize in bookkeeping for professional services firms including law firms, consulting companies, marketing agencies, and healthcare practices. We understand the unique billing and expense patterns of service-based businesses.
+                <strong>Regular Reconciliation:</strong> We perform monthly bank and credit card reconciliations to ensure every transaction is accurately recorded. This process helps identify discrepancies early and maintains the integrity of your financial records.
               </li>
               <li>
-                <strong>E-commerce Bookkeeping:</strong> For online businesses, we handle multi-channel sales tracking, payment processor reconciliation, shipping costs, and international transaction recording. Our bookkeeping services keep pace with the fast-moving e-commerce environment.
-              </li>
-              <li>
-                <strong>Manufacturing & Construction Bookkeeping:</strong> We provide bookkeeping services for manufacturing and construction companies, handling job costing, material tracking, equipment expenses, and project-based accounting.
+                <strong>Expense Categorization:</strong> We properly categorize all business expenses according to CRA guidelines, ensuring you can claim all eligible deductions while maintaining compliance. Our bookkeeping services help maximize your tax benefits while staying within regulations.
               </li>
             </ul>
           </div>
@@ -146,7 +206,6 @@ include 'components/header.php';
       </div>
     </div>
   </section>
-
   <!-- Benefits Section -->
   <section class="common-section">
     <div class="container">
@@ -204,39 +263,7 @@ include 'components/header.php';
     </div>
   </section>
 
-  <!-- CRA Compliance & Best Practices -->
-  <section class="common-section">
-    <div class="container">
-       <h2 class="section-title">CRA Compliance & Bookkeeping Best Practices</h2>
-            <p>
-              All our bookkeeping services are performed in strict accordance with Canadian accounting standards and CRA requirements. We ensure your financial records meet all regulatory standards and are prepared for tax reporting, audits, and compliance reviews.
-            </p>
-      <div class="row align-items-center">
-        <div class="col-lg-6 order-lg-last">
-          <div class="img-box scroll-animate-right">
-            <img src="images/perfect-numbers.jpg" alt="CRA Compliant Bookkeeping Services" />
-          </div>
-        </div>
-        <div class="col-lg-6">
-          <div class="scroll-animate-left">
-           
-           <ul class="ul-list"> <li>
-              <strong>CRA Compliance:</strong> We ensure all bookkeeping records meet CRA requirements for tax reporting, GST/HST tracking, payroll documentation, and business expense categorization. Our bookkeepers stay current with all changes to Canadian tax laws and accounting standards.
-            </li>
-            <li>
-              <strong>Proper Documentation:</strong> Our bookkeeping services maintain organized documentation including receipts, invoices, bank statements, and transaction records. We ensure all documentation is properly stored and easily accessible for audits or reviews.
-            </li>
-            <li>
-              <strong>Regular Reconciliation:</strong> We perform monthly bank and credit card reconciliations to ensure every transaction is accurately recorded. This process helps identify discrepancies early and maintains the integrity of your financial records.
-            </li>
-            <li>
-              <strong>Expense Categorization:</strong> We properly categorize all business expenses according to CRA guidelines, ensuring you can claim all eligible deductions while maintaining compliance. Our bookkeeping services help maximize your tax benefits while staying within regulations.
-            </li></ul>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+
 
   <!-- Other Services -->
   <?php include 'components/other-services.php'; ?>
@@ -356,87 +383,90 @@ include 'components/header.php';
 <?php include 'components/footer.php'; ?>
 
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "Service",
-  "serviceType": "Bookkeeping Services",
-  "provider": {
-    "@type": "AccountingService",
-    "name": "Verma Accounting & Financial Services",
-    "url": "https://vermaaccounting.ca/bookkeeping",
-    "telephone": "613-318-6478",
-    "email": "info@vermaaccounting.ca",
-    "address": {
-      "@type": "PostalAddress",
-      "addressCountry": "CA",
-      "addressRegion": "ON",
-      "addressLocality": "London"
+  {
+    "@context": "https://schema.org",
+    "@type": "Service",
+    "serviceType": "Bookkeeping Services",
+    "provider": {
+      "@type": "AccountingService",
+      "name": "Verma Accounting & Financial Services",
+      "url": "https://vermaaccounting.ca/bookkeeping",
+      "telephone": "613-318-6478",
+      "email": "info@vermaaccounting.ca",
+      "address": {
+        "@type": "PostalAddress",
+        "addressCountry": "CA",
+        "addressRegion": "ON",
+        "addressLocality": "London"
+      },
+      "areaServed": {
+        "@type": "Country",
+        "name": "Canada"
+      }
     },
-    "areaServed": {
-      "@type": "Country",
-      "name": "Canada"
+    "description": "Professional bookkeeping services in Canada including transaction recording, bank reconciliation, monthly financial reports, audit preparation, and document organization. Expert bookkeepers serving businesses across Ontario and Canada with CRA compliant bookkeeping.",
+    "offers": {
+      "@type": "Offer",
+      "description": "Comprehensive bookkeeping services for businesses in Canada"
     }
-  },
-  "description": "Professional bookkeeping services in Canada including transaction recording, bank reconciliation, monthly financial reports, audit preparation, and document organization. Expert bookkeepers serving businesses across Ontario and Canada with CRA compliant bookkeeping.",
-  "offers": {
-    "@type": "Offer",
-    "description": "Comprehensive bookkeeping services for businesses in Canada"
   }
-}
 </script>
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  "mainEntity": [{
-    "@type": "Question",
-    "name": "What is included in your bookkeeping services?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Our bookkeeping services include transaction recording and reconciliation, monthly financial reports and summaries, audit preparation, document organization, and regular bank and credit card reconciliations. We ensure your books are always accurate, up-to-date, and audit-ready."
-    }
-  }, {
-    "@type": "Question",
-    "name": "How often will I receive financial reports?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "We provide detailed monthly financial reports and summaries to track your business performance and cash flow. You'll receive comprehensive reports each month, giving you clear insights into your financial health."
-    }
-  }, {
-    "@type": "Question",
-    "name": "Do you use cloud-based accounting software?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Yes, we use secure, cloud-based accounting tools that make every figure traceable, accessible, and transparent. You'll have real-time access to your financial records from anywhere in Canada."
-    }
-  }, {
-    "@type": "Question",
-    "name": "How do you ensure accuracy in bookkeeping?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "We perform regular bank and credit card reconciliations, double-check all transactions, and maintain organized documentation. Every entry is verified to ensure accuracy and CRA compliance."
-    }
-  }, {
-    "@type": "Question",
-    "name": "Can you help prepare my books for an audit?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "Absolutely. We organize all financial records and documentation to be audit-ready. Our bookkeeping services ensure your records are properly categorized, reconciled, and documented for any audit or regulatory review."
-    }
-  }, {
-    "@type": "Question",
-    "name": "What information do I need to provide for bookkeeping?",
-    "acceptedAnswer": {
-      "@type": "Answer",
-      "text": "You'll need to provide bank statements, credit card statements, invoices, receipts, payroll records, and any other financial documents. We'll guide you on what's needed and can work with your existing systems."
-    }
-  }]
-}
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [{
+      "@type": "Question",
+      "name": "What is included in your bookkeeping services?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Our bookkeeping services include transaction recording and reconciliation, monthly financial reports and summaries, audit preparation, document organization, and regular bank and credit card reconciliations. We ensure your books are always accurate, up-to-date, and audit-ready."
+      }
+    }, {
+      "@type": "Question",
+      "name": "How often will I receive financial reports?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We provide detailed monthly financial reports and summaries to track your business performance and cash flow. You'll receive comprehensive reports each month, giving you clear insights into your financial health."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Do you use cloud-based accounting software?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes, we use secure, cloud-based accounting tools that make every figure traceable, accessible, and transparent. You'll have real-time access to your financial records from anywhere in Canada."
+      }
+    }, {
+      "@type": "Question",
+      "name": "How do you ensure accuracy in bookkeeping?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We perform regular bank and credit card reconciliations, double-check all transactions, and maintain organized documentation. Every entry is verified to ensure accuracy and CRA compliance."
+      }
+    }, {
+      "@type": "Question",
+      "name": "Can you help prepare my books for an audit?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Absolutely. We organize all financial records and documentation to be audit-ready. Our bookkeeping services ensure your records are properly categorized, reconciled, and documented for any audit or regulatory review."
+      }
+    }, {
+      "@type": "Question",
+      "name": "What information do I need to provide for bookkeeping?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "You'll need to provide bank statements, credit card statements, invoices, receipts, payroll records, and any other financial documents. We'll guide you on what's needed and can work with your existing systems."
+      }
+    }]
+  }
 </script>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {

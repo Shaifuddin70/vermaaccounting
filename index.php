@@ -151,7 +151,7 @@
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="/images/calculation.jpg" alt="Tax calculation" />
+            <img src="/images/rishab-verma-1.jpg" alt="Rishab Verma" />
           </div>
         </div>
         <div class="col-lg-6">
