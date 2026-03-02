@@ -250,7 +250,7 @@
       </div>
 
       <!-- Business Registration Service -->
-      <div class="service-item scroll-animate-scale" id="business-registration">
+      <div class="service-item scroll-animate-scale mb-5" id="business-registration">
         <h2>Business Registration</h2>
         <p class="service-subtitle">Start right, grow strong.</p>
         <p>

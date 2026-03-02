@@ -30,8 +30,15 @@
   <section class="about-section">
     <div class="container">
       <div class="about-content">
-        <div class="about-main">
-          <div class="about-text">
+        <div class="row align-items-center">
+          <div class="col-lg-4 order-lg-last mb-4 mb-lg-0">
+            <picture class="img-box scroll-animate-right animate-in">
+
+              <source media="(max-width:991px)" srcset="/images/rishab-verma.jpg">
+              <img src="images/rishab-verma-lg.jpg" alt="Rishab Verma" class="about-image" />
+            </picture>
+          </div>
+          <div class="col-lg-8">
             <h2>Who We Are</h2>
             <p>
               At Verma Accounting, expertise, integrity, and precision define all our work.
@@ -51,9 +58,7 @@
               every client has unique needs, and we tailor our services accordingly.
             </p>
           </div>
-          <div class="about-image-wrapper">
-            <img src="images/rishab-verma.png" alt="Rishab Verma" class="about-image" />
-          </div>
+
         </div>
         <div class="about-stats">
           <div class="stat-item">

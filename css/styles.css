@@ -1586,22 +1586,6 @@ h6.section-title {
     margin-bottom: 1.5rem;
 }
 
-.about-image-wrapper {
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.about-image {
-    max-width: 100%;
-    width: 100%;
-    max-width: 400px;
-    height: auto;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    object-fit: contain;
-}
 
 .benefits-list {
     list-style: none;
@@ -4039,14 +4023,7 @@ a:has(.contact-item) {
         gap: 2rem;
     }
 
-    .about-image-wrapper {
-        order: -1;
-        margin-bottom: 0;
-    }
-
-    .about-image {
-        max-width: 250px;
-    }
+  
 
     .about-stats {
         grid-template-columns: repeat(2, 1fr);

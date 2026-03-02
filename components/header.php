@@ -196,6 +196,7 @@
               <a href="/loan" class="verma-submenu-link">Business Loans</a>
             </div>
           </div>
+          <a href="https://owningottawa.com/" class="verma-link" target="_blank" rel="noopener">Real Estate</a>
           <a href="/resources" class="verma-link" data-page="resources">Resources</a>
           <a href="/contact" class="verma-link" data-page="contact">Contact Us</a>
           <a href="/about" class="verma-link" data-page="about">About Us</a>

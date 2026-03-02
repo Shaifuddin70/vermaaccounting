@@ -139,13 +139,7 @@
     </div>
   </section>
 
-  <div class="common-section bg-white">
-    <div class="container scroll-animate-left">
-      <div class="widget-container ">
-        <div class="elfsight-app-a9eff633-ffca-4ea6-bbac-14d16ba7f88f"></div>
-      </div>
-    </div>
-  </div>
+
   <section class="common-section">
     <div class="container">
       <div class="row align-items-center">
@@ -176,7 +170,13 @@
       </div>
     </div>
   </section>
-
+  <div class="py-5">
+    <div class="container scroll-animate-left">
+      <div class="widget-container ">
+        <div class="elfsight-app-a9eff633-ffca-4ea6-bbac-14d16ba7f88f"></div>
+      </div>
+    </div>
+  </div>
   <section class="common-section">
     <div class="container">
       <div class="row align-items-center">
