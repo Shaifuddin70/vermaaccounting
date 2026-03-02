@@ -48,6 +48,7 @@
            <li><a href="personal-tax"><i class="fas fa-angle-right"></i> Personal Tax</a></li>
            <li><a href="corporate-tax"><i class="fas fa-angle-right"></i> Corporate Tax</a></li>
            <li><a href="business-registration"><i class="fas fa-angle-right"></i> Business Registration</a></li>
+            <li><a href="https://owningottawa.com/" target="_blank" rel="noopener"><i class="fas fa-angle-right"></i> Real Estate</a></li>
            <li><a href="loan"><i class="fas fa-angle-right"></i> Business Loans</a></li>
          </ul>
        </div>

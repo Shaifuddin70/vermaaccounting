@@ -147,8 +147,14 @@ function initActiveLink() {
   navLinks.forEach((link) => {
     link.classList.remove("active");
 
-    // Check if current page matches link
-    const linkPath = new URL(link.href).pathname;
+    // Skip external links (different domain)
+    const linkUrl = new URL(link.href, window.location.origin);
+    if (linkUrl.origin !== window.location.origin) {
+      return;
+    }
+
+    // Check if current page matches link (same origin)
+    const linkPath = linkUrl.pathname;
     if (
       currentPath === linkPath ||
       (currentPath === "/" && linkPath.includes("index.html")) ||
