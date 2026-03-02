@@ -194,9 +194,9 @@
               <a href="/corporate-tax" class="verma-submenu-link">Corporate Tax</a>
               <a href="/business-registration" class="verma-submenu-link">Business Registration</a>
               <a href="/loan" class="verma-submenu-link">Business Loans</a>
+              <a href="https://owningottawa.com/" class="verma-submenu-link" target="_blank" rel="noopener">Real Estate</a>
             </div>
           </div>
-          <a href="https://owningottawa.com/" class="verma-link" target="_blank" rel="noopener">Real Estate</a>
           <a href="/resources" class="verma-link" data-page="resources">Resources</a>
           <a href="/contact" class="verma-link" data-page="contact">Contact Us</a>
           <a href="/about" class="verma-link" data-page="about">About Us</a>
