@@ -2,23 +2,24 @@
 # Enable URL rewriting for clean URLs
 
 RewriteEngine On
+RewriteBase /
 
-# Redirect index.php to root (remove index from URL)
-RewriteCond %{THE_REQUEST} /index\.php [NC]
+# Redirect index.php to root first (single redirect)
+RewriteCond %{THE_REQUEST} \s/index\.php[\s?] [NC]
 RewriteRule ^index\.php$ / [R=301,L]
+
+# 301 redirect all other .php URLs to clean URLs (so Google indexes only canonical URLs)
+RewriteCond %{THE_REQUEST} \s/[^.]+\.php [NC]
+RewriteRule ^(.+)\.php$ /$1 [R=301,L]
 
 # Redirect /index to root
 RewriteCond %{REQUEST_URI} ^/index/?$
 RewriteRule ^(.*)$ / [R=301,L]
 
-# Clean URLs - Remove .php extension
+# Clean URLs - internally rewrite /page to page.php
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^([^\.]+)$ $1.php [NC,L]
-
-# Redirect .php extension to clean URLs
-RewriteCond %{THE_REQUEST} /([^.]+)\.php [NC]
-RewriteRule ^ /%1 [NC,L,R=301]
 
 # Custom Error Pages
 ErrorDocument 404 /index.php

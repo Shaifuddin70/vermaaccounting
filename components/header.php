@@ -20,7 +20,19 @@
     name="keywords"
     content="accounting services Canada, tax preparation Canada, personal tax filing, corporate tax services, bookkeeping services Ontario, payroll management Canada, business registration, CRA compliance, tax optimization, accounting firm London Ontario, certified accountants Canada" />
   <meta name="robots" content="index, follow" />
-  <link rel="canonical" href="https://vermaaccounting.ca/" />
+  <?php
+  // Build canonical URL per page (without query string)
+  $canonicalPath = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+  if ($canonicalPath === '' || $canonicalPath === false) {
+    $canonicalPath = '/';
+  }
+  if ($canonicalPath !== '/') {
+    $canonicalUrl = 'https://vermaaccounting.ca' . rtrim($canonicalPath, '/');
+  } else {
+    $canonicalUrl = 'https://vermaaccounting.ca/';
+  }
+  ?>
+  <link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES); ?>" />
 
   <!-- Calendly link widget begin -->
   <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
@@ -46,7 +58,7 @@
   <meta property="og:title" content="Professional Accounting & Tax Services in Canada | Verma Accounting" />
   <meta property="og:description" content="Leading accounting firm in Canada specializing in personal tax preparation, corporate tax filing, bookkeeping, payroll management, and business registration." />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="https://vermaaccounting.ca/" />
+  <meta property="og:url" content="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES); ?>" />
   <meta property="og:site_name" content="Verma Accounting & Financial Services" />
   <meta property="og:locale" content="en_CA" />
 
