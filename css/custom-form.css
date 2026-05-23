@@ -1,0 +1,79 @@
+.custom-form-wrap {
+  background: #fff;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+}
+
+.custom-form-field {
+  margin-bottom: 1.25rem;
+}
+
+.custom-form-field label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+}
+
+.custom-form-field .required {
+  color: #dc2626;
+}
+
+.custom-form input[type="text"],
+.custom-form input[type="email"],
+.custom-form input[type="tel"],
+.custom-form input[type="number"],
+.custom-form input[type="date"],
+.custom-form input[type="file"],
+.custom-form select,
+.custom-form textarea {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font: inherit;
+}
+
+.custom-form-heading {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.25rem;
+  color: #1e3a8a;
+}
+
+.custom-form-paragraph {
+  color: #475569;
+  margin: 0 0 1rem;
+}
+
+.custom-form-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.custom-form-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 400;
+}
+
+.custom-form-help {
+  display: block;
+  margin-top: 0.35rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.custom-form-status {
+  margin-top: 1rem;
+  min-height: 1.25rem;
+}
+
+.custom-form-status.is-success {
+  color: #166534;
+}
+
+.custom-form-status.is-error {
+  color: #991b1b;
+}

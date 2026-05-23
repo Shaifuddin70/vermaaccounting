@@ -1,6 +1,5 @@
-# MAMP .htaccess Configuration
-# Enable URL rewriting for clean URLs
-
+# Enable URL rewriting for clean URLs (requires mod_rewrite on Apache)
+<IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /
 
@@ -8,23 +7,23 @@ RewriteBase /
 RewriteCond %{THE_REQUEST} \s/index\.php[\s?] [NC]
 RewriteRule ^index\.php$ / [R=301,L]
 
-# 301 redirect all other .php URLs to clean URLs (so Google indexes only canonical URLs)
+# 301 redirect .php URLs to clean URLs (skip admin & api — used by form builder)
 RewriteCond %{THE_REQUEST} \s/[^.]+\.php [NC]
+RewriteCond %{REQUEST_URI} !^/admin/ [NC]
+RewriteCond %{REQUEST_URI} !^/api/ [NC]
 RewriteRule ^(.+)\.php$ /$1 [R=301,L]
 
 # Redirect /index to root
 RewriteCond %{REQUEST_URI} ^/index/?$
 RewriteRule ^(.*)$ / [R=301,L]
 
+# Custom forms: /form/client-intake -> form.php?slug=client-intake
+RewriteRule ^form/([a-zA-Z0-9_-]+)/?$ form.php?slug=$1 [L,QSA]
+
 # Clean URLs - internally rewrite /page to page.php
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteRule ^([^\.]+)$ $1.php [NC,L]
-
-# Custom Error Pages
-ErrorDocument 404 /index.php
-ErrorDocument 403 /index.php
-ErrorDocument 500 /index.php
 
 # SEO redirects
 RewriteCond %{REQUEST_URI} ^/home/?$
@@ -38,6 +37,12 @@ RewriteRule ^(.*)$ /services [R=301,L]
 
 RewriteCond %{REQUEST_URI} ^/about-us/?$
 RewriteRule ^(.*)$ /about [R=301,L]
+</IfModule>
+
+# Custom Error Pages
+ErrorDocument 404 /index.php
+ErrorDocument 403 /index.php
+ErrorDocument 500 /index.php
 
 # Set default charset
 AddDefaultCharset UTF-8
