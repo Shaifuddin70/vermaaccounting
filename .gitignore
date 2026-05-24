@@ -1,7 +1,7 @@
 .DS_Store
 config.local.php
 
-# Runtime data (SQLite, uploads) — keep directory guards in repo
+# Runtime data (uploads) — keep directory guards in repo
 data/*
 !data/.htaccess
 !data/uploads/

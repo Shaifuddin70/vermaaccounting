@@ -27,40 +27,108 @@
     box.textContent = msg;
   }
 
+  let dragFromIndex = null;
+
+  function clearDropIndicators() {
+    fieldList.querySelectorAll('.builder-field-item').forEach((node) => {
+      node.classList.remove('drop-before', 'drop-after', 'is-dragging');
+    });
+  }
+
+  function reorderFields(fromIndex, toIndex, insertAfter) {
+    if (fromIndex === null) return;
+    const fields = state.schema.fields;
+    const [moved] = fields.splice(fromIndex, 1);
+    let insertAt = toIndex;
+    if (insertAfter) insertAt++;
+    if (fromIndex < insertAt) insertAt--;
+    insertAt = Math.max(0, Math.min(insertAt, fields.length));
+    fields.splice(insertAt, 0, moved);
+    renderFieldList();
+    renderFieldEditor();
+  }
+
   function renderFieldList() {
     fieldList.innerHTML = '';
     state.schema.fields.forEach((field, index) => {
       const item = document.createElement('div');
-      item.className = 'builder-field-item' + (field.id === selectedFieldId ? ' is-selected' : '');
-      item.draggable = true;
+      item.className =
+        'builder-field-item' + (field.id === selectedFieldId ? ' is-selected' : '');
       item.dataset.id = field.id;
+      item.dataset.index = String(index);
+
       item.innerHTML =
+        '<span class="builder-drag-handle" title="Drag to reorder" aria-hidden="true">⠿</span>' +
+        '<div class="builder-field-body">' +
         '<div class="field-type">' +
         (config.fieldTypes[field.type] || field.type) +
         '</div>' +
         '<strong>' +
         escapeHtml(field.label) +
         '</strong>' +
-        (field.required ? ' <span style="color:#dc2626">*</span>' : '');
-      item.addEventListener('click', () => selectField(field.id));
-      item.addEventListener('dragstart', (e) => {
+        (field.required ? ' <span style="color:#dc2626">*</span>' : '') +
+        '</div>';
+
+      const handle = item.querySelector('.builder-drag-handle');
+      const body = item.querySelector('.builder-field-body');
+
+      handle.draggable = true;
+      handle.addEventListener('dragstart', (e) => {
+        dragFromIndex = index;
+        e.dataTransfer.effectAllowed = 'move';
         e.dataTransfer.setData('text/plain', String(index));
-        item.classList.add('dragging');
+        item.classList.add('is-dragging');
       });
-      item.addEventListener('dragend', () => item.classList.remove('dragging'));
-      item.addEventListener('dragover', (e) => e.preventDefault());
+
+      handle.addEventListener('dragend', () => {
+        dragFromIndex = null;
+        clearDropIndicators();
+      });
+
+      item.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (dragFromIndex === null) return;
+        fieldList.querySelectorAll('.builder-field-item').forEach((n) => {
+          n.classList.remove('drop-before', 'drop-after');
+        });
+        const rect = item.getBoundingClientRect();
+        const mid = rect.top + rect.height / 2;
+        item.classList.add(e.clientY < mid ? 'drop-before' : 'drop-after');
+      });
+
+      item.addEventListener('dragleave', (e) => {
+        if (!item.contains(e.relatedTarget)) {
+          item.classList.remove('drop-before', 'drop-after');
+        }
+      });
+
       item.addEventListener('drop', (e) => {
         e.preventDefault();
-        const from = Number(e.dataTransfer.getData('text/plain'));
-        const to = index;
-        if (from === to) return;
-        const moved = state.schema.fields.splice(from, 1)[0];
-        state.schema.fields.splice(to, 0, moved);
-        renderFieldList();
-        renderFieldEditor();
+        const from = dragFromIndex ?? Number(e.dataTransfer.getData('text/plain'));
+        const insertAfter = item.classList.contains('drop-after');
+        clearDropIndicators();
+        reorderFields(from, index, insertAfter);
       });
+
+      body.addEventListener('click', () => selectField(field.id));
+
       fieldList.appendChild(item);
     });
+
+    fieldList.addEventListener(
+      'dragover',
+      (e) => {
+        if (dragFromIndex === null) return;
+        e.preventDefault();
+        if (e.target === fieldList && state.schema.fields.length) {
+          clearDropIndicators();
+          const last = fieldList.lastElementChild;
+          if (last) last.classList.add('drop-after');
+        }
+      },
+      { once: false }
+    );
   }
 
   function escapeHtml(s) {
@@ -107,47 +175,84 @@
 
     const conditionsHtml = renderConditionsEditor(field, otherFields);
 
+    const placeholderRow =
+      ['text', 'textarea', 'email', 'tel', 'number'].includes(field.type) &&
+      ['text', 'textarea'].includes(field.type)
+        ? `<div class="admin-fields-2col">
+            <div class="admin-field"><label>Placeholder</label><input type="text" id="fe-placeholder" value="${escapeAttr(field.placeholder || '')}"></div>
+            <div class="admin-field"><label>Help text</label><input type="text" id="fe-help" value="${escapeAttr(field.helpText || '')}"></div>
+          </div>`
+        : ['text', 'textarea', 'email', 'tel', 'number'].includes(field.type)
+          ? `<div class="admin-field admin-field--full"><label>Placeholder</label><input type="text" id="fe-placeholder" value="${escapeAttr(field.placeholder || '')}"></div>`
+          : ['text', 'textarea'].includes(field.type)
+            ? `<div class="admin-field admin-field--full"><label>Help text</label><input type="text" id="fe-help" value="${escapeAttr(field.helpText || '')}"></div>`
+            : '';
+
     fieldEditor.innerHTML = `
-      <div class="admin-field">
-        <label>Field type</label>
-        <select id="fe-type">
-          ${Object.entries(config.fieldTypes)
-            .map(([t, l]) => `<option value="${t}" ${field.type === t ? 'selected' : ''}>${l}</option>`)
-            .join('')}
-        </select>
+      <div class="admin-fields-2col">
+        <div class="admin-field admin-field--full">
+          <label>Field type</label>
+          <select id="fe-type">
+            ${Object.entries(config.fieldTypes)
+              .map(([t, l]) => `<option value="${t}" ${field.type === t ? 'selected' : ''}>${l}</option>`)
+              .join('')}
+          </select>
+        </div>
+        <div class="admin-field">
+          <label>Label</label>
+          <input type="text" id="fe-label" value="${escapeAttr(field.label)}">
+        </div>
+        <div class="admin-field">
+          <label>Field name (for data)</label>
+          <input type="text" id="fe-name" value="${escapeAttr(field.name)}">
+        </div>
+        ${
+          !['heading', 'paragraph'].includes(field.type)
+            ? `<div class="admin-field admin-field--full"><label><input type="checkbox" id="fe-required" ${field.required ? 'checked' : ''}> Required</label></div>`
+            : ''
+        }
       </div>
-      <div class="admin-field">
-        <label>Label</label>
-        <input type="text" id="fe-label" value="${escapeAttr(field.label)}">
-      </div>
-      <div class="admin-field">
-        <label>Field name (for data)</label>
-        <input type="text" id="fe-name" value="${escapeAttr(field.name)}">
-      </div>
+      ${placeholderRow}
       ${
-        !['heading', 'paragraph'].includes(field.type)
-          ? `<div class="admin-field"><label><input type="checkbox" id="fe-required" ${field.required ? 'checked' : ''}> Required</label></div>`
+        ['select', 'radio', 'checkbox'].includes(field.type)
+          ? `<div class="admin-field admin-field--full"><label>Options</label>${optionsHtml}<button type="button" class="admin-btn admin-btn-secondary" id="fe-add-opt">+ Option</button></div>`
           : ''
       }
       ${
-        ['text', 'textarea', 'email', 'tel', 'number'].includes(field.type)
-          ? `<div class="admin-field"><label>Placeholder</label><input type="text" id="fe-placeholder" value="${escapeAttr(field.placeholder || '')}"></div>`
-          : ''
-      }
-      ${
-        ['text', 'textarea'].includes(field.type)
-          ? `<div class="admin-field"><label>Help text</label><input type="text" id="fe-help" value="${escapeAttr(field.helpText || '')}"></div>`
-          : ''
-      }
-      ${
-        ['select', 'radio', 'checkbox', 'yes_no'].includes(field.type)
-          ? `<div class="admin-field"><label>Options</label>${optionsHtml}<button type="button" class="admin-btn admin-btn-secondary" id="fe-add-opt">+ Option</button></div>`
+        field.type === 'yes_no'
+          ? `
+      <hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
+      <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Follow-up reason</h3>
+      <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Show a text field when the user picks Yes or No (e.g. ask why they answered No).</p>
+      <div class="admin-fields-2col">
+        <div class="admin-field">
+          <label>Ask for reason when answer is</label>
+          <select id="fe-reason-when">
+            <option value="" ${!(field.reasonWhen) ? 'selected' : ''}>Never</option>
+            <option value="no" ${field.reasonWhen === 'no' ? 'selected' : ''}>No</option>
+            <option value="yes" ${field.reasonWhen === 'yes' ? 'selected' : ''}>Yes</option>
+          </select>
+        </div>
+        <div class="admin-field" style="display:flex;align-items:flex-end;padding-bottom:0.15rem;">
+          <label><input type="checkbox" id="fe-reason-required" ${field.reasonRequired !== false ? 'checked' : ''}> Reason required when shown</label>
+        </div>
+        <div class="admin-field">
+          <label>Reason field label</label>
+          <input type="text" id="fe-reason-label" value="${escapeAttr(field.reasonLabel || 'Please explain your answer')}">
+        </div>
+        <div class="admin-field">
+          <label>Reason placeholder</label>
+          <input type="text" id="fe-reason-placeholder" value="${escapeAttr(field.reasonPlaceholder || '')}">
+        </div>
+      </div>`
           : ''
       }
       ${
         ['file', 'image'].includes(field.type)
-          ? `<div class="admin-field"><label>Accept (optional)</label><input type="text" id="fe-accept" value="${escapeAttr(field.accept || (field.type === 'image' ? 'image/*' : ''))}"></div>
-             <div class="admin-field"><label>Max files</label><input type="number" id="fe-max-files" min="1" max="10" value="${field.maxFiles || 1}"></div>`
+          ? `<div class="admin-fields-2col">
+             <div class="admin-field"><label>Accept (optional)</label><input type="text" id="fe-accept" value="${escapeAttr(field.accept || (field.type === 'image' ? 'image/*' : ''))}"></div>
+             <div class="admin-field"><label>Max files</label><input type="number" id="fe-max-files" min="1" max="10" value="${field.maxFiles || 1}"></div>
+           </div>`
           : ''
       }
       <hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
@@ -255,6 +360,21 @@
       if (node && node.type === 'checkbox') node.addEventListener('change', sync);
     });
 
+    const syncYesNoReason = () => {
+      if (field.type !== 'yes_no') return;
+      field.reasonWhen = el('fe-reason-when')?.value || '';
+      field.reasonLabel = el('fe-reason-label')?.value || 'Please explain your answer';
+      field.reasonPlaceholder = el('fe-reason-placeholder')?.value || '';
+      field.reasonRequired = el('fe-reason-required')?.checked ?? true;
+    };
+    ['fe-reason-when', 'fe-reason-label', 'fe-reason-placeholder', 'fe-reason-required'].forEach((id) => {
+      const node = el(id);
+      if (node) {
+        node.addEventListener('input', syncYesNoReason);
+        node.addEventListener('change', syncYesNoReason);
+      }
+    });
+
     fieldEditor.querySelectorAll('[data-opt-label]').forEach((input) => {
       input.addEventListener('input', () => {
         const i = Number(input.dataset.optLabel);
@@ -346,6 +466,10 @@
           { label: 'Yes', value: 'yes' },
           { label: 'No', value: 'no' },
         ],
+        reasonWhen: 'no',
+        reasonLabel: 'Please explain why',
+        reasonPlaceholder: '',
+        reasonRequired: true,
         conditions: [],
       },
       file: { type: 'file', label: 'File upload', required: false, accept: '', maxFiles: 1, options: [], conditions: [] },

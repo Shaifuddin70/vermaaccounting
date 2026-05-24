@@ -39,6 +39,26 @@ require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Auth.php';
 require_once __DIR__ . '/FormRepository.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/embed.php';
 
 ensure_data_dirs();
-Database::instance()->migrate();
+
+try {
+    Database::instance()->migrate();
+} catch (PDOException $e) {
+    $hint = $e->getMessage();
+    $msg = 'Database connection failed. Check database settings in config.local.php.';
+    if (str_contains($hint, '2002') || str_contains($hint, 'Connection refused')) {
+        $msg .= ' (Cannot reach MySQL — use MAMP MySQL port 8889, not web port 8888.)';
+    } elseif (str_contains($hint, '1049')) {
+        $msg .= ' (Database does not exist — create verma_forms in phpMyAdmin.)';
+    } elseif (str_contains($hint, '1045')) {
+        $msg .= ' (Wrong username or password.)';
+    }
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $msg . ' [' . $hint . ']' . PHP_EOL);
+        exit(1);
+    }
+    http_response_code(500);
+    exit($msg);
+}

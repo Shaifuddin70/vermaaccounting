@@ -64,6 +64,7 @@
         const visible = evaluateConditions(conditions);
         wrap.style.display = visible ? '' : 'none';
         wrap.querySelectorAll('input, select, textarea').forEach((el) => {
+          if (el.closest('.yes-no-reason-wrap')) return;
           el.disabled = !visible;
           if (!visible) {
             if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
@@ -72,6 +73,32 @@
         });
       } catch (e) {
         wrap.style.display = '';
+      }
+    });
+    applyYesNoReasons();
+  }
+
+  function applyYesNoReasons() {
+    form.querySelectorAll('[data-yes-no-reason-for]').forEach((reasonWrap) => {
+      const fieldId = reasonWrap.getAttribute('data-yes-no-reason-for');
+      const when = reasonWrap.getAttribute('data-reason-when');
+      const required = reasonWrap.getAttribute('data-reason-required') === '1';
+      const yesNoBlock = form.querySelector('[data-yes-no-field="' + fieldId + '"]');
+      const textarea = reasonWrap.querySelector('textarea');
+      if (!yesNoBlock || !textarea) return;
+
+      const selected = yesNoBlock.querySelector('input[type="radio"]:checked');
+      const show = selected && selected.value === when;
+
+      reasonWrap.hidden = !show;
+      textarea.disabled = !show;
+      if (!show) {
+        textarea.value = '';
+        textarea.removeAttribute('required');
+      } else if (required) {
+        textarea.setAttribute('required', 'required');
+      } else {
+        textarea.removeAttribute('required');
       }
     });
   }

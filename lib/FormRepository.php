@@ -29,7 +29,7 @@ final class FormRepository
     {
         $sql = 'SELECT * FROM forms WHERE slug = ?';
         if ($publishedOnly) {
-            $sql .= ' AND status = "published"';
+            $sql .= " AND status = 'published'";
         }
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$slug]);
@@ -141,6 +141,49 @@ final class FormRepository
     {
         $stmt = $this->db->prepare('SELECT * FROM submission_files WHERE submission_id = ?');
         $stmt->execute([$submissionId]);
+        return $stmt->fetchAll();
+    }
+
+    public function findSubmissionFile(int $fileId): ?array
+    {
+        $stmt = $this->db->prepare('
+            SELECT sf.*, s.form_id, s.id AS submission_id
+            FROM submission_files sf
+            INNER JOIN submissions s ON s.id = sf.submission_id
+            WHERE sf.id = ?
+        ');
+        $stmt->execute([$fileId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
+    public function filesForForm(int $formId): array
+    {
+        $stmt = $this->db->prepare('
+            SELECT sf.*, s.id AS submission_id, s.created_at AS submitted_at
+            FROM submission_files sf
+            INNER JOIN submissions s ON s.id = sf.submission_id
+            WHERE s.form_id = ?
+            ORDER BY s.created_at DESC, sf.id ASC
+        ');
+        $stmt->execute([$formId]);
+        return $stmt->fetchAll();
+    }
+
+    /** @return array<int, list<array>> */
+    public function filesGroupedBySubmission(int $formId): array
+    {
+        $grouped = [];
+        foreach ($this->filesForForm($formId) as $file) {
+            $sid = (int) $file['submission_id'];
+            $grouped[$sid][] = $file;
+        }
+        return $grouped;
+    }
+
+    public function publishedForms(): array
+    {
+        $stmt = $this->db->query("SELECT id, slug, title FROM forms WHERE status = 'published' ORDER BY title ASC");
         return $stmt->fetchAll();
     }
 

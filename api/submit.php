@@ -101,6 +101,23 @@ foreach ($schema['fields'] as $field) {
     $value = trim((string) ($_POST[$name] ?? ''));
     if ($type === 'yes_no') {
         $value = in_array($value, ['yes', 'no'], true) ? $value : '';
+        if ($field['required'] && $value === '') {
+            $errors[] = $field['label'] . ' is required.';
+        }
+        $data[$name] = $value;
+
+        $reasonWhen = $field['reasonWhen'] ?? '';
+        if ($reasonWhen !== '') {
+            $reasonKey = $name . '_reason';
+            $reasonVal = trim((string) ($_POST[$reasonKey] ?? ''));
+            if ($value === $reasonWhen) {
+                if (!empty($field['reasonRequired']) && $reasonVal === '') {
+                    $errors[] = ($field['reasonLabel'] ?? 'Reason') . ' is required.';
+                }
+                $data[$reasonKey] = $reasonVal;
+            }
+        }
+        continue;
     }
     if ($field['required'] && $value === '') {
         $errors[] = $field['label'] . ' is required.';

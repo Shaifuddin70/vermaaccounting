@@ -1,3 +1,8 @@
+<?php
+if (!function_exists('asset')) {
+    require_once __DIR__ . '/../lib/helpers.php';
+}
+?>
  <!-- Footer Placeholder -->
  <div id="footer-placeholder"></div>
 
@@ -8,7 +13,7 @@
        <!-- Company Info -->
        <div class="footer-section footer-brand">
          <div class="footer-logo">
-           <img src="images/verma-accounting-footer-logo.png" alt="Verma Accounting" />
+           <img src="<?= asset('images/verma-accounting-footer-logo.png') ?>" alt="Verma Accounting" />
          </div>
          <p class="footer-description">
            Professional accounting and tax services for individuals and businesses across Canada. Expert guidance you can trust.
@@ -31,10 +36,10 @@
          <h3 class="footer-heading">Quick Links</h3>
          <ul class="footer-links">
            <li><a href="/"><i class="fas fa-angle-right"></i> Home</a></li>
-           <li><a href="services"><i class="fas fa-angle-right"></i> Services</a></li>
-           <li><a href="resources"><i class="fas fa-angle-right"></i> Resources</a></li>
-           <li><a href="contact"><i class="fas fa-angle-right"></i> Contact</a></li>
-           <li><a href="about"><i class="fas fa-angle-right"></i> About Us</a></li>
+           <li><a href="/services"><i class="fas fa-angle-right"></i> Services</a></li>
+           <li><a href="/resources"><i class="fas fa-angle-right"></i> Resources</a></li>
+           <li><a href="/contact"><i class="fas fa-angle-right"></i> Contact</a></li>
+           <li><a href="/about"><i class="fas fa-angle-right"></i> About Us</a></li>
          </ul>
        </div>
 
@@ -42,14 +47,14 @@
        <div class="footer-section">
          <h3 class="footer-heading">Our Services</h3>
          <ul class="footer-links">
-           <li><a href="accounting"><i class="fas fa-angle-right"></i> Accounting</a></li>
-           <li><a href="bookkeeping"><i class="fas fa-angle-right"></i> Bookkeeping</a></li>
-           <li><a href="payroll"><i class="fas fa-angle-right"></i> Payroll</a></li>
-           <li><a href="personal-tax"><i class="fas fa-angle-right"></i> Personal Tax</a></li>
-           <li><a href="corporate-tax"><i class="fas fa-angle-right"></i> Corporate Tax</a></li>
-           <li><a href="business-registration"><i class="fas fa-angle-right"></i> Business Registration</a></li>
+           <li><a href="/accounting"><i class="fas fa-angle-right"></i> Accounting</a></li>
+           <li><a href="/bookkeeping"><i class="fas fa-angle-right"></i> Bookkeeping</a></li>
+           <li><a href="/payroll"><i class="fas fa-angle-right"></i> Payroll</a></li>
+           <li><a href="/personal-tax"><i class="fas fa-angle-right"></i> Personal Tax</a></li>
+           <li><a href="/corporate-tax"><i class="fas fa-angle-right"></i> Corporate Tax</a></li>
+           <li><a href="/business-registration"><i class="fas fa-angle-right"></i> Business Registration</a></li>
             <li><a href="https://owningottawa.com/" target="_blank" rel="noopener"><i class="fas fa-angle-right"></i> Real Estate</a></li>
-           <li><a href="loan"><i class="fas fa-angle-right"></i> Business Loans</a></li>
+           <li><a href="/loan"><i class="fas fa-angle-right"></i> Business Loans</a></li>
          </ul>
        </div>
 
@@ -493,7 +498,7 @@
    crossorigin="anonymous"></script>
 
  <!-- JavaScript -->
- <script src="components/js/navigation.js"></script>
+ <script src="<?= asset('components/js/navigation.js') ?>"></script>
  <script src="https://elfsightcdn.com/platform.js" async></script>
  </body>
 

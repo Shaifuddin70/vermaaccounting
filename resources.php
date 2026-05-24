@@ -1,4 +1,7 @@
-<?php include 'components/header.php'; ?>
+<?php
+require_once __DIR__ . '/lib/bootstrap.php';
+include 'components/header.php';
+?>
 <!-- Main Content -->
 <main class="main-content">
     <!-- Modern Hero Section -->
@@ -27,6 +30,23 @@
             </div>
         </div>
     </section>
+
+    <?php
+    // Embed custom forms with shortcode: [form slug="your-form-slug" height="720"]
+    // Only published forms appear. Create the form in Admin → Form Builder first.
+    $resourcesFormEmbed = process_form_shortcodes('[form slug="resources-upload" height="720"]');
+    if (str_contains($resourcesFormEmbed, 'form-embed')):
+    ?>
+    <section class="common-section" id="resources-online-forms">
+        <div class="container">
+            <div class="section-header-modern">
+                <h2>Submit Documents Online</h2>
+                <p>Secure forms for uploading tax documents and client information</p>
+            </div>
+            <?= $resourcesFormEmbed ?>
+        </div>
+    </section>
+    <?php endif; ?>
 
     <!-- Modern Resources Cards Section -->
     <section class="common-section">

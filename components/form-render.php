@@ -5,13 +5,15 @@
 <form class="custom-form" id="custom-form" enctype="multipart/form-data" novalidate>
   <input type="hidden" name="form_slug" value="<?= e($form['slug']) ?>">
 
+  <div class="custom-form-grid">
   <?php foreach ($schema['fields'] as $field):
     $type = $field['type'];
     $name = e($field['name']);
     $id = e($field['id']);
     $required = !empty($field['required']);
     $condJson = !empty($field['conditions']) ? e(json_encode($field['conditions'])) : '';
-    $wrapAttrs = 'class="custom-form-field" data-field-id="' . $id . '"';
+    $layout = form_field_uses_half_column($type, $field) ? 'custom-form-field--half' : 'custom-form-field--full';
+    $wrapAttrs = 'class="custom-form-field ' . $layout . '" data-field-id="' . $id . '"';
     if ($condJson) {
         $wrapAttrs .= ' data-conditions="' . $condJson . '" style="display:none;"';
     }
@@ -43,7 +45,7 @@
             <?php endforeach; ?>
           </select>
 
-        <?php elseif ($type === 'radio' || $type === 'yes_no'): ?>
+        <?php elseif ($type === 'radio'): ?>
           <div class="custom-form-options">
             <?php foreach ($field['options'] ?? [] as $opt): ?>
               <label class="custom-form-option">
@@ -53,6 +55,35 @@
               </label>
             <?php endforeach; ?>
           </div>
+
+        <?php elseif ($type === 'yes_no'):
+          $reasonWhen = $field['reasonWhen'] ?? '';
+          $reasonName = $field['name'] . '_reason';
+          $reasonRequired = !empty($field['reasonRequired']);
+        ?>
+          <div class="custom-form-options custom-form-yes-no" data-yes-no-field="<?= $id ?>">
+            <?php foreach ($field['options'] ?? [] as $opt): ?>
+              <label class="custom-form-option">
+                <input type="radio" name="<?= $name ?>" value="<?= e($opt['value']) ?>"
+                  data-yes-no-trigger="<?= e($opt['value']) ?>"
+                  <?= $required ? 'required' : '' ?>>
+                <?= e($opt['label']) ?>
+              </label>
+            <?php endforeach; ?>
+          </div>
+          <?php if ($reasonWhen !== ''): ?>
+            <div class="yes-no-reason-wrap"
+              data-yes-no-reason-for="<?= $id ?>"
+              data-reason-when="<?= e($reasonWhen) ?>"
+              data-reason-required="<?= $reasonRequired ? '1' : '0' ?>"
+              hidden>
+              <label for="cf-<?= $id ?>-reason"><?= e($field['reasonLabel'] ?? 'Please explain your answer') ?></label>
+              <textarea id="cf-<?= $id ?>-reason"
+                name="<?= e($reasonName) ?>"
+                rows="3"
+                placeholder="<?= e($field['reasonPlaceholder'] ?? '') ?>"></textarea>
+            </div>
+          <?php endif; ?>
 
         <?php elseif ($type === 'checkbox'): ?>
           <div class="custom-form-options">
@@ -83,6 +114,7 @@
 
     </div>
   <?php endforeach; ?>
+  </div>
 
   <button type="submit" class="cta-button primary" id="custom-form-submit">
     <?= e($schema['settings']['submitLabel'] ?? 'Submit') ?>

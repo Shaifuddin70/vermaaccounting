@@ -7,6 +7,24 @@ function e(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+/** Root-relative URL for CSS, JS, images (works on /form/slug and all clean URLs). */
+function asset(string $path): string
+{
+    return '/' . ltrim($path, '/');
+}
+
+/** Field types that render in a two-column row on the public form. */
+function form_field_uses_half_column(string $type, array $field = []): bool
+{
+    if (in_array($type, ['text', 'email', 'tel', 'number', 'date', 'select'], true)) {
+        return true;
+    }
+    if ($type === 'yes_no') {
+        return empty($field['reasonWhen']);
+    }
+    return false;
+}
+
 function json_response(array $data, int $code = 200): void
 {
     http_response_code($code);
@@ -24,7 +42,7 @@ function slugify(string $text): string
 
 function now_iso(): string
 {
-    return gmdate('Y-m-d\TH:i:s\Z');
+    return gmdate('Y-m-d H:i:s');
 }
 
 function field_types(): array
@@ -74,6 +92,10 @@ function default_field(string $type = 'text'): array
             ['value' => 'yes', 'label' => 'Yes'],
             ['value' => 'no', 'label' => 'No'],
         ];
+        $base['reasonWhen'] = '';
+        $base['reasonLabel'] = 'Please explain your answer';
+        $base['reasonPlaceholder'] = '';
+        $base['reasonRequired'] = true;
     }
 
     if (in_array($type, ['heading', 'paragraph'], true)) {
@@ -103,6 +125,13 @@ function normalize_form_schema(array $schema): array
         $merged = array_merge(default_field($type), $field);
         $merged['id'] = (string) ($merged['id'] ?? ('f_' . bin2hex(random_bytes(4))));
         $merged['name'] = preg_replace('/[^a-zA-Z0-9_]/', '_', (string) ($merged['name'] ?? $merged['id'])) ?: $merged['id'];
+        if ($type === 'yes_no') {
+            $when = (string) ($merged['reasonWhen'] ?? '');
+            $merged['reasonWhen'] = in_array($when, ['yes', 'no'], true) ? $when : '';
+            $merged['reasonLabel'] = trim((string) ($merged['reasonLabel'] ?? 'Please explain your answer'));
+            $merged['reasonPlaceholder'] = (string) ($merged['reasonPlaceholder'] ?? '');
+            $merged['reasonRequired'] = !empty($merged['reasonRequired']);
+        }
         $fields[] = $merged;
     }
 

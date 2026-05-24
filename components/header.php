@@ -1,3 +1,8 @@
+<?php
+if (!function_exists('asset')) {
+    require_once __DIR__ . '/../lib/helpers.php';
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -40,12 +45,12 @@
 
   <!-- Calendly link widget end -->
   <!-- Favicon -->
-  <link rel="icon" type="image/jpeg" href="images/verma-accounting-favicon.jpg" />
-  <link rel="shortcut icon" type="image/jpeg" href="images/verma-accounting-favicon.jpg" />
-  <link rel="apple-touch-icon" href="images/verma-accounting-favicon.jpg" />
-  <link rel="apple-touch-icon" sizes="180x180" href="images/verma-accounting-favicon.jpg" />
-  <link rel="icon" type="image/jpeg" sizes="32x32" href="images/verma-accounting-favicon.jpg" />
-  <link rel="icon" type="image/jpeg" sizes="16x16" href="images/verma-accounting-favicon.jpg" />
+  <link rel="icon" type="image/jpeg" href="<?= asset('images/verma-accounting-favicon.jpg') ?>" />
+  <link rel="shortcut icon" type="image/jpeg" href="<?= asset('images/verma-accounting-favicon.jpg') ?>" />
+  <link rel="apple-touch-icon" href="<?= asset('images/verma-accounting-favicon.jpg') ?>" />
+  <link rel="apple-touch-icon" sizes="180x180" href="<?= asset('images/verma-accounting-favicon.jpg') ?>" />
+  <link rel="icon" type="image/jpeg" sizes="32x32" href="<?= asset('images/verma-accounting-favicon.jpg') ?>" />
+  <link rel="icon" type="image/jpeg" sizes="16x16" href="<?= asset('images/verma-accounting-favicon.jpg') ?>" />
 
   <!-- Additional SEO Meta Tags -->
   <meta name="author" content="Verma Accounting & Financial Services" />
@@ -155,7 +160,7 @@
     }
   </script>
 
-  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>" />
 </head>
 
 <body>
@@ -170,7 +175,7 @@
         <div class="verma-logo">
           <a href="/">
             <img
-              src="images/verma-accounting-logo.png"
+              src="<?= asset('images/verma-accounting-logo.png') ?>"
               alt="Verma Accounting & Financial Services"
               class="verma-logo-img" />
           </a>

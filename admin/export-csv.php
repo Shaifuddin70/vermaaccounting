@@ -1,0 +1,79 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../lib/bootstrap.php';
+Auth::requireLogin();
+
+$formId = (int) ($_GET['form_id'] ?? 0);
+$repo = new FormRepository();
+$form = $repo->find($formId);
+
+if (!$form) {
+    http_response_code(404);
+    exit('Form not found.');
+}
+
+$schema = $repo->decodeSchema($form);
+$submissions = $repo->submissionsForForm($formId);
+$filesBySubmission = $repo->filesGroupedBySubmission($formId);
+
+$inputFields = array_values(array_filter(
+    $schema['fields'],
+    static fn ($f) => !in_array($f['type'], ['heading', 'paragraph'], true)
+));
+
+$filename = slugify($form['slug']) . '-responses-' . date('Y-m-d') . '.csv';
+
+header('Content-Type: text/csv; charset=utf-8');
+header('Content-Disposition: attachment; filename="' . $filename . '"');
+header('Cache-Control: no-store');
+
+$out = fopen('php://output', 'w');
+if ($out === false) {
+    exit('Could not open output.');
+}
+
+// UTF-8 BOM for Excel
+fwrite($out, "\xEF\xBB\xBF");
+
+$headers = ['Submission ID', 'Submitted At', 'IP Address'];
+foreach ($inputFields as $field) {
+    $headers[] = $field['label'];
+    if ($field['type'] === 'yes_no' && !empty($field['reasonWhen'])) {
+        $headers[] = ($field['reasonLabel'] ?? 'Reason') . ' (' . $field['label'] . ')';
+    }
+}
+$headers[] = 'Uploaded Files';
+fputcsv($out, $headers);
+
+foreach ($submissions as $sub) {
+    $data = json_decode($sub['data_json'], true) ?: [];
+    $row = [
+        (string) $sub['id'],
+        $sub['created_at'],
+        $sub['ip'] ?? '',
+    ];
+
+    foreach ($inputFields as $field) {
+        $key = $field['name'];
+        $val = $data[$key] ?? '';
+        if (is_array($val)) {
+            $val = implode('; ', $val);
+        }
+        $row[] = (string) $val;
+        if ($field['type'] === 'yes_no' && !empty($field['reasonWhen'])) {
+            $row[] = (string) ($data[$key . '_reason'] ?? '');
+        }
+    }
+
+    $fileParts = [];
+    foreach ($filesBySubmission[(int) $sub['id']] ?? [] as $file) {
+        $fileParts[] = $file['original_name'] . ' (admin download: /admin/download.php?file_id=' . $file['id'] . ')';
+    }
+    $row[] = implode(' | ', $fileParts);
+
+    fputcsv($out, $row);
+}
+
+fclose($out);
+exit;

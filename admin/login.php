@@ -26,13 +26,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Login | Verma Form Builder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/admin/css/admin.css">
 </head>
 <body>
   <div class="admin-login-wrap">
     <div class="admin-login-card">
-      <h1>Form Builder</h1>
-      <p style="color:#64748b;margin:0 0 1.25rem;">Sign in to manage custom forms</p>
+      <h1>Verma Form Builder</h1>
+      <p style="color:var(--verma-muted);margin:0 0 1.25rem;">Sign in to manage custom forms</p>
       <?php if ($error): ?>
         <div class="admin-alert admin-alert-error"><?= e($error) ?></div>
       <?php endif; ?>

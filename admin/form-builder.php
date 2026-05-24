@@ -47,33 +47,35 @@ require __DIR__ . '/includes/layout-start.php';
   <div>
     <div class="admin-card">
       <h2 style="margin:0 0 1rem;font-size:1rem;">Form settings</h2>
-      <div class="admin-field">
-        <label for="form-title">Title</label>
-        <input type="text" id="form-title" value="<?= e($initial['title']) ?>">
-      </div>
-      <div class="admin-field">
-        <label for="form-slug">URL slug</label>
-        <input type="text" id="form-slug" value="<?= e($initial['slug']) ?>" placeholder="client-intake">
-        <small style="color:#64748b;">Public URL: /form/<span id="slug-preview"><?= e($initial['slug'] ?: 'your-slug') ?></span></small>
-      </div>
-      <div class="admin-field">
-        <label for="form-description">Description (optional)</label>
-        <textarea id="form-description" rows="2"><?= e($initial['description']) ?></textarea>
-      </div>
-      <div class="admin-field">
-        <label for="form-status">Status</label>
-        <select id="form-status">
-          <option value="draft" <?= $initial['status'] === 'draft' ? 'selected' : '' ?>>Draft</option>
-          <option value="published" <?= $initial['status'] === 'published' ? 'selected' : '' ?>>Published</option>
-        </select>
-      </div>
-      <div class="admin-field">
-        <label for="submit-label">Submit button text</label>
-        <input type="text" id="submit-label" value="<?= e($schema['settings']['submitLabel'] ?? 'Submit') ?>">
-      </div>
-      <div class="admin-field">
-        <label for="success-message">Success message</label>
-        <input type="text" id="success-message" value="<?= e($schema['settings']['successMessage'] ?? '') ?>">
+      <div class="admin-fields-2col">
+        <div class="admin-field admin-field--full">
+          <label for="form-title">Title</label>
+          <input type="text" id="form-title" value="<?= e($initial['title']) ?>">
+        </div>
+        <div class="admin-field admin-field--full">
+          <label for="form-slug">URL slug</label>
+          <input type="text" id="form-slug" value="<?= e($initial['slug']) ?>" placeholder="client-intake">
+          <small style="color:#64748b;">Public URL: /form/<span id="slug-preview"><?= e($initial['slug'] ?: 'your-slug') ?></span></small>
+        </div>
+        <div class="admin-field admin-field--full">
+          <label for="form-description">Description (optional)</label>
+          <textarea id="form-description" rows="2"><?= e($initial['description']) ?></textarea>
+        </div>
+        <div class="admin-field">
+          <label for="form-status">Status</label>
+          <select id="form-status">
+            <option value="draft" <?= $initial['status'] === 'draft' ? 'selected' : '' ?>>Draft</option>
+            <option value="published" <?= $initial['status'] === 'published' ? 'selected' : '' ?>>Published</option>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label for="submit-label">Submit button text</label>
+          <input type="text" id="submit-label" value="<?= e($schema['settings']['submitLabel'] ?? 'Submit') ?>">
+        </div>
+        <div class="admin-field admin-field--full">
+          <label for="success-message">Success message</label>
+          <input type="text" id="success-message" value="<?= e($schema['settings']['successMessage'] ?? '') ?>">
+        </div>
       </div>
     </div>
 
@@ -100,14 +102,21 @@ require __DIR__ . '/includes/layout-start.php';
       <div id="field-editor" style="display:none;"></div>
     </div>
 
-    <?php if ($form): ?>
     <div class="admin-card">
       <h2 style="margin:0 0 0.75rem;font-size:1rem;">Embed on your site</h2>
-      <p style="font-size:0.875rem;color:#64748b;">Link to this form or embed in an iframe:</p>
-      <div class="embed-code" id="embed-link">https://vermaaccounting.ca/form/<?= e($form['slug']) ?></div>
-      <div class="embed-code" style="margin-top:0.5rem;" id="embed-iframe">&lt;iframe src="https://vermaaccounting.ca/form/<?= e($form['slug']) ?>" width="100%" height="800" frameborder="0"&gt;&lt;/iframe&gt;</div>
+      <?php if ($form): ?>
+      <p style="font-size:0.875rem;color:#64748b;margin:0 0 0.5rem;">Direct link:</p>
+      <div class="embed-code" id="embed-link"><?= e((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'vermaaccounting.ca')) ?>/form/<?= e($form['slug']) ?></div>
+      <p style="font-size:0.875rem;color:#64748b;margin:1rem 0 0.5rem;">PHP shortcode (paste in any .php page):</p>
+      <div class="embed-code" id="embed-shortcode"><?= e(form_shortcode_literal($form['slug'])) ?></div>
+      <p style="font-size:0.875rem;color:#64748b;margin:1rem 0 0.5rem;">Or output in PHP:</p>
+      <div class="embed-code">&lt;?= process_form_shortcodes('<?= e(form_shortcode_literal($form['slug'])) ?>') ?&gt;</div>
+      <p style="font-size:0.875rem;color:#64748b;margin:1rem 0 0.5rem;">Iframe embed:</p>
+      <div class="embed-code" id="embed-iframe">&lt;iframe src="/form/<?= e($form['slug']) ?>?embed=1" width="100%" height="720" frameborder="0" title="<?= e($form['title']) ?>"&gt;&lt;/iframe&gt;</div>
+      <?php else: ?>
+      <p style="font-size:0.875rem;color:#64748b;">Save the form first to get embed codes and shortcodes.</p>
+      <?php endif; ?>
     </div>
-    <?php endif; ?>
   </div>
 </div>
 

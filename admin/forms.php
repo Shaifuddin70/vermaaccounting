@@ -49,6 +49,9 @@ require __DIR__ . '/includes/layout-start.php';
               <a href="/admin/form-builder.php?id=<?= (int) $form['id'] ?>">Edit</a>
               ·
               <a href="/admin/submissions.php?form_id=<?= (int) $form['id'] ?>">Responses</a>
+              <?php if ($subs): ?>
+                · <a href="/admin/export-csv.php?form_id=<?= (int) $form['id'] ?>">CSV</a>
+              <?php endif; ?>
             </td>
           </tr>
         <?php endforeach; ?>
