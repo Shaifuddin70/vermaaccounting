@@ -41,4 +41,43 @@ return [
         'text/plain',
         'text/csv',
     ],
+
+    /** Public site URL (used in admin email links). */
+    'site_url' => 'https://vermaaccounting.ca',
+
+    /**
+     * Submission email notifications (admin alert + client confirmation).
+     *
+     * If your domain MX points to Microsoft 365 / Outlook (common with Namecheap + M365):
+     *   transport: smtp, host: smtp.office365.com, username: your M365 mailbox
+     *   Enable "Authenticated SMTP" for that mailbox in Microsoft 365 admin.
+     *
+     * If email is on cPanel hosting only:
+     *   Add DNS A record: mail.yourdomain.ca → your server IP
+     *   transport: smtp, host: mail.yourdomain.ca (or serverXXX.web-hosting.com)
+     *   Or use transport "mail" when PHP runs on the same hosting server.
+     */
+    'mail' => [
+        'enabled' => true,
+        'transport' => 'smtp', // mail | smtp
+        'from_email' => 'info@vermaaccounting.ca',
+        'from_name' => 'Verma Accounting',
+        'admin_email' => 'info@vermaaccounting.ca',
+        'admin_name' => 'Verma Accounting',
+        'smtp' => [
+            'host' => 'smtp.office365.com',
+            'port' => 587,
+            'encryption' => 'tls', // tls | ssl | none
+            'username' => 'info@vermaaccounting.ca',
+            'password' => 'YOUR_MAILBOX_PASSWORD',
+        ],
+        'admin_notification' => [
+            'enabled' => true,
+            'subject' => 'New submission: {form_title} (#{submission_id})',
+        ],
+        'client_confirmation' => [
+            'enabled' => true,
+            'subject' => 'We received your submission — {form_title}',
+        ],
+    ],
 ];

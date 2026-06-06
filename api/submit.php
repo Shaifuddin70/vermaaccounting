@@ -150,6 +150,14 @@ $clientRepo->linkFromSubmission([
     'data_json' => json_encode($data, JSON_UNESCAPED_UNICODE),
 ], $schema);
 
+send_submission_notification_emails(
+    $form,
+    $schema,
+    $submissionId,
+    $data,
+    $taxYear > 0 ? $taxYear : null
+);
+
 json_response([
     'ok' => true,
     'message' => $schema['settings']['successMessage'] ?? 'Thank you!',

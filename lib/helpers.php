@@ -45,6 +45,63 @@ function now_iso(): string
     return gmdate('Y-m-d H:i:s');
 }
 
+/** @return array<string, mixed> */
+function mail_config(): array
+{
+    $config = app_config();
+    $defaults = [
+        'enabled' => false,
+        'transport' => 'mail',
+        'from_email' => '',
+        'from_name' => 'Verma Accounting',
+        'admin_email' => '',
+        'admin_name' => 'Verma Accounting',
+        'smtp' => [
+            'host' => '',
+            'port' => 587,
+            'encryption' => 'tls',
+            'username' => '',
+            'password' => '',
+        ],
+        'admin_notification' => [
+            'enabled' => true,
+            'subject' => 'New submission: {form_title} (#{submission_id})',
+        ],
+        'client_confirmation' => [
+            'enabled' => true,
+            'subject' => 'We received your submission — {form_title}',
+        ],
+    ];
+
+    $mail = is_array($config['mail'] ?? null) ? $config['mail'] : [];
+    $mail = array_replace_recursive($defaults, $mail);
+
+    if (($mail['admin_email'] ?? '') === '' && ($config['admin_notification_email'] ?? '') !== '') {
+        $mail['admin_email'] = (string) $config['admin_notification_email'];
+    }
+
+    return $mail;
+}
+
+function app_base_url(): string
+{
+    $config = app_config();
+    $configured = trim((string) ($config['site_url'] ?? ''));
+    if ($configured !== '') {
+        return rtrim($configured, '/');
+    }
+
+    if (PHP_SAPI === 'cli') {
+        return '';
+    }
+
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
+    $scheme = $https ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    return $scheme . '://' . $host;
+}
+
 function field_types(): array
 {
     return [
