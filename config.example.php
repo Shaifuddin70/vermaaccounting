@@ -2,12 +2,11 @@
 /**
  * Copy to config.local.php and set your values.
  *
+ * config.local.php supports local (MAMP) + production (hosting) in one file.
+ * See the template at the bottom of this file, or copy config.local.php from a teammate.
+ *
  * Admin password hash:
  *   php -r "echo password_hash('your-password', PASSWORD_DEFAULT);"
- *
- * MySQL: create a database (e.g. verma_forms) in phpMyAdmin, then set credentials below.
- * MAMP: website = port 8888, MySQL = port 8889 (MAMP → Preferences → Ports).
- * Default MAMP MySQL user/password is usually root / root.
  */
 return [
     'admin_username' => 'admin',
@@ -24,7 +23,6 @@ return [
         'charset' => 'utf8mb4',
     ],
 
-    /** Total storage quota for client uploads (shown in admin file manager). */
     'uploads_quota_bytes' => 15 * 1024 * 1024 * 1024,
 
     'max_upload_bytes' => 10 * 1024 * 1024,
@@ -42,24 +40,11 @@ return [
         'text/csv',
     ],
 
-    /** Public site URL (used in admin email links). */
     'site_url' => 'https://vermaaccounting.ca',
 
-    /**
-     * Submission email notifications (admin alert + client confirmation).
-     *
-     * If your domain MX points to Microsoft 365 / Outlook (common with Namecheap + M365):
-     *   transport: smtp, host: smtp.office365.com, username: your M365 mailbox
-     *   Enable "Authenticated SMTP" for that mailbox in Microsoft 365 admin.
-     *
-     * If email is on cPanel hosting only:
-     *   Add DNS A record: mail.yourdomain.ca → your server IP
-     *   transport: smtp, host: mail.yourdomain.ca (or serverXXX.web-hosting.com)
-     *   Or use transport "mail" when PHP runs on the same hosting server.
-     */
     'mail' => [
         'enabled' => true,
-        'transport' => 'smtp', // mail | smtp
+        'transport' => 'smtp',
         'from_email' => 'info@vermaaccounting.ca',
         'from_name' => 'Verma Accounting',
         'admin_email' => 'info@vermaaccounting.ca',
@@ -67,7 +52,7 @@ return [
         'smtp' => [
             'host' => 'smtp.office365.com',
             'port' => 587,
-            'encryption' => 'tls', // tls | ssl | none
+            'encryption' => 'tls',
             'username' => 'info@vermaaccounting.ca',
             'password' => 'YOUR_MAILBOX_PASSWORD',
         ],
@@ -81,3 +66,14 @@ return [
         ],
     ],
 ];
+
+/*
+ * ── Dual environment config.local.php pattern ─────────────────────────────
+ *
+ * Set $environmentMode = 'auto' to switch automatically:
+ *   localhost:8888 / 127.0.0.1  →  MAMP database, mail disabled
+ *   vermaaccounting.ca          →  hosting database, mail enabled
+ *
+ * Force one environment: $environmentMode = 'local' or 'production'
+ * CLI scripts: VERMA_ENV=production php your-script.php
+ */

@@ -102,6 +102,17 @@ function app_base_url(): string
     return $scheme . '://' . $host;
 }
 
+function app_environment(): string
+{
+    $env = app_config()['environment'] ?? 'production';
+    return in_array($env, ['local', 'production'], true) ? $env : 'production';
+}
+
+function app_is_local(): bool
+{
+    return app_environment() === 'local';
+}
+
 function field_types(): array
 {
     return [
