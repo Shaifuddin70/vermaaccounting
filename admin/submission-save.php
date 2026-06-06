@@ -2,29 +2,37 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
+Auth::requireLogin();
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    json_response(['error' => 'Method not allowed'], 405);
+    http_response_code(405);
+    exit('Method not allowed');
 }
 
-$slug = trim($_POST['form_slug'] ?? '');
-if ($slug === '') {
-    json_response(['error' => 'Missing form'], 400);
+if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
+    http_response_code(403);
+    exit('Invalid session.');
 }
+
+$submissionId = (int) ($_POST['submission_id'] ?? 0);
+$formId = (int) ($_POST['form_id'] ?? 0);
 
 $repo = new FormRepository();
-$form = $repo->findBySlug($slug, true);
-if (!$form) {
-    json_response(['error' => 'Form not found or not published'], 404);
+$form = $repo->find($formId);
+$submission = $repo->findSubmissionForForm($submissionId, $formId);
+
+if (!$form || !$submission) {
+    http_response_code(404);
+    exit('Submission not found.');
 }
 
 $schema = $repo->decodeSchema($form);
 $config = app_config();
 $maxBytes = (int) ($config['max_upload_bytes'] ?? 10485760);
 $allowedMimes = $config['allowed_upload_mimes'] ?? [];
+$existingFiles = files_by_field_id($repo->filesForSubmission($submissionId));
 
 $data = [];
-$filesMeta = [];
 $errors = [];
 
 foreach ($schema['fields'] as $field) {
@@ -46,10 +54,14 @@ foreach ($schema['fields'] as $field) {
     }
 
     if (in_array($type, ['file', 'image'], true)) {
+        $hasExisting = !empty($existingFiles[$id]);
         $fileKey = $name;
         if (!isset($_FILES[$fileKey]) || $_FILES[$fileKey]['error'] === UPLOAD_ERR_NO_FILE) {
-            if ($field['required']) {
+            if ($field['required'] && !$hasExisting) {
                 $errors[] = $field['label'] . ' is required.';
+            }
+            if ($hasExisting) {
+                $data[$name] = $existingFiles[$id][0]['stored_name'] ?? '';
             }
             continue;
         }
@@ -77,7 +89,7 @@ foreach ($schema['fields'] as $field) {
 
         $ext = pathinfo($upload['name'], PATHINFO_EXTENSION);
         $stored = bin2hex(random_bytes(16)) . ($ext ? '.' . preg_replace('/[^a-zA-Z0-9]/', '', $ext) : '');
-        $destDir = UPLOADS_DIR . '/' . $form['id'];
+        $destDir = UPLOADS_DIR . '/' . $formId;
         if (!is_dir($destDir)) {
             mkdir($destDir, 0755, true);
         }
@@ -87,14 +99,16 @@ foreach ($schema['fields'] as $field) {
             continue;
         }
 
-        $data[$name] = $stored;
-        $filesMeta[] = [
+        $repo->deleteFilesForField($submissionId, $id);
+        $storedPath = $formId . '/' . $stored;
+        $data[$name] = $storedPath;
+        $repo->addSubmissionFile($submissionId, [
             'field_id' => $id,
-            'stored_name' => $form['id'] . '/' . $stored,
+            'stored_name' => $storedPath,
             'original_name' => $upload['name'],
             'mime' => $mime,
             'size' => (int) $upload['size'],
-        ];
+        ]);
         continue;
     }
 
@@ -115,10 +129,13 @@ foreach ($schema['fields'] as $field) {
                     $errors[] = ($field['reasonLabel'] ?? 'Reason') . ' is required.';
                 }
                 $data[$reasonKey] = $reasonVal;
+            } else {
+                unset($data[$reasonKey]);
             }
         }
         continue;
     }
+
     if ($field['required'] && $value === '') {
         $errors[] = $field['label'] . ' is required.';
     }
@@ -128,29 +145,17 @@ foreach ($schema['fields'] as $field) {
     $data[$name] = $value;
 }
 
-$taxYear = null;
-$taxYearCfg = $schema['settings']['taxYear'] ?? [];
-if (!empty($taxYearCfg['enabled'])) {
-    $taxYear = (int) ($_POST['tax_year'] ?? 0);
-    $allowed = $taxYearCfg['years'] ?? [];
-    if ($taxYear < 1 || !in_array($taxYear, $allowed, true)) {
-        $errors[] = 'Please select a valid tax year.';
-    }
-}
-
 if ($errors) {
-    json_response(['error' => implode(' ', $errors), 'errors' => $errors], 422);
+    $_SESSION['submission_edit_errors'] = $errors;
+    header('Location: /admin/submission.php?id=' . $submissionId . '&form_id=' . $formId . '&edit=1');
+    exit;
 }
 
-$submissionId = $repo->saveSubmission((int) $form['id'], $data, $filesMeta, $taxYear > 0 ? $taxYear : null);
+$repo->updateSubmissionData($submissionId, $data);
 
-$clientRepo = new ClientRepository();
-$clientRepo->linkFromSubmission([
-    'id' => $submissionId,
-    'data_json' => json_encode($data, JSON_UNESCAPED_UNICODE),
-], $schema);
-
-json_response([
-    'ok' => true,
-    'message' => $schema['settings']['successMessage'] ?? 'Thank you!',
+ActivityLog::record('submission.edited', 'submission', $submissionId, [
+    'form_id' => $formId,
 ]);
+
+header('Location: /admin/submission.php?id=' . $submissionId . '&form_id=' . $formId . '&saved=1');
+exit;

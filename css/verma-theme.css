@@ -1,5 +1,5 @@
 /**
- * Verma Accounting — shared brand tokens (site, admin, custom forms)
+ * Verma Accounting — shared brand tokens (solid colors only, no gradients)
  */
 :root {
   --verma-navy: #1e3a8a;
@@ -21,12 +21,14 @@
   --verma-border: #e2e8f0;
   --verma-input-bg: #fbfafa;
   --verma-surface: #ffffff;
-  --verma-page-bg: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  --verma-page-bg: #f1f5f9;
 
-  --verma-gradient-primary: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-  --verma-gradient-primary-hover: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
-  --verma-gradient-orange: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-  --verma-gradient-sidebar: linear-gradient(180deg, #1e3a8a 0%, #1e40af 55%, #0f2a6d 100%);
+  --verma-primary: #1e3a8a;
+  --verma-primary-hover: #1e40af;
+  --verma-accent: #f97316;
+  --verma-accent-hover: #ea580c;
+  --verma-sidebar: #1e3a8a;
+  --verma-sidebar-active: #f97316;
 
   --verma-radius: 12px;
   --verma-radius-sm: 8px;

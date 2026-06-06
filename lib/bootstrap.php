@@ -38,8 +38,14 @@ function ensure_data_dirs(): void
 require_once __DIR__ . '/Database.php';
 require_once __DIR__ . '/Auth.php';
 require_once __DIR__ . '/FormRepository.php';
+require_once __DIR__ . '/UploadRepository.php';
+require_once __DIR__ . '/UserRepository.php';
+require_once __DIR__ . '/ActivityLog.php';
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/embed.php';
+require_once __DIR__ . '/submission_helpers.php';
+require_once __DIR__ . '/client_helpers.php';
+require_once __DIR__ . '/ClientRepository.php';
 
 ensure_data_dirs();
 

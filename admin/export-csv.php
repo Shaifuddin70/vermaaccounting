@@ -14,7 +14,13 @@ if (!$form) {
 }
 
 $schema = $repo->decodeSchema($form);
-$submissions = $repo->submissionsForForm($formId);
+$taxYearOn = form_tax_year_enabled($schema);
+$yearParam = $_GET['year'] ?? '';
+$taxYearFilter = ($yearParam !== '' && $yearParam !== 'all') ? (int) $yearParam : null;
+if ($taxYearFilter !== null && $taxYearFilter < 1) {
+    $taxYearFilter = null;
+}
+$submissions = $repo->submissionsForForm($formId, null, $taxYearFilter);
 $filesBySubmission = $repo->filesGroupedBySubmission($formId);
 
 $inputFields = array_values(array_filter(
@@ -22,7 +28,11 @@ $inputFields = array_values(array_filter(
     static fn ($f) => !in_array($f['type'], ['heading', 'paragraph'], true)
 ));
 
-$filename = slugify($form['slug']) . '-responses-' . date('Y-m-d') . '.csv';
+$filename = slugify($form['slug']) . '-responses';
+if ($taxYearFilter) {
+    $filename .= '-' . $taxYearFilter;
+}
+$filename .= '-' . date('Y-m-d') . '.csv';
 
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -36,7 +46,11 @@ if ($out === false) {
 // UTF-8 BOM for Excel
 fwrite($out, "\xEF\xBB\xBF");
 
-$headers = ['Submission ID', 'Submitted At', 'IP Address'];
+$headers = ['Submission ID', 'Submitted At'];
+if ($taxYearOn) {
+    $headers[] = 'Tax Year';
+}
+$headers[] = 'IP Address';
 foreach ($inputFields as $field) {
     $headers[] = $field['label'];
     if ($field['type'] === 'yes_no' && !empty($field['reasonWhen'])) {
@@ -51,8 +65,11 @@ foreach ($submissions as $sub) {
     $row = [
         (string) $sub['id'],
         $sub['created_at'],
-        $sub['ip'] ?? '',
     ];
+    if ($taxYearOn) {
+        $row[] = submission_tax_year_label($sub) ?: '';
+    }
+    $row[] = $sub['ip'] ?? '';
 
     foreach ($inputFields as $field) {
         $key = $field['name'];

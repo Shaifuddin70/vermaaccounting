@@ -27,28 +27,81 @@ final class Auth
         }
     }
 
-    public static function attempt(string $username, string $password): bool
+    /**
+     * Require the logged-in user to have at least one of the given roles.
+     * Admins always pass. Redirects to dashboard with an error if role missing.
+     */
+    public static function requireRole(string ...$roles): void
     {
+        self::requireLogin();
+        $current = self::userRole();
+        // admin can do everything
+        if ($current === 'admin') {
+            return;
+        }
+        foreach ($roles as $role) {
+            if ($current === $role) {
+                return;
+            }
+        }
+        $_SESSION['flash_error'] = 'You do not have permission to access that page.';
+        header('Location: /admin/');
+        exit;
+    }
+
+    /**
+     * Attempt login. Tries config admin by username first, then DB users by email.
+     * Returns true on success.
+     */
+    public static function attempt(string $login, string $password): bool
+    {
+        // 1. Config-file admin (login by username, not email)
         $config = app_config();
-        $expectedUser = $config['admin_username'] ?? 'admin';
-        $hash = $config['admin_password_hash'] ?? '';
+        $configUser = $config['admin_username'] ?? 'admin';
+        $configHash = $config['admin_password_hash'] ?? '';
 
-        if ($hash === '' || str_contains($hash, 'REPLACE_WITH')) {
+        if (
+            $configHash !== ''
+            && !str_contains($configHash, 'REPLACE_WITH')
+            && hash_equals($configUser, $login)
+            && password_verify($password, $configHash)
+        ) {
+            self::startSession();
+            session_regenerate_id(true);
+            $_SESSION['admin_logged_in'] = true;
+            $_SESSION['admin_user_id']   = null;          // null = config admin
+            $_SESSION['admin_username']  = $configUser;
+            $_SESSION['admin_user_name'] = 'Admin';
+            $_SESSION['admin_user_role'] = 'admin';
+            $_SESSION['admin_user_email'] = '';
+            return true;
+        }
+
+        // 2. DB user (login by email)
+        try {
+            $pdo = Database::instance()->pdo();
+            $stmt = $pdo->prepare(
+                "SELECT * FROM users WHERE email = ? AND status = 'active' LIMIT 1"
+            );
+            $stmt->execute([$login]);
+            $user = $stmt->fetch();
+        } catch (PDOException $e) {
+            // DB might not have users table yet on first boot — fail gracefully
             return false;
         }
 
-        if (!hash_equals($expectedUser, $username)) {
-            return false;
-        }
-
-        if (!password_verify($password, $hash)) {
+        if (!$user || !password_verify($password, $user['password_hash'])) {
             return false;
         }
 
         self::startSession();
         session_regenerate_id(true);
-        $_SESSION['admin_logged_in'] = true;
-        $_SESSION['admin_username'] = $username;
+        $_SESSION['admin_logged_in']  = true;
+        $_SESSION['admin_user_id']    = (int) $user['id'];
+        $_SESSION['admin_username']   = $user['email'];
+        $_SESSION['admin_user_name']  = $user['name'];
+        $_SESSION['admin_user_role']  = $user['role'];
+        $_SESSION['admin_user_email'] = $user['email'];
         return true;
     }
 
@@ -61,6 +114,52 @@ final class Auth
             setcookie(session_name(), '', time() - 42000, $p['path'], $p['domain'], $p['secure'], $p['httponly']);
         }
         session_destroy();
+    }
+
+    /**
+     * Return the currently logged-in user as an array.
+     * Returns null if not logged in.
+     */
+    public static function currentUser(): ?array
+    {
+        if (!self::check()) {
+            return null;
+        }
+        return [
+            'id'    => $_SESSION['admin_user_id'] ?? null,
+            'name'  => $_SESSION['admin_user_name'] ?? ($_SESSION['admin_username'] ?? 'Admin'),
+            'email' => $_SESSION['admin_user_email'] ?? '',
+            'role'  => $_SESSION['admin_user_role'] ?? 'admin',
+            'is_config_admin' => ($_SESSION['admin_user_id'] ?? null) === null,
+        ];
+    }
+
+    /** Currently logged-in user ID (null for config admin). */
+    public static function userId(): ?int
+    {
+        if (!self::check()) {
+            return null;
+        }
+        $id = $_SESSION['admin_user_id'] ?? null;
+        return $id !== null ? (int) $id : null;
+    }
+
+    /** Currently logged-in user display name. */
+    public static function userName(): string
+    {
+        if (!self::check()) {
+            return '';
+        }
+        return (string) ($_SESSION['admin_user_name'] ?? $_SESSION['admin_username'] ?? 'Admin');
+    }
+
+    /** Currently logged-in user role: 'admin' or 'reviewer'. */
+    public static function userRole(): string
+    {
+        if (!self::check()) {
+            return '';
+        }
+        return (string) ($_SESSION['admin_user_role'] ?? 'admin');
     }
 
     public static function csrfToken(): string

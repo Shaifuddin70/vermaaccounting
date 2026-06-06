@@ -24,6 +24,9 @@ return [
         'charset' => 'utf8mb4',
     ],
 
+    /** Total storage quota for client uploads (shown in admin file manager). */
+    'uploads_quota_bytes' => 15 * 1024 * 1024 * 1024,
+
     'max_upload_bytes' => 10 * 1024 * 1024,
     'allowed_upload_mimes' => [
         'image/jpeg',

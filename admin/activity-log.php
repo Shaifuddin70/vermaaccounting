@@ -1,0 +1,160 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../lib/bootstrap.php';
+Auth::requireLogin();
+Auth::requireRole('admin');
+
+$filterAction  = (string) ($_GET['action'] ?? '');
+$filterUser    = isset($_GET['user_id']) && $_GET['user_id'] !== '' ? (int) $_GET['user_id'] : null;
+$filterSubject = (string) ($_GET['subject'] ?? '');
+
+$limit = 100;
+$logs = ActivityLog::recent(
+    $limit,
+    $filterUser ?: null,
+    $filterAction !== '' ? $filterAction : null,
+    $filterSubject !== '' ? $filterSubject : null
+);
+
+$userRepo = new UserRepository();
+$allUsers = $userRepo->all();
+
+$pageTitle = 'Activity log';
+$activeNav = 'activity';
+require __DIR__ . '/includes/layout-start.php';
+?>
+<div class="admin-header">
+  <h1>Activity log</h1>
+</div>
+
+<div class="admin-card activity-filters">
+  <form method="get" class="activity-filter-form">
+    <div class="admin-field" style="margin:0;">
+      <label for="af-action">Action</label>
+      <select id="af-action" name="action" onchange="this.form.submit()">
+        <option value="">All actions</option>
+        <option value="submission.status_changed" <?= $filterAction === 'submission.status_changed' ? 'selected' : '' ?>>Changed status</option>
+        <option value="submission.edited"         <?= $filterAction === 'submission.edited'         ? 'selected' : '' ?>>Edited submission</option>
+        <option value="file.deleted"              <?= $filterAction === 'file.deleted'              ? 'selected' : '' ?>>Deleted file</option>
+        <option value="user.created"              <?= $filterAction === 'user.created'              ? 'selected' : '' ?>>Created user</option>
+        <option value="user.updated"              <?= $filterAction === 'user.updated'              ? 'selected' : '' ?>>Updated user</option>
+        <option value="user.deactivated"          <?= $filterAction === 'user.deactivated'          ? 'selected' : '' ?>>Deactivated user</option>
+        <option value="user.activated"            <?= $filterAction === 'user.activated'            ? 'selected' : '' ?>>Activated user</option>
+        <option value="auth.login"                <?= $filterAction === 'auth.login'                ? 'selected' : '' ?>>Sign in</option>
+        <option value="auth.logout"               <?= $filterAction === 'auth.logout'               ? 'selected' : '' ?>>Sign out</option>
+      </select>
+    </div>
+    <div class="admin-field" style="margin:0;">
+      <label for="af-user">Team member</label>
+      <select id="af-user" name="user_id" onchange="this.form.submit()">
+        <option value="">All members</option>
+        <?php foreach ($allUsers as $u): ?>
+          <option value="<?= (int) $u['id'] ?>" <?= $filterUser === (int) $u['id'] ? 'selected' : '' ?>>
+            <?= e($u['name']) ?>
+          </option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div class="admin-field" style="margin:0;">
+      <label for="af-subject">Subject</label>
+      <select id="af-subject" name="subject" onchange="this.form.submit()">
+        <option value="">All subjects</option>
+        <option value="submission" <?= $filterSubject === 'submission' ? 'selected' : '' ?>>Submission</option>
+        <option value="user"       <?= $filterSubject === 'user'       ? 'selected' : '' ?>>User</option>
+      </select>
+    </div>
+    <?php if ($filterAction || $filterUser || $filterSubject): ?>
+      <a href="/admin/activity-log.php" class="admin-btn admin-btn-secondary admin-btn-sm activity-filter-clear">Clear filters</a>
+    <?php endif; ?>
+  </form>
+</div>
+
+<div class="admin-card">
+  <?php if (!$logs): ?>
+    <p style="color:#64748b;">No activity recorded yet<?= ($filterAction || $filterUser || $filterSubject) ? ' for these filters' : '' ?>.</p>
+  <?php else: ?>
+    <table class="admin-table activity-table">
+      <thead>
+        <tr>
+          <th>When</th>
+          <th>Who</th>
+          <th>Action</th>
+          <th>Subject</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($logs as $log):
+          $meta = $log['meta_json'] ? json_decode($log['meta_json'], true) : [];
+          $isConfigAdmin = ($log['user_id'] === null);
+        ?>
+          <tr>
+            <td class="dashboard-date activity-time">
+              <?= e($log['created_at']) ?>
+            </td>
+            <td>
+              <span class="activity-actor">
+                <?= e($log['user_name'] ?: 'Admin') ?>
+                <?php if ($isConfigAdmin): ?>
+                  <span class="role-badge role-badge--admin" style="font-size:0.7rem;">config</span>
+                <?php endif; ?>
+              </span>
+            </td>
+            <td>
+              <span class="activity-action activity-action--<?= e(str_replace('.', '-', $log['action'])) ?>">
+                <?= e(ActivityLog::actionLabel($log['action'])) ?>
+              </span>
+            </td>
+            <td>
+              <?php if ($log['subject_type'] === 'submission' && $log['subject_id']): ?>
+                <?php
+                  $formIdForLink = (int) ($meta['form_id'] ?? 0);
+                  $subIdForLink  = (int) $log['subject_id'];
+                ?>
+                <?php if ($formIdForLink): ?>
+                  <a href="/admin/submission.php?id=<?= $subIdForLink ?>&form_id=<?= $formIdForLink ?>">
+                    Submission #<?= $subIdForLink ?>
+                  </a>
+                <?php else: ?>
+                  Submission #<?= $subIdForLink ?>
+                <?php endif; ?>
+              <?php elseif ($log['subject_type'] === 'user' && $log['subject_id']): ?>
+                <a href="/admin/user-edit.php?id=<?= (int) $log['subject_id'] ?>">User #<?= (int) $log['subject_id'] ?></a>
+              <?php elseif ($log['subject_type']): ?>
+                <?= e(ucfirst($log['subject_type'])) ?> #<?= (int) $log['subject_id'] ?>
+              <?php else: ?>
+                —
+              <?php endif; ?>
+            </td>
+            <td class="activity-meta">
+              <?php if ($log['action'] === 'submission.status_changed' && $meta): ?>
+                <span class="submission-status-badge submission-status-badge--<?= e($meta['from_status'] ?? '') ?>">
+                  <?= e(ucfirst($meta['from_status'] ?? '')) ?>
+                </span>
+                → 
+                <span class="submission-status-badge submission-status-badge--<?= e($meta['to_status'] ?? '') ?>">
+                  <?= e(ucfirst($meta['to_status'] ?? '')) ?>
+                </span>
+              <?php elseif ($meta): ?>
+                <span class="activity-meta-text">
+                  <?php foreach ($meta as $k => $v):
+                    if (in_array($k, ['form_id'], true)) continue;
+                  ?>
+                    <span><?= e($k) ?>: <?= e(is_string($v) ? $v : json_encode($v)) ?></span>
+                  <?php endforeach; ?>
+                </span>
+              <?php else: ?>
+                —
+              <?php endif; ?>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+    <?php if (count($logs) >= $limit): ?>
+      <p style="color:#64748b;font-size:0.875rem;margin-top:0.75rem;">Showing most recent <?= $limit ?> entries.</p>
+    <?php endif; ?>
+  <?php endif; ?>
+</div>
+<?php require __DIR__ . '/includes/layout-end.php'; ?>

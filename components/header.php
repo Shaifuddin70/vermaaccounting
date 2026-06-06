@@ -2,6 +2,7 @@
 if (!function_exists('asset')) {
     require_once __DIR__ . '/../lib/helpers.php';
 }
+$siteCta = site_cta_resolve();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -217,6 +218,9 @@ if (!function_exists('asset')) {
           <a href="/resources" class="verma-link" data-page="resources">Resources</a>
           <a href="/contact" class="verma-link" data-page="contact">Contact Us</a>
           <a href="/about" class="verma-link" data-page="about">About Us</a>
+          <?php if ($siteCta['nav_label'] !== ''): ?>
+            <a href="<?= e($siteCta['url']) ?>" class="verma-link" data-page="form-cta"><?= e($siteCta['nav_label']) ?></a>
+          <?php endif; ?>
         </div>
 
         <!-- Contact Information -->

@@ -51,9 +51,8 @@
 
           <!-- CTA Buttons -->
           <div class="hero-cta">
-            <a href="/contact" class="cta-button primary">
-
-              <span>Get Free Consultation</span>
+            <a href="<?= e(site_cta_url()) ?>" class="cta-button primary">
+              <span><?= e(site_cta_hero_label()) ?></span>
               <i class="fas fa-arrow-right"></i>
             </a>
             <a href="/services" class="cta-button secondary">

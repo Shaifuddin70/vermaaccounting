@@ -8,6 +8,20 @@
   const noFieldSelected = el('no-field-selected');
   let selectedFieldId = state.schema.fields[0]?.id || null;
 
+  function ensureSchemaSettings() {
+    if (!state.schema) {
+      state.schema = { version: 1, fields: [], settings: {} };
+    }
+    if (!state.schema.settings || typeof state.schema.settings !== 'object') {
+      state.schema.settings = {};
+    }
+    if (!state.schema.fields) {
+      state.schema.fields = [];
+    }
+  }
+
+  ensureSchemaSettings();
+
   function uid() {
     return 'f_' + Math.random().toString(16).slice(2, 10);
   }
@@ -129,6 +143,78 @@
       },
       { once: false }
     );
+    renderDataMatchFields();
+  }
+
+  const MATCHABLE_TYPES = ['text', 'email', 'tel', 'number', 'date', 'select', 'radio', 'yes_no'];
+
+  function renderDataMatchFields() {
+    const container = el('data-match-fields');
+    if (!container) return;
+    ensureSchemaSettings();
+    if (!state.schema.settings.dataMatch) {
+      state.schema.settings.dataMatch = {
+        enabled: false,
+        fieldIds: [],
+        title: '',
+        message: '',
+        confirmLabel: '',
+        declineLabel: '',
+      };
+    }
+    const selected = new Set(state.schema.settings.dataMatch.fieldIds || []);
+    const fields = state.schema.fields.filter((f) => MATCHABLE_TYPES.includes(f.type));
+    if (fields.length < 2) {
+      container.innerHTML =
+        '<p style="color:#64748b;font-size:0.875rem;margin:0;">Add at least two text-like fields (e.g. email and phone) to use matching.</p>';
+      return;
+    }
+    container.innerHTML = fields
+      .map(
+        (f) =>
+          '<label class="data-match-field-option">' +
+          '<input type="checkbox" data-match-field-id="' +
+          escapeHtml(f.id) +
+          '" ' +
+          (selected.has(f.id) ? 'checked' : '') +
+          '> ' +
+          escapeHtml(f.label) +
+          ' <span style="color:#64748b;font-size:0.8rem;">(' +
+          escapeHtml(config.fieldTypes[f.type] || f.type) +
+          ')</span></label>'
+      )
+      .join('');
+    container.querySelectorAll('input[data-match-field-id]').forEach((cb) => {
+      cb.addEventListener('change', syncDataMatchSettings);
+    });
+  }
+
+  function syncDataMatchSettings() {
+    ensureSchemaSettings();
+    const container = el('data-match-fields');
+    const fieldIds = [];
+    if (container) {
+      container.querySelectorAll('input[data-match-field-id]:checked').forEach((cb) => {
+        fieldIds.push(cb.getAttribute('data-match-field-id'));
+      });
+    }
+    state.schema.settings.dataMatch = {
+      enabled: !!el('data-match-enabled')?.checked,
+      fieldIds,
+      title: (el('data-match-title')?.value || '').trim() || 'We found your information',
+      message:
+        (el('data-match-message')?.value || '').trim() ||
+        'A previous submission matches what you entered. Would you like to fill this form with that saved information?',
+      confirmLabel: (el('data-match-confirm')?.value || '').trim() || 'Yes, fill the form',
+      declineLabel: (el('data-match-decline')?.value || '').trim() || 'No, start fresh',
+    };
+    return state.schema.settings.dataMatch;
+  }
+
+  function toggleDataMatchSettingsUi() {
+    const on = el('data-match-enabled')?.checked ?? false;
+    const panel = el('data-match-settings');
+    if (panel) panel.style.display = on ? '' : 'none';
   }
 
   function escapeHtml(s) {
@@ -567,7 +653,60 @@
     el('slug-preview').textContent = state.slug || 'your-slug';
   });
 
+  function syncTaxYearSettings() {
+    ensureSchemaSettings();
+    const enabledEl = el('tax-year-enabled');
+    const enabled = enabledEl ? enabledEl.checked : false;
+    const yearsRaw = (el('tax-year-years')?.value || '').trim();
+    const years = yearsRaw
+      .split(/[\s,;]+/)
+      .map((y) => parseInt(y, 10))
+      .filter((y) => !Number.isNaN(y) && y >= 1990 && y <= 2100);
+
+    state.schema.settings.taxYear = {
+      enabled: !!enabled,
+      label: (el('tax-year-label')?.value || '').trim() || 'Which tax year are you filing for?',
+      prompt:
+        (el('tax-year-prompt')?.value || '').trim() ||
+        'Select a year to continue to the form for that tax period.',
+      years,
+    };
+    return state.schema.settings.taxYear;
+  }
+
+  function hydrateTaxYearFromDom() {
+    syncTaxYearSettings();
+    toggleTaxYearSettingsUi();
+  }
+
+  function toggleTaxYearSettingsUi() {
+    const on = el('tax-year-enabled')?.checked ?? false;
+    document.querySelectorAll('.tax-year-settings').forEach((node) => {
+      node.style.display = on ? '' : 'none';
+    });
+  }
+
+  el('tax-year-enabled')?.addEventListener('change', () => {
+    syncTaxYearSettings();
+    toggleTaxYearSettingsUi();
+  });
+  el('tax-year-label')?.addEventListener('input', syncTaxYearSettings);
+  el('tax-year-prompt')?.addEventListener('input', syncTaxYearSettings);
+  el('tax-year-years')?.addEventListener('input', syncTaxYearSettings);
+  hydrateTaxYearFromDom();
+
+  el('data-match-enabled')?.addEventListener('change', () => {
+    syncDataMatchSettings();
+    toggleDataMatchSettingsUi();
+  });
+  ['data-match-title', 'data-match-message', 'data-match-confirm', 'data-match-decline'].forEach(
+    (id) => el(id)?.addEventListener('input', syncDataMatchSettings)
+  );
+  toggleDataMatchSettingsUi();
+  renderDataMatchFields();
+
   el('save-form-btn')?.addEventListener('click', async () => {
+    ensureSchemaSettings();
     state.title = el('form-title').value.trim() || 'Untitled form';
     state.slug = slugify(el('form-slug').value || state.title);
     state.description = el('form-description').value.trim();
@@ -575,6 +714,8 @@
     state.schema.settings.submitLabel = el('submit-label').value.trim() || 'Submit';
     state.schema.settings.successMessage =
       el('success-message').value.trim() || 'Thank you! Your response has been received.';
+    const taxYear = syncTaxYearSettings();
+    syncDataMatchSettings();
 
     const getSelected = getSelectedField();
     if (getSelected) {
@@ -593,6 +734,8 @@
           description: state.description,
           status: state.status,
           schema: state.schema,
+          is_site_cta: !!el('form-site-cta')?.checked,
+          cta_label: (el('form-cta-label')?.value || '').trim(),
         }),
       });
       const data = await res.json();
@@ -602,7 +745,19 @@
       if (!window.location.search.includes('id=')) {
         history.replaceState({}, '', '?id=' + data.id);
       }
-      showStatus('Form saved successfully.', true);
+      let msg = 'Form saved successfully.';
+      if (taxYear.enabled) {
+        const yrCount = taxYear.years.length;
+        msg += yrCount
+          ? ' Tax years: ' + taxYear.years.join(', ') + '.'
+          : ' Tax year step on (default year range will be used on the public form).';
+      }
+      if (el('form-site-cta')?.checked && state.status === 'published') {
+        msg += ' This form is linked on the homepage and header.';
+      } else if (el('form-site-cta')?.checked && state.status !== 'published') {
+        msg += ' Publish the form to show it on the homepage and header.';
+      }
+      showStatus(msg, true);
     } catch (err) {
       showStatus(err.message, false);
     }

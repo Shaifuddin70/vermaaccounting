@@ -20,6 +20,8 @@ $initial = [
     'title' => $form['title'] ?? 'Untitled form',
     'description' => $form['description'] ?? '',
     'status' => $form['status'] ?? 'draft',
+    'is_site_cta' => $form ? !empty($form['is_site_cta']) : false,
+    'cta_label' => $form['cta_label'] ?? '',
     'schema' => $schema,
 ];
 
@@ -45,7 +47,8 @@ require __DIR__ . '/includes/layout-start.php';
 
 <div class="admin-grid-2">
   <div>
-    <div class="admin-card">
+    <div class="builder-settings-pair">
+    <div class="admin-card builder-settings-card">
       <h2 style="margin:0 0 1rem;font-size:1rem;">Form settings</h2>
       <div class="admin-fields-2col">
         <div class="admin-field admin-field--full">
@@ -75,6 +78,95 @@ require __DIR__ . '/includes/layout-start.php';
         <div class="admin-field admin-field--full">
           <label for="success-message">Success message</label>
           <input type="text" id="success-message" value="<?= e($schema['settings']['successMessage'] ?? '') ?>">
+        </div>
+        <div class="admin-field admin-field--full">
+          <label class="admin-checkbox-label">
+            <input type="checkbox" id="form-site-cta" <?= !empty($initial['is_site_cta']) ? 'checked' : '' ?>>
+            Link on website (homepage hero &amp; header menu)
+          </label>
+          <small class="admin-field-hint">Only one form at a time. Must be <strong>Published</strong> to appear on the site.</small>
+        </div>
+        <div class="admin-field admin-field--full" id="form-cta-label-wrap">
+          <label for="form-cta-label">Button label (optional)</label>
+          <input type="text" id="form-cta-label" value="<?= e($initial['cta_label']) ?>"
+            placeholder="Get Free Consultation">
+          <small class="admin-field-hint">Used in the hero and beside About Us in the menu. Leave blank for the default text.</small>
+        </div>
+      </div>
+    </div>
+
+    <?php
+      $ty = $schema['settings']['taxYear'] ?? [];
+      $tyYearsList = implode(', ', $ty['years'] ?? []);
+    ?>
+    <div class="admin-card builder-settings-card">
+      <h2 style="margin:0 0 0.75rem;font-size:1rem;">Tax year selection</h2>
+      <p style="font-size:0.875rem;color:#64748b;margin:0 0 1rem;">
+        When enabled, visitors choose a tax year first; responses are stored and filtered by that year.
+      </p>
+      <div class="admin-fields-2col">
+        <div class="admin-field admin-field--full">
+          <label class="admin-checkbox-label">
+            <input type="checkbox" id="tax-year-enabled" <?= !empty($ty['enabled']) ? 'checked' : '' ?>>
+            Require tax year before showing the form
+          </label>
+        </div>
+        <div class="admin-field admin-field--full tax-year-settings" id="tax-year-settings">
+          <label for="tax-year-label">Year step heading</label>
+          <input type="text" id="tax-year-label" value="<?= e($ty['label'] ?? 'Which tax year are you filing for?') ?>">
+        </div>
+        <div class="admin-field admin-field--full tax-year-settings">
+          <label for="tax-year-prompt">Instructions (optional)</label>
+          <input type="text" id="tax-year-prompt" value="<?= e($ty['prompt'] ?? '') ?>"
+            placeholder="Select a year to continue to the form for that tax period.">
+        </div>
+        <div class="admin-field admin-field--full tax-year-settings">
+          <label for="tax-year-years">Available years</label>
+          <input type="text" id="tax-year-years" value="<?= e($tyYearsList) ?>"
+            placeholder="e.g. 2025, 2024, 2023, 2022">
+          <small class="admin-field-hint">Comma-separated. Leave blank to use the current year and the five prior years.</small>
+        </div>
+      </div>
+    </div>
+    </div><!-- .builder-settings-pair -->
+
+    <?php
+      $dm = $schema['settings']['dataMatch'] ?? [];
+      $dmFieldIds = $dm['fieldIds'] ?? [];
+    ?>
+    <div class="admin-card">
+      <h2 style="margin:0 0 0.75rem;font-size:1rem;">Autofill from previous submission</h2>
+      <p style="font-size:0.875rem;color:#64748b;margin:0 0 1rem;">
+        Choose 2 or more fields (e.g. email + phone). When a visitor enters values that match a past submission, they can fill the form with that saved data.
+      </p>
+      <div class="admin-field admin-field--full">
+        <label class="admin-checkbox-label">
+          <input type="checkbox" id="data-match-enabled" <?= !empty($dm['enabled']) ? 'checked' : '' ?>>
+          Enable lookup and autofill popup
+        </label>
+      </div>
+      <div id="data-match-settings" class="data-match-settings">
+        <div class="admin-field admin-field--full">
+          <label>Match fields <span style="font-weight:400;color:#64748b;">(select at least 2)</span></label>
+          <div id="data-match-fields" class="data-match-fields"></div>
+        </div>
+        <div class="admin-fields-2col">
+          <div class="admin-field admin-field--full">
+            <label for="data-match-title">Popup title</label>
+            <input type="text" id="data-match-title" value="<?= e($dm['title'] ?? '') ?>">
+          </div>
+          <div class="admin-field admin-field--full">
+            <label for="data-match-message">Popup message</label>
+            <input type="text" id="data-match-message" value="<?= e($dm['message'] ?? '') ?>">
+          </div>
+          <div class="admin-field">
+            <label for="data-match-confirm">Confirm button</label>
+            <input type="text" id="data-match-confirm" value="<?= e($dm['confirmLabel'] ?? '') ?>">
+          </div>
+          <div class="admin-field">
+            <label for="data-match-decline">Decline button</label>
+            <input type="text" id="data-match-decline" value="<?= e($dm['declineLabel'] ?? '') ?>">
+          </div>
         </div>
       </div>
     </div>
@@ -127,5 +219,5 @@ require __DIR__ . '/includes/layout-start.php';
     fieldTypes: <?= json_encode(field_types(), JSON_UNESCAPED_UNICODE) ?>
   };
 </script>
-<script src="/admin/js/form-builder.js"></script>
+<script src="/admin/js/form-builder.js?v=5"></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>
