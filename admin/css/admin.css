@@ -1240,8 +1240,15 @@ body.admin-body {
 }
 
 .fb-section-body {
-  padding: 0 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem 1.25rem;
   border-top: 1px solid var(--admin-border);
+}
+
+.fb-section-body .admin-field {
+  margin-bottom: 0;
 }
 
 .fb-section-body .admin-field:last-child {
@@ -1252,7 +1259,7 @@ body.admin-body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding-top: 0.85rem;
+  padding-top: 0;
 }
 
 .fb-embed-label {
@@ -2844,8 +2851,11 @@ a.md-form-slug:hover { color: var(--admin-primary); }
   accent-color: var(--admin-primary);
 }
 
-.data-match-settings {
-  margin-top: 0.75rem;
+.data-match-settings,
+.tax-year-settings {
+  margin-top: 0;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--admin-border);
 }
 
 .data-match-fields {
