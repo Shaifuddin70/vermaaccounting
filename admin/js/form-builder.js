@@ -63,6 +63,11 @@
   }
 
   function renderFieldList() {
+    const emptyEl = el('field-list-empty');
+    if (emptyEl) {
+      emptyEl.hidden = state.schema.fields.length > 0;
+    }
+
     fieldList.innerHTML = '';
     state.schema.fields.forEach((field, index) => {
       const item = document.createElement('div');
@@ -74,13 +79,13 @@
       item.innerHTML =
         '<span class="builder-drag-handle" title="Drag to reorder" aria-hidden="true">⠿</span>' +
         '<div class="builder-field-body">' +
-        '<div class="field-type">' +
+        '<span class="field-type">' +
         (config.fieldTypes[field.type] || field.type) +
-        '</div>' +
+        '</span>' +
         '<strong>' +
         escapeHtml(field.label) +
         '</strong>' +
-        (field.required ? ' <span style="color:#dc2626">*</span>' : '') +
+        (field.required ? ' <span class="builder-field-required" aria-label="Required">*</span>' : '') +
         '</div>';
 
       const handle = item.querySelector('.builder-drag-handle');
@@ -215,6 +220,10 @@
     const on = el('data-match-enabled')?.checked ?? false;
     const panel = el('data-match-settings');
     if (panel) panel.style.display = on ? '' : 'none';
+    const section = el('fb-section-autofill');
+    if (section && on) {
+      section.open = true;
+    }
   }
 
   function escapeHtml(s) {
@@ -294,7 +303,7 @@
         </div>
         ${
           !['heading', 'paragraph'].includes(field.type)
-            ? `<div class="admin-field admin-field--full"><label><input type="checkbox" id="fe-required" ${field.required ? 'checked' : ''}> Required</label></div>`
+            ? `<div class="admin-field admin-field--full"><label class="admin-checkbox-label"><input type="checkbox" id="fe-required" ${field.required ? 'checked' : ''}><span>Required</span></label></div>`
             : ''
         }
       </div>
@@ -319,8 +328,11 @@
             <option value="yes" ${field.reasonWhen === 'yes' ? 'selected' : ''}>Yes</option>
           </select>
         </div>
-        <div class="admin-field" style="display:flex;align-items:flex-end;padding-bottom:0.15rem;">
-          <label><input type="checkbox" id="fe-reason-required" ${field.reasonRequired !== false ? 'checked' : ''}> Reason required when shown</label>
+        <div class="admin-field admin-field--full">
+          <label class="admin-checkbox-label">
+            <input type="checkbox" id="fe-reason-required" ${field.reasonRequired !== false ? 'checked' : ''}>
+            <span>Reason required when shown</span>
+          </label>
         </div>
         <div class="admin-field">
           <label>Reason field label</label>
@@ -393,7 +405,7 @@
 
     return `
       <div class="admin-field">
-        <label><input type="checkbox" id="fe-cond-enabled" ${field.conditions.length ? 'checked' : ''}> Enable conditions</label>
+        <label class="admin-checkbox-label"><input type="checkbox" id="fe-cond-enabled" ${field.conditions.length ? 'checked' : ''}><span>Enable conditions</span></label>
       </div>
       <div id="fe-cond-panel" style="${field.conditions.length ? '' : 'display:none'}">
         <div class="admin-field">
@@ -684,7 +696,22 @@
     document.querySelectorAll('.tax-year-settings').forEach((node) => {
       node.style.display = on ? '' : 'none';
     });
+    const section = el('fb-section-tax-year');
+    if (section && on) {
+      section.open = true;
+    }
   }
+
+  function toggleCtaLabelWrap() {
+    const wrap = el('form-cta-label-wrap');
+    const on = el('form-site-cta')?.checked ?? false;
+    if (wrap) {
+      wrap.style.display = on ? '' : 'none';
+    }
+  }
+
+  el('form-site-cta')?.addEventListener('change', toggleCtaLabelWrap);
+  toggleCtaLabelWrap();
 
   el('tax-year-enabled')?.addEventListener('change', () => {
     syncTaxYearSettings();
