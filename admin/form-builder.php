@@ -49,7 +49,7 @@ require __DIR__ . '/includes/layout-start.php';
   <div>
     <div class="builder-settings-pair">
     <div class="admin-card builder-settings-card">
-      <h2 style="margin:0 0 1rem;font-size:1rem;">Form settings</h2>
+      <h2 class="admin-card-title">Form settings</h2>
       <div class="admin-fields-2col">
         <div class="admin-field admin-field--full">
           <label for="form-title">Title</label>
@@ -100,7 +100,7 @@ require __DIR__ . '/includes/layout-start.php';
       $tyYearsList = implode(', ', $ty['years'] ?? []);
     ?>
     <div class="admin-card builder-settings-card">
-      <h2 style="margin:0 0 0.75rem;font-size:1rem;">Tax year selection</h2>
+      <h2 class="admin-card-title" style="margin-bottom:0.75rem;">Tax year selection</h2>
       <p style="font-size:0.875rem;color:#64748b;margin:0 0 1rem;">
         When enabled, visitors choose a tax year first; responses are stored and filtered by that year.
       </p>
@@ -135,7 +135,7 @@ require __DIR__ . '/includes/layout-start.php';
       $dmFieldIds = $dm['fieldIds'] ?? [];
     ?>
     <div class="admin-card">
-      <h2 style="margin:0 0 0.75rem;font-size:1rem;">Autofill from previous submission</h2>
+      <h2 class="admin-card-title" style="margin-bottom:0.75rem;">Autofill from previous submission</h2>
       <p style="font-size:0.875rem;color:#64748b;margin:0 0 1rem;">
         Choose 2 or more fields (e.g. email + phone). When a visitor enters values that match a past submission, they can fill the form with that saved data.
       </p>
@@ -173,7 +173,7 @@ require __DIR__ . '/includes/layout-start.php';
 
     <div class="admin-card">
       <div class="admin-header" style="margin-bottom:0.75rem;">
-        <h2 style="margin:0;font-size:1rem;">Fields</h2>
+        <h2 class="admin-card-title" style="margin-bottom:0;">Fields</h2>
       </div>
       <div class="builder-toolbar">
         <select id="add-field-type">
@@ -189,13 +189,13 @@ require __DIR__ . '/includes/layout-start.php';
 
   <div>
     <div class="admin-card" id="field-editor-panel">
-      <h2 style="margin:0 0 1rem;font-size:1rem;">Field settings</h2>
+      <h2 class="admin-card-title">Field settings</h2>
       <p id="no-field-selected" style="color:#64748b;">Select a field to edit its properties and conditional logic.</p>
       <div id="field-editor" style="display:none;"></div>
     </div>
 
     <div class="admin-card">
-      <h2 style="margin:0 0 0.75rem;font-size:1rem;">Embed on your site</h2>
+      <h2 class="admin-card-title" style="margin-bottom:0.75rem;">Embed on your site</h2>
       <?php if ($form): ?>
       <p style="font-size:0.875rem;color:#64748b;margin:0 0 0.5rem;">Direct link:</p>
       <div class="embed-code" id="embed-link"><?= e((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'vermaaccounting.ca')) ?>/form/<?= e($form['slug']) ?></div>

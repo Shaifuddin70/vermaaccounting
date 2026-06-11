@@ -77,19 +77,26 @@ require __DIR__ . '/includes/layout-start.php';
 
   <div class="admin-card rs-card">
     <?php if (!$forms): ?>
-      <div class="rs-empty">
-        <p>
-          <?php if (Auth::userRole() === 'admin'): ?>
-            No forms yet. <a href="/admin/form-builder">Create a form</a> and publish it to start collecting responses.
-          <?php else: ?>
-            No published forms are available for review yet.
-          <?php endif; ?>
-        </p>
+      <div class="admin-empty-state">
+        <span class="admin-empty-state-icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+        </span>
+        <h2 class="admin-empty-state-title">No forms yet</h2>
+        <?php if (Auth::userRole() === 'admin'): ?>
+          <p class="admin-empty-state-text">Create a form and publish it to start collecting responses.</p>
+          <a href="/admin/form-builder" class="admin-btn">Create a form</a>
+        <?php else: ?>
+          <p class="admin-empty-state-text">No published forms are available for review yet.</p>
+        <?php endif; ?>
       </div>
     <?php elseif (!$visibleForms): ?>
-      <div class="rs-empty">
-        <p>Nothing pending right now.</p>
-        <p><a href="<?= e(rs_page_url('all')) ?>">View all forms</a></p>
+      <div class="admin-empty-state">
+        <span class="admin-empty-state-icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </span>
+        <h2 class="admin-empty-state-title">All caught up</h2>
+        <p class="admin-empty-state-text">Nothing pending right now.</p>
+        <a href="<?= e(rs_page_url('all')) ?>" class="admin-btn admin-btn-secondary">View all forms</a>
       </div>
     <?php else: ?>
       <table class="admin-table rs-table">

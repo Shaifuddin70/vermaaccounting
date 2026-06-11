@@ -629,22 +629,185 @@ body.admin-body {
 }
 
 .admin-alert {
-  padding: 0.75rem 1rem;
-  border-radius: var(--admin-radius);
+  position: relative;
+  padding: 0.85rem 2.5rem 0.85rem 1rem;
+  border-radius: var(--admin-radius-sm);
   margin-bottom: 1rem;
   font-size: 0.9rem;
+  line-height: 1.45;
+  border: 1px solid transparent;
+  border-left-width: 4px;
+  box-shadow: var(--admin-elevation-1);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.admin-alert.is-hiding {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .admin-alert-error {
-  background: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+  border-left-color: #dc2626;
 }
 
 .admin-alert-success {
-  background: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+  background: #f0fdf4;
+  color: #166534;
+  border-color: #bbf7d0;
+  border-left-color: #16a34a;
+}
+
+.admin-alert-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  opacity: 0.55;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.admin-alert-close:hover {
+  opacity: 1;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+/* Shared empty state */
+.admin-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 2.75rem 1.5rem;
+  text-align: center;
+}
+
+.admin-empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 0.35rem;
+  border-radius: 50%;
+  background: var(--admin-surface-variant);
+  color: var(--admin-muted);
+}
+
+.admin-empty-state-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--admin-secondary);
+}
+
+.admin-empty-state-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--admin-muted);
+  max-width: 30rem;
+  line-height: 1.5;
+}
+
+.admin-empty-state-text a {
+  color: var(--admin-secondary-hover);
+  font-weight: 600;
+}
+
+.admin-empty-state .admin-btn {
+  margin-top: 0.65rem;
+}
+
+/* Inline copy button (e.g. copy form URL) */
+.admin-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  margin-left: 0.25rem;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--admin-muted);
+  cursor: pointer;
+  vertical-align: middle;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.admin-copy-btn:hover {
+  color: var(--admin-secondary);
+  background: var(--admin-secondary-container);
+}
+
+.admin-copy-btn.is-copied {
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+/* Card section title */
+.admin-card-title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--admin-secondary);
+  letter-spacing: -0.01em;
+}
+
+/* Muted helper note below tables/cards */
+.admin-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  color: var(--admin-muted);
+  line-height: 1.5;
+}
+
+.admin-note code {
+  padding: 0.1rem 0.35rem;
+  border-radius: 5px;
+  background: var(--admin-surface-variant);
+  border: 1px solid var(--admin-border);
+  font-size: 0.8em;
+}
+
+.admin-login-sub {
+  margin: 0 0 1.25rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--admin-muted);
+}
+
+.admin-login-foot {
+  margin: 1.25rem 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.admin-login-foot a {
+  color: var(--admin-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: color 0.15s ease;
+}
+
+.admin-login-foot a:hover {
+  color: var(--admin-secondary);
 }
 
 .admin-grid-2 {
@@ -934,23 +1097,7 @@ body.admin-body {
   margin: 0;
 }
 
-.admin-alert {
-  padding: 0.75rem 1rem;
-  border-radius: var(--admin-radius);
-  margin-bottom: 1rem;
-}
-
-.admin-alert-success {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #6ee7b7;
-}
-
-.admin-alert-error {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fca5a5;
-}
+/* (alert styles consolidated above) */
 
 .submission-meta {
   margin-bottom: 1rem;

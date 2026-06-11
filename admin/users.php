@@ -79,9 +79,15 @@ require __DIR__ . '/includes/layout-start.php';
     <tbody id="users-tbody">
       <?php if (!$users): ?>
         <tr id="empty-row">
-          <td colspan="6" style="color:#64748b;text-align:center;padding:2rem;">
-            No team members yet.
-            <button type="button" class="admin-btn admin-btn-sm" id="btn-add-user-empty" style="margin-left:0.5rem;">Add your first one</button>
+          <td colspan="6" style="padding:0;">
+            <div class="admin-empty-state">
+              <span class="admin-empty-state-icon" aria-hidden="true">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+              </span>
+              <h2 class="admin-empty-state-title">No team members yet</h2>
+              <p class="admin-empty-state-text">Add reviewers to help process submissions, or other admins to manage the whole workspace.</p>
+              <button type="button" class="admin-btn" id="btn-add-user-empty">Add your first team member</button>
+            </div>
           </td>
         </tr>
       <?php else: ?>
@@ -137,7 +143,7 @@ require __DIR__ . '/includes/layout-start.php';
 
 <?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
 
-<p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
+<p class="admin-note">
   The super-admin account configured in <code>config.local.php</code> always has full access and is not listed here.
 </p>
 

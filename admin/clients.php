@@ -93,12 +93,19 @@ require __DIR__ . '/includes/layout-start.php';
 
 <div class="admin-card">
   <?php if (!$clients): ?>
-    <div class="clients-empty">
-      <p>No clients yet.</p>
-      <p>
-        <a href="/admin/clients-import" class="admin-btn admin-btn-secondary">Import from spreadsheet</a>
-        or sync from existing form submissions.
-      </p>
+    <div class="admin-empty-state">
+      <span class="admin-empty-state-icon" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+      </span>
+      <?php if ($search !== ''): ?>
+        <h2 class="admin-empty-state-title">No clients match “<?= e($search) ?>”</h2>
+        <p class="admin-empty-state-text">Try a different name, CIN, email, phone, or company.</p>
+        <a href="/admin/clients" class="admin-btn admin-btn-secondary">Clear search</a>
+      <?php else: ?>
+        <h2 class="admin-empty-state-title">No clients yet</h2>
+        <p class="admin-empty-state-text">Import a spreadsheet of clients or use “Sync from submissions” to build the directory from existing form responses.</p>
+        <a href="/admin/clients-import" class="admin-btn">Import from spreadsheet</a>
+      <?php endif; ?>
     </div>
   <?php else: ?>
     <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>

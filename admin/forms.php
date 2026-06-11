@@ -31,7 +31,14 @@ require __DIR__ . '/includes/layout-start.php';
 
 <div class="admin-card">
   <?php if (!$forms): ?>
-    <p style="color:#64748b;">No forms yet.</p>
+    <div class="admin-empty-state">
+      <span class="admin-empty-state-icon" aria-hidden="true">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+      </span>
+      <h2 class="admin-empty-state-title">No forms yet</h2>
+      <p class="admin-empty-state-text">Build your first form to start collecting client information and documents.</p>
+      <a href="/admin/form-builder" class="admin-btn">Create your first form</a>
+    </div>
   <?php else: ?>
     <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
     <table class="admin-table">
@@ -59,12 +66,21 @@ require __DIR__ . '/includes/layout-start.php';
             <td>
               <?php if ($form['status'] === 'published'): ?>
                 <a href="/form/<?= e($form['slug']) ?>" target="_blank" rel="noopener">/form/<?= e($form['slug']) ?></a>
+                <button type="button" class="admin-copy-btn" data-copy-path="/form/<?= e($form['slug']) ?>" title="Copy link" aria-label="Copy link to <?= e($form['title']) ?>">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
               <?php else: ?>
                 <code>/form/<?= e($form['slug']) ?></code> <span class="badge badge-draft">draft</span>
               <?php endif; ?>
             </td>
             <td><span class="badge badge-<?= e($form['status']) ?>"><?= e($form['status']) ?></span></td>
-            <td><?= $subCount ?></td>
+            <td>
+              <?php if ($subCount > 0): ?>
+                <a href="/admin/submissions?form_id=<?= $fid ?>"><?= number_format($subCount) ?></a>
+              <?php else: ?>
+                <span style="color:#94a3b8;">0</span>
+              <?php endif; ?>
+            </td>
             <td>
               <div class="admin-table-actions">
                 <a href="/admin/form-builder?id=<?= $fid ?>" class="admin-btn admin-btn-sm">Edit</a>

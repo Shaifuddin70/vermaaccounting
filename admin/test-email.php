@@ -57,7 +57,7 @@ require __DIR__ . '/includes/layout-start.php';
 
 <div class="admin-grid-2">
   <div class="admin-card">
-    <h2 style="margin:0 0 1rem;font-size:1rem;">Send test</h2>
+    <h2 class="admin-card-title">Send test</h2>
     <form method="post">
       <input type="hidden" name="csrf_token" value="<?= e(Auth::csrfToken()) ?>">
       <div class="admin-field">
@@ -69,7 +69,7 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 
   <div class="admin-card">
-    <h2 style="margin:0 0 1rem;font-size:1rem;">Current mail config</h2>
+    <h2 class="admin-card-title">Current mail config</h2>
     <table class="admin-table clients-import-guide">
       <tbody>
         <tr><td>Enabled</td><td><?= !empty($mail['enabled']) ? 'Yes' : 'No' ?></td></tr>
@@ -81,7 +81,7 @@ require __DIR__ . '/includes/layout-start.php';
         <tr><td>SMTP user</td><td><?= e((string) ($mail['smtp']['username'] ?? '')) ?></td></tr>
       </tbody>
     </table>
-    <p style="margin:1rem 0 0;font-size:0.85rem;color:var(--admin-muted);">
+    <p class="admin-note" style="margin-top:1rem;">
       Test from your <strong>live server</strong> after updating DNS/SMTP. Local MAMP often cannot send through hosting mail.
     </p>
   </div>
