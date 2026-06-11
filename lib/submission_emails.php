@@ -82,7 +82,7 @@ function build_submission_admin_email(
     array $clientInfo
 ): array {
     $formTitle = (string) ($form['title'] ?? 'Form');
-    $adminUrl = app_base_url() . '/admin/submission.php?id=' . $submissionId . '&form_id=' . (int) $form['id'];
+    $adminUrl = app_base_url() . '/admin/submission?id=' . $submissionId . '&form_id=' . (int) $form['id'];
     $rows = submission_email_field_rows($schema, $data);
     $fileCount = submission_email_file_count($schema, $data);
 

@@ -9,13 +9,31 @@ $filterAction  = (string) ($_GET['action'] ?? '');
 $filterUser    = isset($_GET['user_id']) && $_GET['user_id'] !== '' ? (int) $_GET['user_id'] : null;
 $filterSubject = (string) ($_GET['subject'] ?? '');
 
-$limit = 100;
+$page = pagination_page_from_request();
+$perPage = pagination_per_page_from_request();
+$filterUserId = $filterUser ?: null;
+$filterActionVal = $filterAction !== '' ? $filterAction : null;
+$filterSubjectVal = $filterSubject !== '' ? $filterSubject : null;
+$logTotal = ActivityLog::count($filterUserId, $filterActionVal, $filterSubjectVal);
+$pagination = pagination_meta($logTotal, $page, $perPage);
 $logs = ActivityLog::recent(
-    $limit,
-    $filterUser ?: null,
-    $filterAction !== '' ? $filterAction : null,
-    $filterSubject !== '' ? $filterSubject : null
+    $pagination['per_page'],
+    $filterUserId,
+    $filterActionVal,
+    $filterSubjectVal,
+    null,
+    $pagination['offset']
 );
+
+$paginationPath = '/admin/activity-log';
+$paginationQuery = array_filter([
+    'action' => $filterAction !== '' ? $filterAction : null,
+    'user_id' => $filterUser !== null && $filterUser > 0 ? $filterUser : null,
+    'subject' => $filterSubject !== '' ? $filterSubject : null,
+], fn ($v) => $v !== null && $v !== '');
+$paginationLabel = 'entries';
+$paginationAriaLabel = 'Activity log pages';
+$paginationUrl = fn (int $p) => pagination_url('/admin/activity-log', $paginationQuery, $p, $pagination['per_page']);
 
 $userRepo = new UserRepository();
 $allUsers = $userRepo->all();
@@ -30,6 +48,9 @@ require __DIR__ . '/includes/layout-start.php';
 
 <div class="admin-card activity-filters">
   <form method="get" class="activity-filter-form">
+    <?php if ($pagination['per_page'] !== pagination_default_per_page()): ?>
+      <input type="hidden" name="per_page" value="<?= (int) $pagination['per_page'] ?>">
+    <?php endif; ?>
     <div class="admin-field" style="margin:0;">
       <label for="af-action">Action</label>
       <select id="af-action" name="action" onchange="this.form.submit()">
@@ -65,7 +86,7 @@ require __DIR__ . '/includes/layout-start.php';
       </select>
     </div>
     <?php if ($filterAction || $filterUser || $filterSubject): ?>
-      <a href="/admin/activity-log.php" class="admin-btn admin-btn-secondary admin-btn-sm activity-filter-clear">Clear filters</a>
+      <a href="/admin/activity-log" class="admin-btn admin-btn-secondary admin-btn-sm activity-filter-clear">Clear filters</a>
     <?php endif; ?>
   </form>
 </div>
@@ -74,6 +95,7 @@ require __DIR__ . '/includes/layout-start.php';
   <?php if (!$logs): ?>
     <p style="color:#64748b;">No activity recorded yet<?= ($filterAction || $filterUser || $filterSubject) ? ' for these filters' : '' ?>.</p>
   <?php else: ?>
+    <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
     <table class="admin-table activity-table">
       <thead>
         <tr>
@@ -113,14 +135,14 @@ require __DIR__ . '/includes/layout-start.php';
                   $subIdForLink  = (int) $log['subject_id'];
                 ?>
                 <?php if ($formIdForLink): ?>
-                  <a href="/admin/submission.php?id=<?= $subIdForLink ?>&form_id=<?= $formIdForLink ?>">
+                  <a href="/admin/submission?id=<?= $subIdForLink ?>&form_id=<?= $formIdForLink ?>">
                     Submission #<?= $subIdForLink ?>
                   </a>
                 <?php else: ?>
                   Submission #<?= $subIdForLink ?>
                 <?php endif; ?>
               <?php elseif ($log['subject_type'] === 'user' && $log['subject_id']): ?>
-                <a href="/admin/user-edit.php?id=<?= (int) $log['subject_id'] ?>">User #<?= (int) $log['subject_id'] ?></a>
+                <a href="/admin/user-edit?id=<?= (int) $log['subject_id'] ?>">User #<?= (int) $log['subject_id'] ?></a>
               <?php elseif ($log['subject_type']): ?>
                 <?= e(ucfirst($log['subject_type'])) ?> #<?= (int) $log['subject_id'] ?>
               <?php else: ?>
@@ -152,9 +174,9 @@ require __DIR__ . '/includes/layout-start.php';
         <?php endforeach; ?>
       </tbody>
     </table>
-    <?php if (count($logs) >= $limit): ?>
-      <p style="color:#64748b;font-size:0.875rem;margin-top:0.75rem;">Showing most recent <?= $limit ?> entries.</p>
-    <?php endif; ?>
   <?php endif; ?>
 </div>
+
+<?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
+
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

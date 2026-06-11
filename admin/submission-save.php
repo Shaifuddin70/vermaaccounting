@@ -147,7 +147,7 @@ foreach ($schema['fields'] as $field) {
 
 if ($errors) {
     $_SESSION['submission_edit_errors'] = $errors;
-    header('Location: /admin/submission.php?id=' . $submissionId . '&form_id=' . $formId . '&edit=1');
+    header('Location: /admin/submission?id=' . $submissionId . '&form_id=' . $formId . '&edit=1');
     exit;
 }
 
@@ -157,5 +157,5 @@ ActivityLog::record('submission.edited', 'submission', $submissionId, [
     'form_id' => $formId,
 ]);
 
-header('Location: /admin/submission.php?id=' . $submissionId . '&form_id=' . $formId . '&saved=1');
+header('Location: /admin/submission?id=' . $submissionId . '&form_id=' . $formId . '&saved=1');
 exit;

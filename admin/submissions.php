@@ -15,12 +15,12 @@ $taxYearFilter = ($yearParam !== '' && $yearParam !== 'all') ? (int) $yearParam 
 if ($taxYearFilter !== null && $taxYearFilter < 1) {
     $taxYearFilter = null;
 }
-
+ 
 $repo = new FormRepository();
 $form = $repo->find($formId);
 
-if (!$form) {
-    header('Location: /admin/forms.php');
+if (!$form || is_file_manager_form($form)) {
+    header('Location: /admin/forms');
     exit;
 }
 
@@ -35,17 +35,37 @@ rsort($yearOptions, SORT_NUMERIC);
 
 $counts = $repo->submissionStatusCounts($formId, $taxYearFilter);
 $statusFilter = $tab === 'all' ? null : $tab;
-$submissions = $repo->submissionsForForm($formId, $statusFilter, $taxYearFilter);
+$page = pagination_page_from_request();
+$perPage = pagination_per_page_from_request();
+$submissionTotal = $repo->countSubmissionsForForm($formId, $statusFilter, $taxYearFilter);
+$pagination = pagination_meta($submissionTotal, $page, $perPage);
+$submissions = $repo->submissionsForForm(
+    $formId,
+    $statusFilter,
+    $taxYearFilter,
+    $pagination['per_page'],
+    $pagination['offset']
+);
 $inputFields = array_filter($schema['fields'], fn ($f) => !in_array($f['type'], ['heading', 'paragraph'], true));
 $csrf = Auth::csrfToken();
 
-function submissions_list_url(int $formId, string $tab, ?int $year, bool $includeYear = false): string
+$paginationPath = '/admin/submissions';
+$paginationQuery = array_filter([
+    'form_id' => $formId,
+    'tab' => $tab,
+    'year' => $taxYearOn ? ($taxYearFilter !== null ? (string) $taxYearFilter : 'all') : null,
+], fn ($v) => $v !== null && $v !== '');
+$paginationLabel = 'submissions';
+$paginationAriaLabel = 'Submission list pages';
+$paginationUrl = fn (int $p) => submissions_list_url($formId, $tab, $taxYearFilter, $taxYearOn, $p, $pagination['per_page']);
+
+function submissions_list_url(int $formId, string $tab, ?int $year, bool $includeYear = false, int $page = 1, ?int $perPage = null): string
 {
     $params = ['form_id' => $formId, 'tab' => $tab];
     if ($includeYear) {
         $params['year'] = $year !== null ? (string) $year : 'all';
     }
-    return '/admin/submissions.php?' . http_build_query($params);
+    return pagination_url('/admin/submissions', $params, $page, $perPage);
 }
 
 $pageTitle = 'Responses: ' . $form['title'];
@@ -62,20 +82,23 @@ require __DIR__ . '/includes/layout-start.php';
             $exportQs .= '&year=' . $taxYearFilter;
         }
       ?>
-      <a href="/admin/export-csv.php?<?= e($exportQs) ?>" class="admin-btn admin-btn-secondary">Export CSV</a>
+      <a href="/admin/export-csv?<?= e($exportQs) ?>" class="admin-btn admin-btn-secondary">Export CSV</a>
     <?php endif; ?>
     <?php if (Auth::userRole() === 'admin'): ?>
-      <a href="/admin/form-builder.php?id=<?= $formId ?>" class="admin-btn admin-btn-secondary">← Edit form</a>
+      <a href="/admin/form-builder?id=<?= $formId ?>" class="admin-btn admin-btn-secondary">← Edit form</a>
     <?php else: ?>
-      <a href="/admin/reviewer-submissions.php" class="admin-btn admin-btn-secondary">← All forms</a>
+      <a href="/admin/reviewer-submissions" class="admin-btn admin-btn-secondary">← All forms</a>
     <?php endif; ?>
   </div>
 </div>
 
 <?php if ($taxYearOn): ?>
-  <form method="get" action="/admin/submissions.php" class="submissions-year-filter">
+  <form method="get" action="/admin/submissions" class="submissions-year-filter">
     <input type="hidden" name="form_id" value="<?= $formId ?>">
     <input type="hidden" name="tab" value="<?= e($tab) ?>">
+    <?php if ($pagination['per_page'] !== pagination_default_per_page()): ?>
+      <input type="hidden" name="per_page" value="<?= (int) $pagination['per_page'] ?>">
+    <?php endif; ?>
     <label for="year-filter" class="submissions-year-filter-label">Tax year</label>
     <select name="year" id="year-filter" class="submissions-year-select" onchange="this.form.submit()">
       <option value="all" <?= $taxYearFilter === null ? 'selected' : '' ?>>All years</option>
@@ -91,17 +114,17 @@ require __DIR__ . '/includes/layout-start.php';
 <?php endif; ?>
 
 <nav class="admin-tabs" aria-label="Filter submissions">
-  <a href="<?= e(submissions_list_url($formId, 'all', $taxYearFilter, $taxYearOn)) ?>"
+  <a href="<?= e(submissions_list_url($formId, 'all', $taxYearFilter, $taxYearOn, 1, $pagination['per_page'])) ?>"
     class="admin-tab <?= $tab === 'all' ? 'is-active' : '' ?>">
-    All <span class="admin-tab-count"><?= $counts['all'] ?></span>
+    All
   </a>
-  <a href="<?= e(submissions_list_url($formId, 'pending', $taxYearFilter, $taxYearOn)) ?>"
+  <a href="<?= e(submissions_list_url($formId, 'pending', $taxYearFilter, $taxYearOn, 1, $pagination['per_page'])) ?>"
     class="admin-tab <?= $tab === 'pending' ? 'is-active' : '' ?>">
-    Pending <span class="admin-tab-count"><?= $counts['pending'] ?></span>
+    Pending
   </a>
-  <a href="<?= e(submissions_list_url($formId, 'complete', $taxYearFilter, $taxYearOn)) ?>"
+  <a href="<?= e(submissions_list_url($formId, 'complete', $taxYearFilter, $taxYearOn, 1, $pagination['per_page'])) ?>"
     class="admin-tab <?= $tab === 'complete' ? 'is-active' : '' ?>">
-    Complete <span class="admin-tab-count"><?= $counts['complete'] ?></span>
+    Complete
   </a>
 </nav>
 
@@ -109,6 +132,7 @@ require __DIR__ . '/includes/layout-start.php';
   <?php if (!$submissions): ?>
     <p style="color:#64748b;">No <?= $tab === 'all' ? '' : e($tab) . ' ' ?>submissions<?= $taxYearFilter ? ' for ' . $taxYearFilter : '' ?><?= $tab === 'all' ? ' yet' : '' ?>.</p>
   <?php else: ?>
+    <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
     <table class="admin-table">
       <thead>
         <tr>
@@ -147,9 +171,9 @@ require __DIR__ . '/includes/layout-start.php';
               <td><?= e(mb_strimwidth((string) $val, 0, 50, '…')) ?></td>
             <?php endforeach; ?>
             <td class="admin-table-actions">
-              <a href="/admin/submission.php?id=<?= (int) $sub['id'] ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
+              <a href="/admin/submission?id=<?= (int) $sub['id'] ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
               <?php if ($status === 'pending'): ?>
-                <form method="post" action="/admin/submission-status.php" class="inline-form">
+                <form method="post" action="/admin/submission-status" class="inline-form">
                   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                   <input type="hidden" name="submission_id" value="<?= (int) $sub['id'] ?>">
                   <input type="hidden" name="form_id" value="<?= $formId ?>">
@@ -157,6 +181,12 @@ require __DIR__ . '/includes/layout-start.php';
                   <input type="hidden" name="tab" value="<?= e($tab) ?>">
                   <?php if ($taxYearOn): ?>
                     <input type="hidden" name="year" value="<?= $taxYearFilter !== null ? (string) $taxYearFilter : 'all' ?>">
+                  <?php endif; ?>
+                  <?php if ($pagination['page'] > 1): ?>
+                    <input type="hidden" name="page" value="<?= (int) $pagination['page'] ?>">
+                  <?php endif; ?>
+                  <?php if ($pagination['per_page'] !== pagination_default_per_page()): ?>
+                    <input type="hidden" name="per_page" value="<?= (int) $pagination['per_page'] ?>">
                   <?php endif; ?>
                   <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm">Mark complete</button>
                 </form>
@@ -168,4 +198,7 @@ require __DIR__ . '/includes/layout-start.php';
     </table>
   <?php endif; ?>
 </div>
+
+<?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
+
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

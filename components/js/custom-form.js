@@ -365,7 +365,7 @@
     }
 
     try {
-      const res = await fetch('/api/lookup-submission.php', {
+      const res = await fetch('/api/lookup-submission', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -444,7 +444,7 @@
 
     const data = new FormData(form);
     try {
-      const res = await fetch('/api/submit.php', {
+      const res = await fetch('/api/submit', {
         method: 'POST',
         body: data,
       });

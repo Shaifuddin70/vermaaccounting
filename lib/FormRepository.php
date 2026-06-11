@@ -13,7 +13,49 @@ final class FormRepository
 
     public function all(): array
     {
-        $stmt = $this->db->query('SELECT * FROM forms ORDER BY updated_at DESC');
+        $stmt = $this->db->prepare('SELECT * FROM forms WHERE slug != ? ORDER BY updated_at DESC');
+        $stmt->execute([file_manager_form_slug()]);
+        return $stmt->fetchAll();
+    }
+
+    public function countForms(): int
+    {
+        $stmt = $this->db->prepare('SELECT COUNT(*) FROM forms WHERE slug != ?');
+        $stmt->execute([file_manager_form_slug()]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /** @return array{total: int, published: int, drafts: int} */
+    public function formStatusCounts(): array
+    {
+        $stmt = $this->db->prepare('
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN status = \'published\' THEN 1 ELSE 0 END) AS published,
+                SUM(CASE WHEN status = \'draft\' THEN 1 ELSE 0 END) AS drafts
+            FROM forms
+            WHERE slug != ?
+        ');
+        $stmt->execute([file_manager_form_slug()]);
+        $row = $stmt->fetch() ?: [];
+        return [
+            'total' => (int) ($row['total'] ?? 0),
+            'published' => (int) ($row['published'] ?? 0),
+            'drafts' => (int) ($row['drafts'] ?? 0),
+        ];
+    }
+
+    public function allPaginated(int $limit, int $offset): array
+    {
+        $limit = max(1, min(200, $limit));
+        $offset = max(0, $offset);
+        $stmt = $this->db->prepare('
+            SELECT * FROM forms
+            WHERE slug != ?
+            ORDER BY updated_at DESC
+            LIMIT ' . $limit . ' OFFSET ' . $offset
+        );
+        $stmt->execute([file_manager_form_slug()]);
         return $stmt->fetchAll();
     }
 
@@ -163,7 +205,44 @@ final class FormRepository
         return $submissionId;
     }
 
-    public function submissionsForForm(int $formId, ?string $status = null, ?int $taxYear = null): array
+    public function submissionsForForm(
+        int $formId,
+        ?string $status = null,
+        ?int $taxYear = null,
+        ?int $limit = null,
+        ?int $offset = null
+    ): array {
+        [$sql, $params] = $this->submissionFilterSql($formId, $status, $taxYear);
+        $sql .= ' ORDER BY created_at DESC';
+        if ($limit !== null) {
+            $limit = max(1, min(200, $limit));
+            $offset = max(0, $offset ?? 0);
+            $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function countSubmissionsForForm(int $formId, ?string $status = null, ?int $taxYear = null): int
+    {
+        $countSql = 'SELECT COUNT(*) FROM submissions WHERE form_id = ?';
+        $countParams = [$formId];
+        if ($status === 'pending' || $status === 'complete') {
+            $countSql .= ' AND status = ?';
+            $countParams[] = $status;
+        }
+        if ($taxYear !== null) {
+            $countSql .= ' AND tax_year = ?';
+            $countParams[] = $taxYear;
+        }
+        $stmt = $this->db->prepare($countSql);
+        $stmt->execute($countParams);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /** @return array{0: string, 1: list<mixed>} */
+    private function submissionFilterSql(int $formId, ?string $status, ?int $taxYear): array
     {
         $sql = 'SELECT * FROM submissions WHERE form_id = ?';
         $params = [$formId];
@@ -175,10 +254,7 @@ final class FormRepository
             $sql .= ' AND tax_year = ?';
             $params[] = $taxYear;
         }
-        $sql .= ' ORDER BY created_at DESC';
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
+        return [$sql, $params];
     }
 
     /**
@@ -252,27 +328,33 @@ final class FormRepository
     /** @return array{all: int, pending: int, complete: int} */
     public function globalSubmissionCounts(): array
     {
-        $stmt = $this->db->query('
+        $stmt = $this->db->prepare('
             SELECT
                 COUNT(*) AS total,
-                SUM(CASE WHEN status = \'pending\' THEN 1 ELSE 0 END) AS pending,
-                SUM(CASE WHEN status = \'complete\' THEN 1 ELSE 0 END) AS complete
-            FROM submissions
+                SUM(CASE WHEN s.status = \'pending\' THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN s.status = \'complete\' THEN 1 ELSE 0 END) AS complete
+            FROM submissions s
+            INNER JOIN forms f ON f.id = s.form_id
+            WHERE f.slug != ?
         ');
+        $stmt->execute([file_manager_form_slug()]);
         return $this->mapSubmissionCountRow($stmt->fetch() ?: []);
     }
 
     /** @return array<int, array{all: int, pending: int, complete: int}> */
     public function submissionCountsByFormId(): array
     {
-        $stmt = $this->db->query('
-            SELECT form_id,
+        $stmt = $this->db->prepare('
+            SELECT s.form_id,
                 COUNT(*) AS total,
-                SUM(CASE WHEN status = \'pending\' THEN 1 ELSE 0 END) AS pending,
-                SUM(CASE WHEN status = \'complete\' THEN 1 ELSE 0 END) AS complete
-            FROM submissions
-            GROUP BY form_id
+                SUM(CASE WHEN s.status = \'pending\' THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN s.status = \'complete\' THEN 1 ELSE 0 END) AS complete
+            FROM submissions s
+            INNER JOIN forms f ON f.id = s.form_id
+            WHERE f.slug != ?
+            GROUP BY s.form_id
         ');
+        $stmt->execute([file_manager_form_slug()]);
         $map = [];
         foreach ($stmt->fetchAll() as $row) {
             $map[(int) $row['form_id']] = $this->mapSubmissionCountRow($row);
@@ -283,14 +365,16 @@ final class FormRepository
     public function recentSubmissions(int $limit = 8): array
     {
         $limit = max(1, min(50, $limit));
-        $stmt = $this->db->query('
+        $stmt = $this->db->prepare('
             SELECT s.id, s.form_id, s.status, s.created_at, s.updated_at,
                    f.title AS form_title, f.slug AS form_slug
             FROM submissions s
             INNER JOIN forms f ON f.id = s.form_id
+            WHERE f.slug != ?
             ORDER BY s.created_at DESC
             LIMIT ' . $limit
         );
+        $stmt->execute([file_manager_form_slug()]);
         return $stmt->fetchAll();
     }
 

@@ -82,3 +82,60 @@ function group_submissions_by_year(array $submissions): array
     krsort($grouped, SORT_NUMERIC);
     return $grouped;
 }
+
+function sanitize_upload_filename_part(string $value): string
+{
+    $value = trim($value);
+    if ($value === '') {
+        return '';
+    }
+    $value = preg_replace('/[^\w\-. ]+/u', '_', $value) ?? '';
+    $value = preg_replace('/[\s_]+/', '_', $value) ?? '';
+    return trim($value, '._-');
+}
+
+function client_upload_tax_year(array $schema, array $post): int
+{
+    $taxYearCfg = $schema['settings']['taxYear'] ?? [];
+    if (!empty($taxYearCfg['enabled'])) {
+        $year = (int) ($post['tax_year'] ?? 0);
+        if ($year > 0) {
+            return $year;
+        }
+    }
+    return (int) date('Y');
+}
+
+function prefixed_client_upload_name(string $originalName, int $year, string $cin): string
+{
+    $originalName = basename(str_replace('\\', '/', $originalName));
+    if ($originalName === '') {
+        $originalName = 'file';
+    }
+
+    $ext = pathinfo($originalName, PATHINFO_EXTENSION);
+    $base = pathinfo($originalName, PATHINFO_FILENAME);
+    $safeBase = sanitize_upload_filename_part($base) ?: 'file';
+    $safeExt = $ext !== '' ? '.' . preg_replace('/[^a-zA-Z0-9]/', '', $ext) : '';
+
+    $yearPart = (string) max(1900, min(9999, $year));
+    $cinPart = sanitize_upload_filename_part($cin);
+    $prefix = $cinPart !== '' ? $yearPart . '_' . $cinPart . '_' : $yearPart . '_';
+
+    if (str_starts_with($safeBase . $safeExt, $prefix) || str_starts_with($originalName, $prefix)) {
+        return mb_strimwidth($originalName, 0, 512, '');
+    }
+
+    $name = $prefix . $safeBase . $safeExt;
+    return mb_strimwidth($name, 0, 512, '');
+}
+
+function client_upload_original_name(string $originalName, array $schema, array $post): string
+{
+    $client = extract_client_from_submission(
+        ['data_json' => json_encode($post, JSON_UNESCAPED_UNICODE)],
+        $schema
+    );
+    $year = client_upload_tax_year($schema, $post);
+    return prefixed_client_upload_name($originalName, $year, $client['cin']);
+}

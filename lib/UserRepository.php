@@ -17,6 +17,22 @@ final class UserRepository
         return $stmt->fetchAll();
     }
 
+    public function countUsers(): int
+    {
+        return (int) $this->db->query('SELECT COUNT(*) FROM users')->fetchColumn();
+    }
+
+    public function allPaginated(int $limit, int $offset): array
+    {
+        $limit = max(1, min(200, $limit));
+        $offset = max(0, $offset);
+        $stmt = $this->db->query(
+            'SELECT id, name, email, role, status, created_at, updated_at FROM users ORDER BY name ASC LIMIT '
+            . $limit . ' OFFSET ' . $offset
+        );
+        return $stmt->fetchAll();
+    }
+
     public function find(int $id): ?array
     {
         $stmt = $this->db->prepare('SELECT id, name, email, role, status, created_at, updated_at FROM users WHERE id = ?');

@@ -6,7 +6,19 @@ Auth::requireLogin();
 
 Auth::requireRole('admin');
 $repo = new FormRepository();
-$forms = $repo->all();
+$submissionCounts = $repo->submissionCountsByFormId();
+
+$page = pagination_page_from_request();
+$perPage = pagination_per_page_from_request();
+$totalForms = $repo->countForms();
+$pagination = pagination_meta($totalForms, $page, $perPage);
+$forms = $repo->allPaginated($pagination['per_page'], $pagination['offset']);
+
+$paginationPath = '/admin/forms';
+$paginationQuery = [];
+$paginationLabel = 'forms';
+$paginationAriaLabel = 'Forms list pages';
+$paginationUrl = fn (int $p) => pagination_url('/admin/forms', [], $p, $pagination['per_page']);
 
 $pageTitle = 'All forms';
 $activeNav = 'forms';
@@ -14,13 +26,14 @@ require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>All forms</h1>
-  <a href="/admin/form-builder.php" class="admin-btn">+ New form</a>
+  <a href="/admin/form-builder" class="admin-btn">+ New form</a>
 </div>
 
 <div class="admin-card">
   <?php if (!$forms): ?>
     <p style="color:#64748b;">No forms yet.</p>
   <?php else: ?>
+    <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
     <table class="admin-table">
       <thead>
         <tr>
@@ -33,7 +46,8 @@ require __DIR__ . '/includes/layout-start.php';
       </thead>
       <tbody>
         <?php foreach ($forms as $form):
-          $subs = $repo->submissionsForForm((int) $form['id']);
+          $fid = (int) $form['id'];
+          $subCount = $submissionCounts[$fid]['all'] ?? 0;
         ?>
           <tr>
             <td>
@@ -50,13 +64,13 @@ require __DIR__ . '/includes/layout-start.php';
               <?php endif; ?>
             </td>
             <td><span class="badge badge-<?= e($form['status']) ?>"><?= e($form['status']) ?></span></td>
-            <td><?= count($subs) ?></td>
+            <td><?= $subCount ?></td>
             <td>
               <div class="admin-table-actions">
-                <a href="/admin/form-builder.php?id=<?= (int) $form['id'] ?>" class="admin-btn admin-btn-sm">Edit</a>
-                <a href="/admin/submissions.php?form_id=<?= (int) $form['id'] ?>" class="admin-btn admin-btn-sm admin-btn-secondary">Responses</a>
-                <?php if ($subs): ?>
-                  <a href="/admin/export-csv.php?form_id=<?= (int) $form['id'] ?>" class="admin-btn admin-btn-sm admin-btn-secondary">CSV</a>
+                <a href="/admin/form-builder?id=<?= $fid ?>" class="admin-btn admin-btn-sm">Edit</a>
+                <a href="/admin/submissions?form_id=<?= $fid ?>" class="admin-btn admin-btn-sm admin-btn-secondary">Responses</a>
+                <?php if ($subCount > 0): ?>
+                  <a href="/admin/export-csv?form_id=<?= $fid ?>" class="admin-btn admin-btn-sm admin-btn-secondary">CSV</a>
                 <?php else: ?>
                   <span class="admin-btn admin-btn-sm admin-btn-disabled" title="No submissions yet">CSV</span>
                 <?php endif; ?>
@@ -68,4 +82,7 @@ require __DIR__ . '/includes/layout-start.php';
     </table>
   <?php endif; ?>
 </div>
+
+<?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
+
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

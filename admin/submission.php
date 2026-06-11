@@ -14,7 +14,7 @@ $form = $repo->find($formId);
 $submission = $repo->findSubmissionForForm($submissionId, $formId);
 
 if (!$form || !$submission) {
-    header('Location: /admin/forms.php');
+    header('Location: /admin/forms');
     exit;
 }
 
@@ -35,11 +35,11 @@ require __DIR__ . '/includes/layout-start.php';
   <h1>Submission #<?= $submissionId ?></h1>
   <div class="admin-header-actions">
     <?php if (!$editMode): ?>
-      <a href="/admin/submission.php?id=<?= $submissionId ?>&form_id=<?= $formId ?>&edit=1" class="admin-btn admin-btn-primary">Edit</a>
+      <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>&edit=1" class="admin-btn admin-btn-primary">Edit</a>
     <?php else: ?>
-      <a href="/admin/submission.php?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
+      <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
     <?php endif; ?>
-    <a href="/admin/submissions.php?form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">← All responses</a>
+    <a href="/admin/submissions?form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">← All responses</a>
   </div>
 </div>
 
@@ -88,7 +88,7 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
   <div class="submission-meta-actions">
     <?php if ($status === 'pending'): ?>
-      <form method="post" action="/admin/submission-status.php" class="inline-form">
+      <form method="post" action="/admin/submission-status" class="inline-form">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
         <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
         <input type="hidden" name="form_id" value="<?= $formId ?>">
@@ -97,7 +97,7 @@ require __DIR__ . '/includes/layout-start.php';
         <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">Mark complete</button>
       </form>
     <?php else: ?>
-      <form method="post" action="/admin/submission-status.php" class="inline-form">
+      <form method="post" action="/admin/submission-status" class="inline-form">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
         <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
         <input type="hidden" name="form_id" value="<?= $formId ?>">
@@ -111,14 +111,14 @@ require __DIR__ . '/includes/layout-start.php';
 
 <div class="admin-card submission-detail-card">
   <?php if ($editMode): ?>
-    <form method="post" action="/admin/submission-save.php" enctype="multipart/form-data" class="submission-edit-form">
+    <form method="post" action="/admin/submission-save" enctype="multipart/form-data" class="submission-edit-form">
       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
       <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
       <input type="hidden" name="form_id" value="<?= $formId ?>">
       <?php require __DIR__ . '/includes/submission-fields-edit.php'; ?>
       <div class="submission-form-actions">
         <button type="submit" class="admin-btn admin-btn-primary">Save changes</button>
-        <a href="/admin/submission.php?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
+        <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
       </div>
     </form>
   <?php else: ?>

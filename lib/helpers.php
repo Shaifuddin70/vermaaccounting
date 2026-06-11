@@ -13,6 +13,25 @@ function asset(string $path): string
     return '/' . ltrim($path, '/');
 }
 
+/** Clean app URL without .php extension (requires Apache mod_rewrite). */
+function app_url(string $path, array $query = []): string
+{
+    $path = '/' . ltrim($path, '/');
+    if (str_ends_with(strtolower($path), '.php')) {
+        $path = substr($path, 0, -4);
+    }
+    if ($path === '/index') {
+        $path = '/';
+    }
+    if ($path === '/admin/index') {
+        $path = '/admin';
+    }
+    if ($query !== []) {
+        $path .= '?' . http_build_query($query);
+    }
+    return $path;
+}
+
 /** Field types that render in a two-column row on the public form. */
 function form_field_uses_half_column(string $type, array $field = []): bool
 {
@@ -410,6 +429,16 @@ function site_cta_hero_label(): string
 function site_cta_nav_label(): string
 {
     return site_cta_resolve()['nav_label'];
+}
+
+function file_manager_form_slug(): string
+{
+    return '__file-manager-storage__';
+}
+
+function is_file_manager_form(array $form): bool
+{
+    return ($form['slug'] ?? '') === file_manager_form_slug();
 }
 
 function uploads_quota_bytes(): int

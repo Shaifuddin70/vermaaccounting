@@ -6,5 +6,5 @@ if (Auth::check()) {
     ActivityLog::record('auth.logout');
 }
 Auth::logout();
-header('Location: /admin/login.php');
+header('Location: /admin/login');
 exit;

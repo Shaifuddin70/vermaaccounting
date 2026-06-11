@@ -6,13 +6,13 @@ Auth::requireLogin();
 Auth::requireRole('admin');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/clients.php');
+    header('Location: /admin/clients');
     exit;
 }
 
 if (!Auth::verifyCsrf($_POST['csrf_token'] ?? '')) {
     $_SESSION['flash_error'] = 'Invalid request. Please try again.';
-    header('Location: /admin/clients.php');
+    header('Location: /admin/clients');
     exit;
 }
 
@@ -36,5 +36,5 @@ $_SESSION['flash_success'] = $parts
     ? 'Sync complete: ' . implode(', ', $parts) . '.'
     : 'Sync complete. Everything is already up to date.';
 
-header('Location: /admin/clients.php');
+header('Location: /admin/clients');
 exit;

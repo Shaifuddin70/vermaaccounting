@@ -16,33 +16,41 @@ $clientRepo = new ClientRepository();
 $client = $clientRepo->find($clientId);
 
 if (!$client) {
-    header('Location: /admin/clients.php');
+    header('Location: /admin/clients');
     exit;
 }
 
-$allSubmissions = $clientRepo->submissionsForClient($clientId);
-$groupedByYear = group_submissions_by_year($allSubmissions);
-$availableYears = array_keys($groupedByYear);
-rsort($availableYears, SORT_NUMERIC);
-
-if ($yearFilter !== null) {
-    $displayGroups = isset($groupedByYear[$yearFilter])
-        ? [$yearFilter => $groupedByYear[$yearFilter]]
-        : [];
-} else {
-    $displayGroups = $groupedByYear;
-}
+$page = pagination_page_from_request();
+$perPage = pagination_per_page_from_request();
+$yearCounts = $clientRepo->submissionYearCountsForClient($clientId);
+$submissionTotal = $clientRepo->countSubmissionsForClient($clientId, $yearFilter);
+$pagination = pagination_meta($submissionTotal, $page, $perPage);
+$submissions = $clientRepo->submissionsForClient(
+    $clientId,
+    $yearFilter,
+    $pagination['per_page'],
+    $pagination['offset']
+);
 
 $pageTitle = $client['name'];
 $activeNav = 'clients';
 
-function client_page_url(int $clientId, string $year = 'all'): string
+$paginationPath = '/admin/client';
+$paginationQuery = array_filter([
+    'id' => $clientId,
+    'year' => $yearParam !== 'all' ? $yearParam : null,
+], fn ($v) => $v !== null && $v !== '');
+$paginationLabel = 'submissions';
+$paginationAriaLabel = 'Client submission pages';
+$paginationUrl = fn (int $p) => client_page_url($clientId, $yearParam, $p, $pagination['per_page']);
+
+function client_page_url(int $clientId, string $year = 'all', int $page = 1, ?int $perPage = null): string
 {
     $params = ['id' => $clientId];
     if ($year !== 'all') {
         $params['year'] = $year;
     }
-    return '/admin/client.php?' . http_build_query($params);
+    return pagination_url('/admin/client', $params, $page, $perPage);
 }
 
 require __DIR__ . '/includes/layout-start.php';
@@ -50,7 +58,7 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1><?= e($client['name']) ?></h1>
   <div class="admin-header-actions">
-    <a href="/admin/clients.php" class="admin-btn admin-btn-secondary">← All clients</a>
+    <a href="/admin/clients" class="admin-btn admin-btn-secondary">← All clients</a>
   </div>
 </div>
 
@@ -74,83 +82,81 @@ require __DIR__ . '/includes/layout-start.php';
     </div>
     <div>
       <span class="submission-meta-label">Submissions</span>
-      <strong><?= count($allSubmissions) ?></strong>
+      <strong><?= array_sum($yearCounts) ?></strong>
     </div>
   </div>
 </div>
 
-<?php if ($availableYears): ?>
-  <form method="get" action="/admin/client.php" class="submissions-year-filter">
+<?php if ($yearCounts): ?>
+  <form method="get" action="/admin/client" class="submissions-year-filter">
     <input type="hidden" name="id" value="<?= $clientId ?>">
+    <?php if ($pagination['per_page'] !== pagination_default_per_page()): ?>
+      <input type="hidden" name="per_page" value="<?= (int) $pagination['per_page'] ?>">
+    <?php endif; ?>
     <label for="client-year-filter" class="submissions-year-filter-label">Year</label>
     <select name="year" id="client-year-filter" class="submissions-year-select" onchange="this.form.submit()">
       <option value="all" <?= $yearFilter === null ? 'selected' : '' ?>>
-        All years (<?= count($allSubmissions) ?>)
+        All years (<?= array_sum($yearCounts) ?>)
       </option>
-      <?php foreach ($availableYears as $y): ?>
+      <?php foreach ($yearCounts as $y => $cnt): ?>
         <option value="<?= (int) $y ?>" <?= $yearFilter === $y ? 'selected' : '' ?>>
-          <?= (int) $y ?> (<?= count($groupedByYear[$y]) ?>)
+          <?= (int) $y ?> (<?= $cnt ?>)
         </option>
       <?php endforeach; ?>
     </select>
   </form>
 <?php endif; ?>
 
-<?php if (!$allSubmissions): ?>
-  <div class="admin-card">
-    <p class="client-no-submissions">No form submissions linked to this client yet.</p>
-  </div>
-<?php elseif (!$displayGroups): ?>
-  <div class="admin-card">
-    <p class="client-no-submissions">No submissions for <?= (int) $yearFilter ?>.</p>
-    <p><a href="<?= e(client_page_url($clientId)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">View all years</a></p>
-  </div>
-<?php else: ?>
-  <?php foreach ($displayGroups as $year => $submissions): ?>
-    <section class="client-year-section">
-      <?php if ($yearFilter === null): ?>
-        <h2 class="client-year-heading">
-          <?= (int) $year ?>
-          <span class="client-year-count"><?= count($submissions) ?> submission<?= count($submissions) === 1 ? '' : 's' ?></span>
-        </h2>
-      <?php endif; ?>
+<div class="admin-card">
+  <?php if ($submissionTotal === 0): ?>
+    <p class="client-no-submissions">
+      <?= $yearFilter !== null
+          ? 'No submissions for ' . (int) $yearFilter . '.'
+          : 'No form submissions linked to this client yet.' ?>
+    </p>
+    <?php if ($yearFilter !== null): ?>
+      <p><a href="<?= e(client_page_url($clientId)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">View all years</a></p>
+    <?php endif; ?>
+  <?php else: ?>
+    <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
+    <table class="admin-table client-submissions-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Year</th>
+          <th>Form</th>
+          <th>Tax year</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach ($submissions as $sub):
+          $status = $sub['status'] ?? 'pending';
+          $taxYear = submission_tax_year_label($sub);
+          $displayYear = submission_display_year($sub);
+        ?>
+          <tr>
+            <td class="clients-col-date"><?= e(substr((string) $sub['created_at'], 0, 16)) ?></td>
+            <td><?= (int) $displayYear ?></td>
+            <td><?= e($sub['form_title'] ?? 'Form') ?></td>
+            <td><?= $taxYear !== '' ? e($taxYear) : '—' ?></td>
+            <td>
+              <span class="submission-status-badge submission-status-badge--<?= e($status) ?>">
+                <?= e(submission_status_label($status)) ?>
+              </span>
+            </td>
+            <td class="admin-table-actions">
+              <a href="/admin/submission?id=<?= (int) $sub['id'] ?>&form_id=<?= (int) $sub['form_id'] ?>"
+                class="admin-btn admin-btn-primary admin-btn-sm">View</a>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  <?php endif; ?>
+</div>
 
-      <div class="admin-card">
-        <table class="admin-table client-submissions-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Form</th>
-              <th>Tax year</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach ($submissions as $sub):
-              $status = $sub['status'] ?? 'pending';
-              $taxYear = submission_tax_year_label($sub);
-            ?>
-              <tr>
-                <td class="clients-col-date"><?= e(substr((string) $sub['created_at'], 0, 16)) ?></td>
-                <td><?= e($sub['form_title'] ?? 'Form') ?></td>
-                <td><?= $taxYear !== '' ? e($taxYear) : e((string) $year) ?></td>
-                <td>
-                  <span class="submission-status-badge submission-status-badge--<?= e($status) ?>">
-                    <?= e(submission_status_label($status)) ?>
-                  </span>
-                </td>
-                <td class="admin-table-actions">
-                  <a href="/admin/submission.php?id=<?= (int) $sub['id'] ?>&form_id=<?= (int) $sub['form_id'] ?>"
-                    class="admin-btn admin-btn-primary admin-btn-sm">View</a>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  <?php endforeach; ?>
-<?php endif; ?>
+<?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
 
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

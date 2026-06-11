@@ -11,7 +11,7 @@ $editUser = $editId ? $userRepo->find($editId) : null;
 $isNew = ($editUser === null);
 
 if ($editId && !$editUser) {
-    header('Location: /admin/users.php');
+    header('Location: /admin/users');
     exit;
 }
 
@@ -26,7 +26,7 @@ require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1><?= $isNew ? 'Add team member' : 'Edit team member' ?></h1>
-  <a href="/admin/users.php" class="admin-btn admin-btn-secondary">← Back to team</a>
+  <a href="/admin/users" class="admin-btn admin-btn-secondary">← Back to team</a>
 </div>
 
 <?php if ($errors): ?>
@@ -40,7 +40,7 @@ require __DIR__ . '/includes/layout-start.php';
 <?php endif; ?>
 
 <div class="admin-card" style="max-width:560px;">
-  <form method="post" action="/admin/user-save.php">
+  <form method="post" action="/admin/user-save">
     <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
     <?php if (!$isNew): ?>
       <input type="hidden" name="id" value="<?= $editId ?>">
@@ -92,7 +92,7 @@ require __DIR__ . '/includes/layout-start.php';
 
     <div style="display:flex;gap:0.5rem;margin-top:1.5rem;">
       <button type="submit" class="admin-btn"><?= $isNew ? 'Create member' : 'Save changes' ?></button>
-      <a href="/admin/users.php" class="admin-btn admin-btn-secondary">Cancel</a>
+      <a href="/admin/users" class="admin-btn admin-btn-secondary">Cancel</a>
     </div>
   </form>
 </div>

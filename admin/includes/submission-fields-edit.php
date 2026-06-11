@@ -96,7 +96,7 @@
         <?php if ($fieldFiles): ?>
           <div class="submission-files submission-files--compact">
             <?php foreach ($fieldFiles as $file):
-              $fileUrl = '/admin/view-file.php?file_id=' . (int) $file['id'];
+              $fileUrl = '/admin/view-file?file_id=' . (int) $file['id'];
             ?>
               <?php if (is_image_mime($file['mime'] ?? null)): ?>
                 <a href="<?= e($fileUrl) ?>" class="submission-image-link" data-fancybox="submission-edit-<?= (int) ($submissionId ?? 0) ?>" data-caption="<?= e($file['original_name']) ?>">

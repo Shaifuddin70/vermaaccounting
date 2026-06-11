@@ -85,7 +85,7 @@ foreach ($submissions as $sub) {
 
     $fileParts = [];
     foreach ($filesBySubmission[(int) $sub['id']] ?? [] as $file) {
-        $fileParts[] = $file['original_name'] . ' (admin download: /admin/download.php?file_id=' . $file['id'] . ')';
+        $fileParts[] = $file['original_name'] . ' (admin download: /admin/download?file_id=' . $file['id'] . ')';
     }
     $row[] = implode(' | ', $fileParts);
 

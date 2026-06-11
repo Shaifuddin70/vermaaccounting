@@ -22,7 +22,7 @@ final class Auth
     public static function requireLogin(): void
     {
         if (!self::check()) {
-            header('Location: /admin/login.php');
+            header('Location: ' . app_url('/admin/login'));
             exit;
         }
     }

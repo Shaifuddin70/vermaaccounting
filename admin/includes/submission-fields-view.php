@@ -29,8 +29,8 @@
           <?php if ($fieldFiles): ?>
             <div class="submission-files">
               <?php foreach ($fieldFiles as $file):
-                $fileUrl = '/admin/view-file.php?file_id=' . (int) $file['id'];
-                $downloadUrl = '/admin/download.php?file_id=' . (int) $file['id'];
+                $fileUrl = '/admin/view-file?file_id=' . (int) $file['id'];
+                $downloadUrl = '/admin/download?file_id=' . (int) $file['id'];
               ?>
                 <div class="submission-file-item">
                   <?php if (is_image_mime($file['mime'] ?? null)): ?>

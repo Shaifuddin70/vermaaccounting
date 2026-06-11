@@ -46,6 +46,7 @@ require_once __DIR__ . '/embed.php';
 require_once __DIR__ . '/submission_helpers.php';
 require_once __DIR__ . '/client_helpers.php';
 require_once __DIR__ . '/ClientRepository.php';
+require_once __DIR__ . '/pagination_helpers.php';
 require_once __DIR__ . '/Mailer.php';
 require_once __DIR__ . '/submission_emails.php';
 

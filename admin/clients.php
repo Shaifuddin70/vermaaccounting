@@ -8,9 +8,8 @@ Auth::requireRole('admin');
 $clientRepo = new ClientRepository();
 
 $search = trim((string) ($_GET['q'] ?? ''));
-$page = max(1, (int) ($_GET['page'] ?? 1));
-$perPage = 50;
-$offset = ($page - 1) * $perPage;
+$page = pagination_page_from_request();
+$perPage = pagination_per_page_from_request();
 
 // Backfill from existing submissions when the list has never been synced.
 if ($search === '' && $page === 1 && $clientRepo->count(null) === 0) {
@@ -28,8 +27,14 @@ if ($search === '' && $page === 1 && $clientRepo->count(null) === 0) {
 }
 
 $total = $clientRepo->count($search !== '' ? $search : null);
-$clients = $clientRepo->allWithStats($search !== '' ? $search : null, $perPage, $offset);
-$totalPages = max(1, (int) ceil($total / $perPage));
+$pagination = pagination_meta($total, $page, $perPage);
+$clients = $clientRepo->allWithStats($search !== '' ? $search : null, $pagination['per_page'], $pagination['offset']);
+
+$paginationPath = '/admin/clients';
+$paginationQuery = $search !== '' ? ['q' => $search] : [];
+$paginationLabel = 'clients';
+$paginationAriaLabel = 'Client list pages';
+$paginationUrl = fn (int $p) => clients_page_url($search, $p, $pagination['per_page']);
 
 $flashSuccess = $_SESSION['flash_success'] ?? null;
 $flashError = $_SESSION['flash_error'] ?? null;
@@ -38,16 +43,13 @@ unset($_SESSION['flash_success'], $_SESSION['flash_error']);
 $pageTitle = 'Clients';
 $activeNav = 'clients';
 
-function clients_page_url(string $search, int $page = 1): string
+function clients_page_url(string $search, int $page = 1, ?int $perPage = null): string
 {
     $params = [];
     if ($search !== '') {
         $params['q'] = $search;
     }
-    if ($page > 1) {
-        $params['page'] = $page;
-    }
-    return '/admin/clients.php' . ($params ? '?' . http_build_query($params) : '');
+    return pagination_url('/admin/clients', $params, $page, $perPage);
 }
 
 require __DIR__ . '/includes/layout-start.php';
@@ -55,12 +57,12 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Clients</h1>
   <div class="admin-header-actions">
-    <form method="post" action="/admin/clients-sync.php" class="inline-form">
+    <form method="post" action="/admin/clients-sync" class="inline-form">
       <input type="hidden" name="csrf_token" value="<?= e(Auth::csrfToken()) ?>">
       <button type="submit" class="admin-btn admin-btn-secondary">Sync from submissions</button>
     </form>
-    <a href="/admin/clients-import.php" class="admin-btn admin-btn-secondary">Import CSV</a>
-    <a href="/admin/clients-export.php" class="admin-btn admin-btn-secondary">Export CSV</a>
+    <a href="/admin/clients-import" class="admin-btn admin-btn-secondary">Import CSV</a>
+    <a href="/admin/clients-export" class="admin-btn admin-btn-secondary">Export CSV</a>
   </div>
 </div>
 
@@ -72,7 +74,10 @@ require __DIR__ . '/includes/layout-start.php';
 <?php endif; ?>
 
 <div class="admin-card clients-filters-card">
-  <form method="get" action="/admin/clients.php" class="clients-filter-form">
+  <form method="get" action="/admin/clients" class="clients-filter-form">
+    <?php if ($pagination['per_page'] !== pagination_default_per_page()): ?>
+      <input type="hidden" name="per_page" value="<?= (int) $pagination['per_page'] ?>">
+    <?php endif; ?>
     <div class="admin-field clients-filter-field clients-filter-field--search">
       <label for="clients-search">Search</label>
       <input type="search" id="clients-search" name="q" value="<?= e($search) ?>" placeholder="Name, CIN, email, phone, or company…">
@@ -80,7 +85,7 @@ require __DIR__ . '/includes/layout-start.php';
     <div class="clients-filter-actions">
       <button type="submit" class="admin-btn admin-btn-secondary">Search</button>
       <?php if ($search !== ''): ?>
-        <a href="/admin/clients.php" class="admin-btn admin-btn-secondary">Clear</a>
+        <a href="/admin/clients" class="admin-btn admin-btn-secondary">Clear</a>
       <?php endif; ?>
     </div>
   </form>
@@ -91,11 +96,12 @@ require __DIR__ . '/includes/layout-start.php';
     <div class="clients-empty">
       <p>No clients yet.</p>
       <p>
-        <a href="/admin/clients-import.php" class="admin-btn admin-btn-secondary">Import from spreadsheet</a>
+        <a href="/admin/clients-import" class="admin-btn admin-btn-secondary">Import from spreadsheet</a>
         or sync from existing form submissions.
       </p>
     </div>
   <?php else: ?>
+    <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
     <table class="admin-table clients-table">
       <thead>
         <tr>
@@ -113,7 +119,7 @@ require __DIR__ . '/includes/layout-start.php';
         <?php foreach ($clients as $client): ?>
           <tr>
             <td>
-              <a href="/admin/client.php?id=<?= (int) $client['id'] ?>" class="clients-name-link">
+              <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="clients-name-link">
                 <strong><?= e($client['name']) ?></strong>
               </a>
             </td>
@@ -126,7 +132,7 @@ require __DIR__ . '/includes/layout-start.php';
             <td class="clients-col-num">
               <?php $subCount = (int) ($client['submission_count'] ?? 0); ?>
               <?php if ($subCount > 0): ?>
-                <a href="/admin/client.php?id=<?= (int) $client['id'] ?>" class="clients-submission-link"><?= $subCount ?></a>
+                <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="clients-submission-link"><?= $subCount ?></a>
               <?php else: ?>
                 <?= $subCount ?>
               <?php endif; ?>
@@ -146,16 +152,6 @@ require __DIR__ . '/includes/layout-start.php';
   <?php endif; ?>
 </div>
 
-<?php if ($totalPages > 1): ?>
-  <nav class="clients-pagination" aria-label="Client list pages">
-    <?php if ($page > 1): ?>
-      <a href="<?= e(clients_page_url($search, $page - 1)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">← Previous</a>
-    <?php endif; ?>
-    <span class="clients-pagination-info">Page <?= $page ?> of <?= $totalPages ?> (<?= number_format($total) ?> clients)</span>
-    <?php if ($page < $totalPages): ?>
-      <a href="<?= e(clients_page_url($search, $page + 1)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Next →</a>
-    <?php endif; ?>
-  </nav>
-<?php endif; ?>
+<?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
 
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

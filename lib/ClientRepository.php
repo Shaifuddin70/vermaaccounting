@@ -56,18 +56,75 @@ final class ClientRepository
     /**
      * @return list<array>
      */
-    public function submissionsForClient(int $clientId): array
+    public function submissionsForClient(int $clientId, ?int $year = null, ?int $limit = null, ?int $offset = null): array
     {
-        $stmt = $this->db->prepare('
+        [$sql, $params] = $this->clientSubmissionSql($clientId, $year);
+        $sql .= ' ORDER BY s.created_at DESC';
+        if ($limit !== null) {
+            $limit = max(1, min(200, $limit));
+            $offset = max(0, $offset ?? 0);
+            $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function countSubmissionsForClient(int $clientId, ?int $year = null): int
+    {
+        $sql = '
+            SELECT COUNT(*)
+            FROM client_submissions cs
+            INNER JOIN submissions s ON s.id = cs.submission_id
+            WHERE cs.client_id = ?
+        ';
+        $params = [$clientId];
+        if ($year !== null && $year > 0) {
+            $sql .= ' AND (s.tax_year = ? OR (s.tax_year IS NULL AND YEAR(s.created_at) = ?))';
+            $params[] = $year;
+            $params[] = $year;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /** @return array{0: string, 1: list<mixed>} */
+    private function clientSubmissionSql(int $clientId, ?int $year): array
+    {
+        $sql = '
             SELECT s.*, f.title AS form_title, f.slug AS form_slug
             FROM client_submissions cs
             INNER JOIN submissions s ON s.id = cs.submission_id
             INNER JOIN forms f ON f.id = s.form_id
             WHERE cs.client_id = ?
-            ORDER BY s.created_at DESC
+        ';
+        $params = [$clientId];
+        if ($year !== null && $year > 0) {
+            $sql .= ' AND (s.tax_year = ? OR (s.tax_year IS NULL AND YEAR(s.created_at) = ?))';
+            $params[] = $year;
+            $params[] = $year;
+        }
+        return [$sql, $params];
+    }
+
+    /** @return array<int, int> year => count */
+    public function submissionYearCountsForClient(int $clientId): array
+    {
+        $stmt = $this->db->prepare('
+            SELECT COALESCE(s.tax_year, YEAR(s.created_at)) AS yr, COUNT(*) AS cnt
+            FROM client_submissions cs
+            INNER JOIN submissions s ON s.id = cs.submission_id
+            WHERE cs.client_id = ?
+            GROUP BY yr
+            ORDER BY yr DESC
         ');
         $stmt->execute([$clientId]);
-        return $stmt->fetchAll();
+        $map = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $map[(int) $row['yr']] = (int) $row['cnt'];
+        }
+        return $map;
     }
 
     public function findByEmail(string $email): ?array

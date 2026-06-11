@@ -6,9 +6,20 @@ Auth::requireLogin();
 Auth::requireRole('admin');
 
 $userRepo = new UserRepository();
-$users = $userRepo->all();
+$page = pagination_page_from_request();
+$perPage = pagination_per_page_from_request();
+$userTotal = $userRepo->countUsers();
+$pagination = pagination_meta($userTotal, $page, $perPage);
+$users = $userRepo->allPaginated($pagination['per_page'], $pagination['offset']);
 $counts = $userRepo->counts();
 $csrf = Auth::csrfToken();
+
+$paginationPath = '/admin/users';
+$paginationQuery = [];
+$paginationLabel = 'team members';
+$paginationAriaLabel = 'Team list pages';
+$paginationUrl = fn (int $p) => pagination_url('/admin/users', [], $p, $pagination['per_page']);
+
 $flash = $_SESSION['flash_success'] ?? null;
 unset($_SESSION['flash_success']);
 
@@ -51,6 +62,9 @@ require __DIR__ . '/includes/layout-start.php';
 </div>
 
 <div class="admin-card">
+  <?php if ($userTotal > 0): ?>
+    <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
+  <?php endif; ?>
   <table class="admin-table" id="users-table">
     <thead>
       <tr>
@@ -121,6 +135,8 @@ require __DIR__ . '/includes/layout-start.php';
   </table>
 </div>
 
+<?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
+
 <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem;">
   The super-admin account configured in <code>config.local.php</code> always has full access and is not listed here.
 </p>
@@ -135,7 +151,7 @@ require __DIR__ . '/includes/layout-start.php';
 
     <div id="umodal-errors" class="admin-alert admin-alert-error" style="display:none;"></div>
 
-    <form id="user-modal-form" method="post" action="/admin/user-save.php" novalidate>
+    <form id="user-modal-form" method="post" action="/admin/user-save" novalidate>
       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
       <input type="hidden" name="id" id="umodal-id" value="">
 
@@ -292,7 +308,7 @@ require __DIR__ . '/includes/layout-start.php';
 
     const fd = new FormData(form);
 
-    fetch('/admin/user-save.php', {
+    fetch('/admin/user-save', {
       method: 'POST',
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
       body: fd,
@@ -328,7 +344,7 @@ require __DIR__ . '/includes/layout-start.php';
     fd.append('id', id);
     fd.append('action', action);
 
-    fetch('/admin/user-action.php', {
+    fetch('/admin/user-action', {
       method: 'POST',
       headers: { 'X-Requested-With': 'XMLHttpRequest' },
       body: fd,

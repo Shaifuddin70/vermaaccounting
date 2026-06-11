@@ -54,7 +54,7 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Import clients</h1>
   <div class="admin-header-actions">
-    <a href="/admin/clients.php" class="admin-btn admin-btn-secondary">← Back to clients</a>
+    <a href="/admin/clients" class="admin-btn admin-btn-secondary">← Back to clients</a>
   </div>
 </div>
 
@@ -124,7 +124,7 @@ require __DIR__ . '/includes/layout-start.php';
     <p style="margin:1rem 0 0;font-size:0.85rem;color:var(--admin-muted);">
       Rows with the same CIN or email are updated instead of duplicated. Each CIN must be unique.
     </p>
-    <a href="/admin/clients-import-template.php" class="admin-btn admin-btn-secondary admin-btn-sm" style="margin-top:1rem;">Download sample CSV</a>
+    <a href="/admin/clients-import-template" class="admin-btn admin-btn-secondary admin-btn-sm" style="margin-top:1rem;">Download sample CSV</a>
   </div>
 </div>
 

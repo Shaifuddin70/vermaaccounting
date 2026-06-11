@@ -25,7 +25,7 @@ $user = $userRepo->find($id);
 
 if (!$user || $id < 1) {
     if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['error' => 'User not found.']); exit; }
-    header('Location: /admin/users.php');
+    header('Location: /admin/users');
     exit;
 }
 
@@ -40,5 +40,5 @@ if ($action === 'deactivate') {
 }
 
 if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['ok' => true]); exit; }
-header('Location: /admin/users.php');
+header('Location: /admin/users');
 exit;

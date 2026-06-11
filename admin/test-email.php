@@ -44,7 +44,7 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Test email</h1>
   <div class="admin-header-actions">
-    <a href="/admin/clients.php" class="admin-btn admin-btn-secondary">← Back</a>
+    <a href="/admin/clients" class="admin-btn admin-btn-secondary">← Back</a>
   </div>
 </div>
 

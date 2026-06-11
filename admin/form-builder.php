@@ -9,7 +9,7 @@ $formId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $form = $formId ? $repo->find($formId) : null;
 
 if ($formId && !$form) {
-    header('Location: /admin/forms.php');
+    header('Location: /admin/forms');
     exit;
 }
 
@@ -34,7 +34,7 @@ require __DIR__ . '/includes/layout-start.php';
   <h1><?= e($pageTitle) ?></h1>
   <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
     <?php if ($form): ?>
-      <a href="/admin/submissions.php?form_id=<?= (int) $form['id'] ?>" class="admin-btn admin-btn-secondary">Responses</a>
+      <a href="/admin/submissions?form_id=<?= (int) $form['id'] ?>" class="admin-btn admin-btn-secondary">Responses</a>
       <?php if ($form['status'] === 'published'): ?>
         <a href="/form/<?= e($form['slug']) ?>" class="admin-btn admin-btn-secondary" target="_blank" rel="noopener">Preview</a>
       <?php endif; ?>

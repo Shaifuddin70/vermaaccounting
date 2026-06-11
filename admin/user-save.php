@@ -60,7 +60,7 @@ if ($errors) {
     }
     $_SESSION['user_edit_errors'] = $errors;
     $_SESSION['user_edit_old']    = compact('name', 'email', 'role', 'status');
-    $back = $isNew ? '/admin/user-edit.php' : '/admin/user-edit.php?id=' . $editId;
+    $back = $isNew ? '/admin/user-edit' : '/admin/user-edit?id=' . $editId;
     header('Location: ' . $back);
     exit;
 }
@@ -90,5 +90,5 @@ if ($isAjax) {
 }
 
 $_SESSION['flash_success'] = $successMsg;
-header('Location: /admin/users.php');
+header('Location: /admin/users');
 exit;

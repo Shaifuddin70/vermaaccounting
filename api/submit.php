@@ -91,7 +91,7 @@ foreach ($schema['fields'] as $field) {
         $filesMeta[] = [
             'field_id' => $id,
             'stored_name' => $form['id'] . '/' . $stored,
-            'original_name' => $upload['name'],
+            'original_name' => client_upload_original_name($upload['name'], $schema, $_POST),
             'mime' => $mime,
             'size' => (int) $upload['size'],
         ];

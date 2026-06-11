@@ -46,13 +46,8 @@ final class ActivityLog
     }
 
     /**
-     * Fetch recent log entries, newest first.
+     * Fetch log entries, newest first.
      *
-     * @param int         $limit
-     * @param int|null    $userId      Filter by user
-     * @param string|null $action      Filter by action prefix (e.g. "submission.")
-     * @param string|null $subjectType Filter by subject type
-     * @param int|null    $subjectId   Filter by subject ID
      * @return array
      */
     public static function recent(
@@ -60,9 +55,57 @@ final class ActivityLog
         ?int    $userId      = null,
         ?string $action      = null,
         ?string $subjectType = null,
-        ?int    $subjectId   = null
+        ?int    $subjectId   = null,
+        int     $offset      = 0
     ): array {
         $limit = max(1, min(200, $limit));
+        $offset = max(0, $offset);
+        [$where, $params] = self::filterClause($userId, $action, $subjectType, $subjectId);
+
+        $sql = 'SELECT * FROM activity_log';
+        if ($where !== '') {
+            $sql .= ' WHERE ' . $where;
+        }
+        $sql .= ' ORDER BY created_at DESC LIMIT ' . $limit . ' OFFSET ' . $offset;
+
+        try {
+            $pdo = Database::instance()->pdo();
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            return $stmt->fetchAll();
+        } catch (Throwable $e) {
+            return [];
+        }
+    }
+
+    public static function count(
+        ?int    $userId      = null,
+        ?string $action      = null,
+        ?string $subjectType = null,
+        ?int    $subjectId   = null
+    ): int {
+        [$where, $params] = self::filterClause($userId, $action, $subjectType, $subjectId);
+        $sql = 'SELECT COUNT(*) FROM activity_log';
+        if ($where !== '') {
+            $sql .= ' WHERE ' . $where;
+        }
+        try {
+            $pdo = Database::instance()->pdo();
+            $stmt = $pdo->prepare($sql);
+            $stmt->execute($params);
+            return (int) $stmt->fetchColumn();
+        } catch (Throwable $e) {
+            return 0;
+        }
+    }
+
+    /** @return array{0: string, 1: list<mixed>} */
+    private static function filterClause(
+        ?int    $userId,
+        ?string $action,
+        ?string $subjectType,
+        ?int    $subjectId
+    ): array {
         $where = [];
         $params = [];
 
@@ -88,20 +131,7 @@ final class ActivityLog
             $params[] = $subjectId;
         }
 
-        $sql = 'SELECT * FROM activity_log';
-        if ($where) {
-            $sql .= ' WHERE ' . implode(' AND ', $where);
-        }
-        $sql .= ' ORDER BY created_at DESC LIMIT ' . $limit;
-
-        try {
-            $pdo = Database::instance()->pdo();
-            $stmt = $pdo->prepare($sql);
-            $stmt->execute($params);
-            return $stmt->fetchAll();
-        } catch (Throwable $e) {
-            return [];
-        }
+        return [implode(' AND ', $where), $params];
     }
 
     /** Human-readable label for a log action. */
@@ -117,6 +147,8 @@ final class ActivityLog
             'auth.login'                => 'Signed in',
             'auth.logout'               => 'Signed out',
             'file.deleted'              => 'Deleted file',
+            'file.uploaded'             => 'Uploaded file',
+            'file.renamed'              => 'Renamed file',
             'clients.synced'            => 'Synced clients',
             'clients.imported'          => 'Imported clients',
             default                     => ucwords(str_replace(['.', '_'], ' ', $action)),

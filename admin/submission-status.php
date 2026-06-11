@@ -39,14 +39,22 @@ ActivityLog::record('submission.status_changed', 'submission', $submissionId, [
     'tax_year'    => $submission['tax_year'] ?? null,
 ]);
 
-$redirect = '/admin/submissions.php?form_id=' . $formId . '&tab=' . rawurlencode($tab);
+$redirect = '/admin/submissions?form_id=' . $formId . '&tab=' . rawurlencode($tab);
 if ($year !== '' && $year !== 'all') {
     $redirect .= '&year=' . rawurlencode($year);
 } elseif ($year === 'all') {
     $redirect .= '&year=all';
 }
+$page = (int) ($_POST['page'] ?? 0);
+if ($page > 1) {
+    $redirect .= '&page=' . $page;
+}
+$perPage = (int) ($_POST['per_page'] ?? 0);
+if ($perPage > 0 && in_array($perPage, admin_per_page_options(), true) && $perPage !== pagination_default_per_page()) {
+    $redirect .= '&per_page=' . $perPage;
+}
 if (!empty($_POST['redirect_view'])) {
-    $redirect = '/admin/submission.php?id=' . $submissionId . '&form_id=' . $formId;
+    $redirect = '/admin/submission?id=' . $submissionId . '&form_id=' . $formId;
 }
 
 header('Location: ' . $redirect);

@@ -6,14 +6,14 @@ Auth::requireLogin();
 Auth::requireRole('admin');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: /admin/files.php');
+    header('Location: /admin/files');
     exit;
 }
 
 $csrf = $_POST['csrf_token'] ?? '';
 if (!Auth::verifyCsrf($csrf)) {
     $_SESSION['flash_error'] = 'Invalid request. Please try again.';
-    header('Location: /admin/files.php');
+    header('Location: /admin/files');
     exit;
 }
 
@@ -34,6 +34,6 @@ if (!$file) {
     $_SESSION['flash_success'] = 'File deleted: ' . ($file['original_name'] ?? 'Unknown');
 }
 
-$redirect = '/admin/files.php' . ($returnQs !== '' ? '?' . $returnQs : '');
+$redirect = '/admin/files' . ($returnQs !== '' ? '?' . $returnQs : '');
 header('Location: ' . $redirect);
 exit;

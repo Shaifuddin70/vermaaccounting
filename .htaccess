@@ -7,10 +7,12 @@ RewriteBase /
 RewriteCond %{THE_REQUEST} \s/index\.php[\s?] [NC]
 RewriteRule ^index\.php$ / [R=301,L]
 
-# 301 redirect .php URLs to clean URLs (skip admin & api — used by form builder)
+# Redirect admin/index.php to /admin/
+RewriteCond %{THE_REQUEST} \s/admin/index\.php[\s?] [NC]
+RewriteRule ^admin/index\.php$ /admin/ [R=301,L]
+
+# 301 redirect .php URLs to clean URLs (public site, admin, and api)
 RewriteCond %{THE_REQUEST} \s/[^.]+\.php [NC]
-RewriteCond %{REQUEST_URI} !^/admin/ [NC]
-RewriteCond %{REQUEST_URI} !^/api/ [NC]
 RewriteRule ^(.+)\.php$ /$1 [R=301,L]
 
 # Redirect /index to root
@@ -19,6 +21,12 @@ RewriteRule ^(.*)$ / [R=301,L]
 
 # Custom forms: /form/client-intake -> form.php?slug=client-intake
 RewriteRule ^form/([a-zA-Z0-9_-]+)/?$ form.php?slug=$1 [L,QSA]
+
+# Admin dashboard: /admin -> admin/index.php
+RewriteRule ^admin/?$ admin/index.php [L]
+
+# API: /api/submit -> api/submit.php
+RewriteRule ^api/([a-zA-Z0-9_-]+)/?$ api/$1.php [L,QSA]
 
 # Clean URLs - internally rewrite /page to page.php
 RewriteCond %{REQUEST_FILENAME} !-d
