@@ -1,0 +1,128 @@
+<?php
+declare(strict_types=1);
+
+require_once __DIR__ . '/../lib/bootstrap.php';
+Auth::requireLogin();
+Auth::requireRole('admin');
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: /admin/campaigns');
+    exit;
+}
+
+if (!Auth::verifyCsrf($_POST['csrf_token'] ?? '')) {
+    $_SESSION['flash_error'] = 'Invalid request. Please try again.';
+    header('Location: /admin/campaigns');
+    exit;
+}
+
+$editId = isset($_POST['id']) && $_POST['id'] !== '' ? (int) $_POST['id'] : null;
+$name = trim((string) ($_POST['name'] ?? ''));
+$subject = trim((string) ($_POST['subject'] ?? ''));
+$body = trim((string) ($_POST['body'] ?? ''));
+$sendAction = (string) ($_POST['send_action'] ?? 'draft');
+$scheduledRaw = trim((string) ($_POST['scheduled_at'] ?? ''));
+
+$errors = [];
+if ($name === '') {
+    $errors[] = 'Campaign name is required.';
+}
+if ($subject === '') {
+    $errors[] = 'Subject is required.';
+}
+if ($body === '') {
+    $errors[] = 'Message body is required.';
+}
+if (!in_array($sendAction, ['draft', 'now', 'schedule'], true)) {
+    $sendAction = 'draft';
+}
+
+$scheduledAt = null;
+if ($sendAction === 'schedule') {
+    $scheduledAt = campaign_parse_scheduled_at($scheduledRaw);
+    if ($scheduledAt === null) {
+        $errors[] = 'Choose a valid schedule date and time.';
+    } elseif ($scheduledAt <= now_iso()) {
+        $errors[] = 'Schedule time must be in the future.';
+    }
+}
+
+$campaignRepo = new EmailCampaignRepository();
+$clientRepo = new ClientRepository();
+
+if ($editId) {
+    $existing = $campaignRepo->find($editId);
+    if (!$existing || ($existing['status'] ?? '') !== 'draft') {
+        $_SESSION['flash_error'] = 'Only draft campaigns can be edited.';
+        header('Location: /admin/campaigns');
+        exit;
+    }
+}
+
+if ($sendAction !== 'draft') {
+    $recipientCount = $clientRepo->countWithEmail();
+    if ($recipientCount === 0) {
+        $errors[] = 'No clients with email addresses found. Add client emails before sending.';
+    }
+}
+
+if ($errors) {
+    $_SESSION['campaign_edit_errors'] = $errors;
+    $_SESSION['campaign_edit_old'] = compact('name', 'subject', 'body', 'sendAction', 'scheduledRaw') + [
+        'scheduled_at' => $scheduledRaw,
+        'send_action' => $sendAction,
+    ];
+    $back = $editId ? '/admin/campaign-edit?id=' . $editId : '/admin/campaign-edit';
+    header('Location: ' . $back);
+    exit;
+}
+
+$user = Auth::currentUser();
+$status = 'draft';
+if ($sendAction === 'now') {
+    $status = 'scheduled';
+    $scheduledAt = now_iso();
+} elseif ($sendAction === 'schedule') {
+    $status = 'scheduled';
+}
+
+$data = [
+    'name' => $name,
+    'subject' => $subject,
+    'body_html' => $body,
+    'status' => $status,
+    'scheduled_at' => $scheduledAt,
+    'created_by_user_id' => $user['id'] ?? null,
+    'created_by_name' => (string) ($user['name'] ?? 'Admin'),
+];
+
+if ($editId) {
+    $campaignRepo->update($editId, $data);
+    $campaignId = $editId;
+    ActivityLog::record('campaign.updated', 'campaign', $campaignId, ['name' => $name, 'status' => $status]);
+} else {
+    $campaignId = $campaignRepo->create($data);
+    ActivityLog::record('campaign.created', 'campaign', $campaignId, ['name' => $name, 'status' => $status]);
+}
+
+if ($sendAction !== 'draft') {
+    $campaignRepo->clearRecipients($campaignId);
+    $recipients = $clientRepo->recipientsForCampaign();
+    $added = $campaignRepo->addRecipients($campaignId, $recipients);
+    $campaignRepo->refreshCounts($campaignId);
+    $campaignRepo->update($campaignId, ['recipient_count' => $added]);
+
+    if ($sendAction === 'now') {
+        process_campaign_batch($campaignId);
+    }
+
+    $_SESSION['flash_success'] = $sendAction === 'now'
+        ? 'Campaign queued and first batch started. Remaining emails will send via the queue.'
+        : 'Campaign scheduled for ' . $scheduledAt . ' UTC.';
+    header('Location: /admin/campaign-view?id=' . $campaignId);
+    exit;
+}
+
+$_SESSION['flash_success'] = 'Campaign saved as draft.';
+header('Location: ' . ($editId ? '/admin/campaign-edit?id=' . $campaignId : '/admin/campaign-edit?id=' . $campaignId));
+exit;

@@ -19,6 +19,49 @@ final class ClientRepository
         return (int) $stmt->fetchColumn();
     }
 
+    public function countWithEmail(): int
+    {
+        $stmt = $this->db->query("
+            SELECT COUNT(DISTINCT LOWER(email))
+            FROM clients
+            WHERE email IS NOT NULL AND TRIM(email) != ''
+        ");
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Unique client emails for bulk campaigns (first match per email, ordered by name).
+     *
+     * @return list<array{client_id: int, client_name: string, email: string, cin: string, company: string}>
+     */
+    public function recipientsForCampaign(): array
+    {
+        $rows = $this->db->query("
+            SELECT c.id, c.name, c.email, c.cin, c.company
+            FROM clients c
+            WHERE c.email IS NOT NULL AND TRIM(c.email) != ''
+            ORDER BY c.name ASC, c.id ASC
+        ")->fetchAll();
+
+        $seen = [];
+        $out = [];
+        foreach ($rows as $row) {
+            $email = strtolower(trim((string) ($row['email'] ?? '')));
+            if ($email === '' || isset($seen[$email])) {
+                continue;
+            }
+            $seen[$email] = true;
+            $out[] = [
+                'client_id' => (int) $row['id'],
+                'client_name' => (string) ($row['name'] ?? ''),
+                'email' => $email,
+                'cin' => (string) ($row['cin'] ?? ''),
+                'company' => (string) ($row['company'] ?? ''),
+            ];
+        }
+        return $out;
+    }
+
     /**
      * @return list<array>
      */

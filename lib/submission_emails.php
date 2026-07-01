@@ -24,8 +24,8 @@ function send_submission_notification_emails(
     ], $schema);
 
     try {
-        if (!empty($mail['admin_notification']['enabled']) && ($mail['admin_email'] ?? '') !== '') {
-            $adminTo = trim((string) $mail['admin_email']);
+        $adminEmails = normalize_admin_emails($mail['admin_emails'] ?? $mail['admin_email'] ?? '');
+        if (!empty($mail['admin_notification']['enabled']) && $adminEmails !== []) {
             $adminSubject = submission_email_replace_tokens(
                 (string) ($mail['admin_notification']['subject'] ?? 'New submission: {form_title} (#{submission_id})'),
                 $form,
@@ -42,8 +42,10 @@ function send_submission_notification_emails(
                 $clientInfo
             );
             $replyTo = $clientInfo['email'] !== '' ? $clientInfo['email'] : null;
-            if (!$mailer->send($adminTo, $adminSubject, $adminHtml, $adminText, $replyTo)) {
-                error_log('Submission email: admin notification failed for submission #' . $submissionId);
+            foreach ($adminEmails as $adminTo) {
+                if (!$mailer->send($adminTo, $adminSubject, $adminHtml, $adminText, $replyTo)) {
+                    error_log('Submission email: admin notification failed for submission #' . $submissionId . ' to ' . $adminTo);
+                }
             }
         }
 
@@ -169,7 +171,7 @@ function build_submission_client_email(
 
     $greetingName = $clientInfo['name'] !== '' ? $clientInfo['name'] : 'there';
     $mail = mail_config();
-    $contactEmail = trim((string) ($mail['admin_email'] ?? 'info@vermaaccounting.ca'));
+    $contactEmail = $mail['admin_emails'][0] ?? trim((string) ($mail['admin_email'] ?? 'info@vermaaccounting.ca'));
 
     $summaryItems = [];
     if ($taxYear !== null && $taxYear > 0) {

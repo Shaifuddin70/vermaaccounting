@@ -7,7 +7,9 @@ Auth::requireRole('admin');
 
 $result = null;
 $error = null;
-$to = trim((string) ($_POST['to'] ?? mail_config()['admin_email'] ?? ''));
+$mail = mail_config();
+$defaultTo = $mail['admin_emails'][0] ?? $mail['admin_email'] ?? '';
+$to = trim((string) ($_POST['to'] ?? $defaultTo));
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? '')) {
@@ -43,13 +45,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $mail = mail_config();
 $pageTitle = 'Test email';
-$activeNav = 'clients';
+$activeNav = 'email';
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>Test email</h1>
   <div class="admin-header-actions">
-    <a href="/admin/clients" class="admin-btn admin-btn-secondary">← Back</a>
+    <a href="/admin/email-settings" class="admin-btn admin-btn-secondary">← Email settings</a>
   </div>
 </div>
 
@@ -80,7 +82,15 @@ require __DIR__ . '/includes/layout-start.php';
         <tr><td>Enabled</td><td><?= !empty($mail['enabled']) ? 'Yes' : 'No' ?></td></tr>
         <tr><td>Transport</td><td><?= e((string) ($mail['transport'] ?? '')) ?></td></tr>
         <tr><td>From</td><td><?= e((string) ($mail['from_email'] ?? '')) ?></td></tr>
-        <tr><td>Admin notifications</td><td><?= e((string) ($mail['admin_email'] ?? '')) ?></td></tr>
+        <tr><td>Admin notifications</td>
+          <td>
+            <?php if (!empty($mail['admin_emails'])): ?>
+              <?= e(implode(', ', $mail['admin_emails'])) ?>
+            <?php else: ?>
+              —
+            <?php endif; ?>
+          </td>
+        </tr>
         <tr><td>SMTP host</td><td><?= e((string) ($mail['smtp']['host'] ?? '')) ?></td></tr>
         <tr><td>SMTP port</td><td><?= e((string) ($mail['smtp']['port'] ?? '')) ?></td></tr>
         <tr><td>SMTP user</td><td><?= e((string) ($mail['smtp']['username'] ?? '')) ?></td></tr>

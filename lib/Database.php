@@ -165,6 +165,8 @@ final class Database
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
+        $this->ensureAppSettingsTable();
+        $this->ensureEmailCampaignsTables();
     }
 
     private function migrateSqlite(): void
@@ -237,6 +239,8 @@ final class Database
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
+        $this->ensureAppSettingsTable();
+        $this->ensureEmailCampaignsTables();
     }
 
     private function ensurePartnerRole(): void
@@ -436,6 +440,105 @@ final class Database
             $this->pdo->exec('ALTER TABLE submissions ADD COLUMN updated_at TEXT');
             $this->pdo->exec('UPDATE submissions SET updated_at = created_at WHERE updated_at IS NULL');
         }
+    }
+
+    private function ensureEmailCampaignsTables(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS email_campaigns (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    subject VARCHAR(500) NOT NULL,
+                    body_html LONGTEXT NOT NULL,
+                    status ENUM("draft", "scheduled", "sending", "sent", "cancelled", "failed") NOT NULL DEFAULT "draft",
+                    scheduled_at DATETIME NULL,
+                    recipient_count INT UNSIGNED NOT NULL DEFAULT 0,
+                    sent_count INT UNSIGNED NOT NULL DEFAULT 0,
+                    failed_count INT UNSIGNED NOT NULL DEFAULT 0,
+                    created_by_user_id INT UNSIGNED NULL,
+                    created_by_name VARCHAR(191) NOT NULL DEFAULT "",
+                    started_at DATETIME NULL,
+                    completed_at DATETIME NULL,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    KEY idx_campaigns_status (status),
+                    KEY idx_campaigns_scheduled (scheduled_at)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+                CREATE TABLE IF NOT EXISTS email_campaign_recipients (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    campaign_id INT UNSIGNED NOT NULL,
+                    client_id INT UNSIGNED NULL,
+                    email VARCHAR(191) NOT NULL,
+                    client_name VARCHAR(255) NOT NULL DEFAULT "",
+                    status ENUM("pending", "sent", "failed", "skipped") NOT NULL DEFAULT "pending",
+                    error_message VARCHAR(500) NULL,
+                    sent_at DATETIME NULL,
+                    KEY idx_recipients_campaign (campaign_id),
+                    KEY idx_recipients_status (campaign_id, status),
+                    CONSTRAINT fk_recipients_campaign
+                        FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ');
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS email_campaigns (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                subject TEXT NOT NULL,
+                body_html TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT "draft",
+                scheduled_at TEXT NULL,
+                recipient_count INTEGER NOT NULL DEFAULT 0,
+                sent_count INTEGER NOT NULL DEFAULT 0,
+                failed_count INTEGER NOT NULL DEFAULT 0,
+                created_by_user_id INTEGER NULL,
+                created_by_name TEXT NOT NULL DEFAULT "",
+                started_at TEXT NULL,
+                completed_at TEXT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS email_campaign_recipients (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                campaign_id INTEGER NOT NULL,
+                client_id INTEGER NULL,
+                email TEXT NOT NULL,
+                client_name TEXT NOT NULL DEFAULT "",
+                status TEXT NOT NULL DEFAULT "pending",
+                error_message TEXT NULL,
+                sent_at TEXT NULL,
+                FOREIGN KEY (campaign_id) REFERENCES email_campaigns(id) ON DELETE CASCADE
+            )
+        ');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_campaigns_status ON email_campaigns(status)');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_recipients_campaign ON email_campaign_recipients(campaign_id)');
+    }
+
+    private function ensureAppSettingsTable(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS app_settings (
+                    setting_key VARCHAR(64) NOT NULL PRIMARY KEY,
+                    value_json LONGTEXT NOT NULL,
+                    updated_at DATETIME NOT NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS app_settings (
+                setting_key TEXT NOT NULL PRIMARY KEY,
+                value_json TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        ');
     }
 
     private function columnExists(string $table, string $column): bool

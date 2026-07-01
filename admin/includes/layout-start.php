@@ -13,7 +13,7 @@ $activeNav = $activeNav ?? '';
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/css/admin.css?v=37">
+  <link rel="stylesheet" href="/admin/css/admin.css?v=39">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.css">
 </head>
 <body class="admin-body">
@@ -64,6 +64,14 @@ $activeNav = $activeNav ?? '';
         <a href="/admin/activity-log" class="admin-nav-item <?= $activeNav === 'activity' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg></span>
           <span class="admin-nav-label">Activity log</span>
+        </a>
+        <a href="/admin/email-settings" class="admin-nav-item <?= $activeNav === 'email' ? 'active' : '' ?>">
+          <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg></span>
+          <span class="admin-nav-label">Email</span>
+        </a>
+        <a href="/admin/campaigns" class="admin-nav-item <?= $activeNav === 'campaigns' ? 'active' : '' ?>">
+          <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
+          <span class="admin-nav-label">Campaigns</span>
         </a>
       <?php endif; ?>
     </nav>

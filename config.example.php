@@ -48,6 +48,8 @@ return [
         'from_email' => 'info@vermaaccounting.ca',
         'from_name' => 'Verma Accounting',
         'admin_email' => 'info@vermaaccounting.ca',
+        // Optional: multiple admin notification recipients (overridden by Admin → Email settings)
+        'admin_emails' => ['info@vermaaccounting.ca'],
         'admin_name' => 'Verma Accounting',
         'smtp' => [
             'host' => 'smtp.office365.com',

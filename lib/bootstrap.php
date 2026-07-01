@@ -46,6 +46,8 @@ require_once __DIR__ . '/UploadRepository.php';
 require_once __DIR__ . '/UserRepository.php';
 require_once __DIR__ . '/ActivityLog.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/SettingsRepository.php';
+require_once __DIR__ . '/EmailCampaignRepository.php';
 require_once __DIR__ . '/embed.php';
 require_once __DIR__ . '/submission_helpers.php';
 require_once __DIR__ . '/staging_uploads.php';
@@ -54,6 +56,7 @@ require_once __DIR__ . '/ClientRepository.php';
 require_once __DIR__ . '/pagination_helpers.php';
 require_once __DIR__ . '/Mailer.php';
 require_once __DIR__ . '/submission_emails.php';
+require_once __DIR__ . '/campaign_emails.php';
 require_once __DIR__ . '/partner_helpers.php';
 
 ensure_data_dirs();

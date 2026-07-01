@@ -67,6 +67,41 @@ function now_iso(): string
     return gmdate('Y-m-d H:i:s');
 }
 
+/** @return list<string> */
+function normalize_admin_emails(mixed $raw): array
+{
+    if (is_string($raw)) {
+        $raw = preg_split('/[\s,;]+/', $raw) ?: [];
+    }
+    if (!is_array($raw)) {
+        return [];
+    }
+
+    $out = [];
+    foreach ($raw as $email) {
+        $email = strtolower(trim((string) $email));
+        if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $out[$email] = $email;
+        }
+    }
+
+    return array_values($out);
+}
+
+/** @return array<string, mixed> */
+function stored_mail_settings(): array
+{
+    static $cached = null;
+    if ($cached !== null) {
+        return $cached;
+    }
+
+    $repo = new SettingsRepository();
+    $stored = $repo->getMailSettings();
+    $cached = $stored;
+    return $cached;
+}
+
 /** @return array<string, mixed> */
 function mail_config(): array
 {
@@ -101,6 +136,30 @@ function mail_config(): array
     if (($mail['admin_email'] ?? '') === '' && ($config['admin_notification_email'] ?? '') !== '') {
         $mail['admin_email'] = (string) $config['admin_notification_email'];
     }
+
+    $stored = stored_mail_settings();
+    if ($stored !== []) {
+        if (array_key_exists('admin_emails', $stored)) {
+            $mail['admin_emails'] = normalize_admin_emails($stored['admin_emails']);
+        }
+        if (isset($stored['admin_notification']) && is_array($stored['admin_notification'])) {
+            $mail['admin_notification'] = array_replace_recursive(
+                $mail['admin_notification'],
+                $stored['admin_notification']
+            );
+        }
+        if (isset($stored['client_confirmation']) && is_array($stored['client_confirmation'])) {
+            $mail['client_confirmation'] = array_replace_recursive(
+                $mail['client_confirmation'],
+                $stored['client_confirmation']
+            );
+        }
+    }
+
+    if (empty($mail['admin_emails'])) {
+        $mail['admin_emails'] = normalize_admin_emails($mail['admin_email'] ?? '');
+    }
+    $mail['admin_email'] = $mail['admin_emails'][0] ?? trim((string) ($mail['admin_email'] ?? ''));
 
     return $mail;
 }

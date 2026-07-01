@@ -868,6 +868,103 @@ body.admin-body {
   .admin-grid-2 { grid-template-columns: 1fr; }
 }
 
+.admin-email-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.admin-email-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.admin-email-row input[type="email"] {
+  flex: 1;
+  min-width: 0;
+}
+
+.campaign-status-badge {
+  display: inline-block;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.campaign-status-badge--draft { background: #e2e8f0; color: #475569; }
+.campaign-status-badge--scheduled { background: #dbeafe; color: #1d4ed8; }
+.campaign-status-badge--sending { background: #fef3c7; color: #b45309; }
+.campaign-status-badge--sent { background: #dcfce7; color: #15803d; }
+.campaign-status-badge--cancelled { background: #f1f5f9; color: #64748b; }
+.campaign-status-badge--failed { background: #fee2e2; color: #b91c1c; }
+
+.campaign-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+}
+
+.campaign-progress-bar {
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.campaign-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #1e3a8a, #3b82f6);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+}
+
+.campaign-body-preview {
+  padding: 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #334155;
+  white-space: pre-wrap;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.campaign-cron-snippet {
+  margin: 0.75rem 0 0;
+  padding: 0.85rem 1rem;
+  background: #0f172a;
+  color: #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  overflow-x: auto;
+}
+
+.campaign-send-options {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 0;
+}
+
+.campaign-send-options legend {
+  padding: 0 0.35rem;
+  font-weight: 600;
+}
+
+.campaign-schedule-wrap {
+  margin-top: 0.75rem;
+}
+
+.admin-table-sub {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin-top: 0.15rem;
+}
+
 /* Form builder: settings + tax year side by side on large screens */
 .builder-settings-pair {
   display: grid;
