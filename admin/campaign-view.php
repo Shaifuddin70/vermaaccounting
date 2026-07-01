@@ -19,6 +19,10 @@ $recipientTotal = (int) ($campaign['recipient_count'] ?? 0);
 $sent = (int) ($campaign['sent_count'] ?? 0);
 $failed = (int) ($campaign['failed_count'] ?? 0);
 $pending = $campaignRepo->countRecipients($campaignId, 'pending');
+$mailReady = Mailer::fromAppConfig() !== null;
+$clientEmailCount = (new ClientRepository())->countWithEmail();
+$scheduledAt = (string) ($campaign['scheduled_at'] ?? '');
+$scheduledFuture = $status === 'scheduled' && $scheduledAt !== '' && $scheduledAt > now_iso();
 
 $flashSuccess = $_SESSION['flash_success'] ?? null;
 $flashError = $_SESSION['flash_error'] ?? null;
@@ -44,6 +48,34 @@ require __DIR__ . '/includes/layout-start.php';
 <?php endif; ?>
 <?php if ($flashError): ?>
   <div class="admin-alert admin-alert-error"><?= e($flashError) ?></div>
+<?php endif; ?>
+
+<?php if (!$mailReady): ?>
+  <div class="admin-alert admin-alert-error">
+    Mail is not configured for this environment. Campaigns cannot send until SMTP is set up in
+    <a href="/admin/email-settings">Email settings</a>.
+  </div>
+<?php elseif ($status === 'draft'): ?>
+  <div class="admin-alert admin-alert-warning">
+    This campaign is a <strong>draft</strong>. The cron job does not send drafts — click <strong>Start sending now</strong> below when you are ready.
+  </div>
+<?php elseif ($scheduledFuture): ?>
+  <div class="admin-alert admin-alert-warning">
+    Scheduled for <?= e(campaign_format_datetime($scheduledAt)) ?>. The cron job will start sending at that time, or you can send immediately below.
+  </div>
+<?php elseif ($status === 'failed'): ?>
+  <div class="admin-alert admin-alert-error">
+    This campaign could not send<?= $recipientTotal === 0 ? ' — no recipients were queued' : '' ?>.
+    Click <strong>Retry sending</strong> below after fixing the issue.
+  </div>
+<?php elseif ($status === 'sending' && $pending > 0): ?>
+  <div class="admin-alert admin-alert-success">
+  Sending in progress — <?= number_format($pending) ?> email<?= $pending === 1 ? '' : 's' ?> remaining. Cron runs every few minutes, or use <strong>Process next batch</strong> below.
+  </div>
+<?php elseif ($clientEmailCount === 0 && in_array($status, ['draft', 'scheduled', 'sending', 'failed'], true)): ?>
+  <div class="admin-alert admin-alert-error">
+    No clients have email addresses. <a href="/admin/clients">Add client emails</a> before sending.
+  </div>
 <?php endif; ?>
 
 <div class="admin-grid-2">
@@ -74,7 +106,7 @@ require __DIR__ . '/includes/layout-start.php';
       <?php if (!empty($campaign['scheduled_at'])): ?>
         <div>
           <span class="submission-meta-label">Scheduled</span>
-          <strong><?= e((string) $campaign['scheduled_at']) ?> UTC</strong>
+          <strong><?= e(campaign_format_datetime((string) $campaign['scheduled_at'])) ?></strong>
         </div>
       <?php endif; ?>
       <?php if (!empty($campaign['completed_at'])): ?>
@@ -99,6 +131,26 @@ require __DIR__ . '/includes/layout-start.php';
     <?php endif; ?>
 
     <div class="admin-form-actions" style="margin-top:1.25rem;">
+      <?php if (in_array($status, ['draft', 'failed'], true) && $clientEmailCount > 0): ?>
+        <form method="post" action="/admin/campaign-action" class="inline-form"
+          onsubmit="return confirm('Start sending this campaign to all clients with email addresses?');">
+          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+          <input type="hidden" name="campaign_id" value="<?= $campaignId ?>">
+          <input type="hidden" name="action" value="launch">
+          <button type="submit" class="admin-btn admin-btn-primary" <?= $mailReady ? '' : 'disabled' ?>>
+            <?= $status === 'failed' ? 'Retry sending' : 'Start sending now' ?>
+          </button>
+        </form>
+      <?php endif; ?>
+      <?php if ($scheduledFuture && $clientEmailCount > 0): ?>
+        <form method="post" action="/admin/campaign-action" class="inline-form"
+          onsubmit="return confirm('Send this campaign now instead of waiting for the scheduled time?');">
+          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+          <input type="hidden" name="campaign_id" value="<?= $campaignId ?>">
+          <input type="hidden" name="action" value="send_now">
+          <button type="submit" class="admin-btn admin-btn-primary" <?= $mailReady ? '' : 'disabled' ?>>Send now</button>
+        </form>
+      <?php endif; ?>
       <?php if (in_array($status, ['scheduled', 'sending'], true)): ?>
         <form method="post" action="/admin/campaign-action" class="inline-form">
           <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">

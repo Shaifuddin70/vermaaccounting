@@ -7,6 +7,16 @@ function campaign_batch_size(): int
     return 25;
 }
 
+function campaign_schedule_timezone(): DateTimeZone
+{
+    return new DateTimeZone('America/Toronto');
+}
+
+function campaign_timezone_label(): string
+{
+    return 'Eastern Time (Toronto)';
+}
+
 function campaign_parse_scheduled_at(string $raw): ?string
 {
     $raw = trim($raw);
@@ -17,11 +27,32 @@ function campaign_parse_scheduled_at(string $raw): ?string
     if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $raw)) {
         $raw .= ':00';
     }
-    $dt = DateTime::createFromFormat('Y-m-d H:i:s', $raw, new DateTimeZone('UTC'));
+    $dt = DateTime::createFromFormat('Y-m-d H:i:s', $raw, campaign_schedule_timezone());
     if (!$dt) {
         return null;
     }
-    return $dt->format('Y-m-d H:i:s');
+    return $dt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+}
+
+function campaign_format_datetime(?string $utc): string
+{
+    if ($utc === null || $utc === '') {
+        return '';
+    }
+    $dt = new DateTime($utc, new DateTimeZone('UTC'));
+    $dt->setTimezone(campaign_schedule_timezone());
+    return $dt->format('Y-m-d g:i A') . ' ' . campaign_timezone_label();
+}
+
+/** Value for HTML datetime-local inputs (Eastern time). */
+function campaign_datetime_local_value(?string $utc): string
+{
+    if ($utc === null || $utc === '') {
+        return '';
+    }
+    $dt = new DateTime($utc, new DateTimeZone('UTC'));
+    $dt->setTimezone(campaign_schedule_timezone());
+    return $dt->format('Y-m-d\TH:i');
 }
 
 function campaign_status_label(string $status): string
@@ -79,7 +110,7 @@ function build_campaign_email(string $subject, string $body, array $client): arr
 /**
  * Send up to $limit pending emails for a campaign.
  *
- * @return array{processed: int, sent: int, failed: int, done: bool}
+ * @return array{processed: int, sent: int, failed: int, done: bool, error?: string}
  */
 function process_campaign_batch(int $campaignId, int $limit = 0): array
 {
@@ -97,7 +128,21 @@ function process_campaign_batch(int $campaignId, int $limit = 0): array
     $mailer = Mailer::fromAppConfig();
     if ($mailer === null) {
       $repo->update($campaignId, ['status' => 'failed', 'completed_at' => now_iso()]);
-      return ['processed' => 0, 'sent' => 0, 'failed' => 0, 'done' => true];
+      return ['processed' => 0, 'sent' => 0, 'failed' => 0, 'done' => true, 'error' => 'mail_disabled'];
+    }
+
+    $pendingTotal = $repo->countRecipients($campaignId, 'pending');
+    if ($pendingTotal === 0) {
+      $total = $repo->countRecipients($campaignId);
+      $status = $total === 0 ? 'failed' : 'sent';
+      $repo->update($campaignId, ['status' => $status, 'completed_at' => now_iso()]);
+      return [
+        'processed' => 0,
+        'sent' => 0,
+        'failed' => 0,
+        'done' => true,
+        'error' => $total === 0 ? 'no_recipients' : null,
+      ];
     }
 
     if ($campaign['status'] === 'scheduled') {
@@ -184,4 +229,54 @@ function process_due_campaign_batches(int $batchSize = 0): array
     }
 
     return $totals;
+}
+
+/** @return array{sending: int, scheduled_due: int, scheduled_future: int, draft: int, failed: int, sent: int} */
+function campaign_queue_diagnostics(): array
+{
+    return (new EmailCampaignRepository())->queueDiagnostics();
+}
+
+/**
+ * Queue a campaign for sending and process the first batch.
+ *
+ * @return array{ok: bool, error?: string, batch?: array{processed: int, sent: int, failed: int, done: bool}}
+ */
+function launch_campaign_send(int $campaignId, bool $rebuildRecipients = false): array
+{
+    $repo = new EmailCampaignRepository();
+    $clientRepo = new ClientRepository();
+    $campaign = $repo->find($campaignId);
+    if (!$campaign) {
+        return ['ok' => false, 'error' => 'Campaign not found.'];
+    }
+
+    $status = (string) ($campaign['status'] ?? '');
+    if (!in_array($status, ['draft', 'scheduled', 'sending', 'failed'], true)) {
+        return ['ok' => false, 'error' => 'This campaign cannot be sent.'];
+    }
+
+    if ($rebuildRecipients || $repo->countRecipients($campaignId) === 0) {
+        $repo->clearRecipients($campaignId);
+        $recipients = $clientRepo->recipientsForCampaign();
+        if ($recipients === []) {
+            return ['ok' => false, 'error' => 'No clients with email addresses.'];
+        }
+        $added = $repo->addRecipients($campaignId, $recipients);
+        $repo->update($campaignId, ['recipient_count' => $added]);
+        $repo->refreshCounts($campaignId);
+    }
+
+    $repo->update($campaignId, [
+        'status' => 'sending',
+        'scheduled_at' => now_iso(),
+        'started_at' => !empty($campaign['started_at']) ? $campaign['started_at'] : now_iso(),
+    ]);
+
+    $batch = process_campaign_batch($campaignId);
+    if (!empty($batch['error']) && $batch['error'] === 'mail_disabled') {
+        return ['ok' => false, 'error' => 'Mail is disabled or not configured. Check Admin → Email settings.'];
+    }
+
+    return ['ok' => true, 'batch' => $batch];
 }

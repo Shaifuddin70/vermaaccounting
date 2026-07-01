@@ -18,7 +18,7 @@ $env = app_environment();
 
 if (PHP_SAPI === 'cli') {
     $line = sprintf(
-        "[%s] [%s] Campaign batch: %d campaign(s), %d processed, %d sent, %d failed\n",
+        "[%s] [%s] Campaign batch: %d campaign(s), %d processed, %d sent, %d failed",
         gmdate('Y-m-d H:i:s'),
         $env,
         $result['campaigns'],
@@ -26,7 +26,28 @@ if (PHP_SAPI === 'cli') {
         $result['sent'],
         $result['failed']
     );
-    fwrite(STDOUT, $line);
+    if ($result['campaigns'] === 0) {
+        $diag = campaign_queue_diagnostics();
+        $line .= sprintf(
+            ' | queue: sending=%d due=%d future=%d draft=%d failed=%d sent=%d',
+            $diag['sending'],
+            $diag['scheduled_due'],
+            $diag['scheduled_future'],
+            $diag['draft'],
+            $diag['failed'],
+            $diag['sent']
+        );
+        if ($diag['draft'] > 0) {
+            $line .= ' (drafts are not sent until you click Start sending)';
+        }
+        if ($diag['scheduled_future'] > 0 && $diag['scheduled_due'] === 0 && $diag['sending'] === 0) {
+            $line .= ' (scheduled campaigns are waiting for their send time)';
+        }
+        if (Mailer::fromAppConfig() === null) {
+            $line .= ' | WARNING: mail not configured';
+        }
+    }
+    fwrite(STDOUT, $line . "\n");
     exit(0);
 }
 

@@ -115,7 +115,7 @@ final class EmailCampaignRepository
 
     $stmt = $this->db->prepare('
       INSERT INTO email_campaign_recipients (campaign_id, client_id, email, client_name, status)
-      VALUES (?, ?, ?, ?, "pending")
+      VALUES (?, ?, ?, ?, \'pending\')
     ');
     $added = 0;
     foreach ($recipients as $recipient) {
@@ -170,7 +170,7 @@ final class EmailCampaignRepository
     $limit = max(1, min(100, $limit));
     $stmt = $this->db->prepare('
       SELECT * FROM email_campaign_recipients
-      WHERE campaign_id = ? AND status = "pending"
+      WHERE campaign_id = ? AND status = \'pending\'
       ORDER BY id ASC
       LIMIT ' . $limit
     );
@@ -182,7 +182,7 @@ final class EmailCampaignRepository
   {
     $stmt = $this->db->prepare('
       UPDATE email_campaign_recipients
-      SET status = "sent", sent_at = ?, error_message = NULL
+      SET status = \'sent\', sent_at = ?, error_message = NULL
       WHERE id = ?
     ');
     $stmt->execute([now_iso(), $recipientId]);
@@ -192,7 +192,7 @@ final class EmailCampaignRepository
   {
     $stmt = $this->db->prepare('
       UPDATE email_campaign_recipients
-      SET status = "failed", error_message = ?
+      SET status = \'failed\', error_message = ?
       WHERE id = ?
     ');
     $stmt->execute([mb_substr($error, 0, 500), $recipientId]);
@@ -203,8 +203,8 @@ final class EmailCampaignRepository
     $stmt = $this->db->prepare('
       SELECT
         COUNT(*) AS total,
-        SUM(CASE WHEN status = "sent" THEN 1 ELSE 0 END) AS sent,
-        SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) AS failed
+        SUM(CASE WHEN status = \'sent\' THEN 1 ELSE 0 END) AS sent,
+        SUM(CASE WHEN status = \'failed\' THEN 1 ELSE 0 END) AS failed
       FROM email_campaign_recipients
       WHERE campaign_id = ?
     ');
@@ -225,8 +225,8 @@ final class EmailCampaignRepository
     $stmt = $this->db->prepare('
       SELECT * FROM email_campaigns
       WHERE (
-        status = "sending"
-        OR (status = "scheduled" AND scheduled_at IS NOT NULL AND scheduled_at <= ?)
+        status = \'sending\'
+        OR (status = \'scheduled\' AND scheduled_at IS NOT NULL AND scheduled_at <= ?)
       )
       ORDER BY COALESCE(scheduled_at, created_at) ASC
       LIMIT ' . $limit
@@ -246,5 +246,31 @@ final class EmailCampaignRepository
       'completed_at' => now_iso(),
     ]);
     return true;
+  }
+
+  /** @return array{sending: int, scheduled_due: int, scheduled_future: int, draft: int, failed: int, sent: int} */
+  public function queueDiagnostics(): array
+  {
+    $now = now_iso();
+    $count = function (string $sql, array $params = []): int {
+      $stmt = $this->db->prepare($sql);
+      $stmt->execute($params);
+      return (int) $stmt->fetchColumn();
+    };
+
+    return [
+      'sending' => $count('SELECT COUNT(*) FROM email_campaigns WHERE status = \'sending\''),
+      'scheduled_due' => $count(
+        'SELECT COUNT(*) FROM email_campaigns WHERE status = \'scheduled\' AND scheduled_at IS NOT NULL AND scheduled_at <= ?',
+        [$now]
+      ),
+      'scheduled_future' => $count(
+        'SELECT COUNT(*) FROM email_campaigns WHERE status = \'scheduled\' AND scheduled_at IS NOT NULL AND scheduled_at > ?',
+        [$now]
+      ),
+      'draft' => $count('SELECT COUNT(*) FROM email_campaigns WHERE status = \'draft\''),
+      'failed' => $count('SELECT COUNT(*) FROM email_campaigns WHERE status = \'failed\''),
+      'sent' => $count('SELECT COUNT(*) FROM email_campaigns WHERE status = \'sent\''),
+    ];
   }
 }

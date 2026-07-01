@@ -80,7 +80,7 @@ if ($errors) {
 $user = Auth::currentUser();
 $status = 'draft';
 if ($sendAction === 'now') {
-    $status = 'scheduled';
+    $status = 'sending';
     $scheduledAt = now_iso();
 } elseif ($sendAction === 'schedule') {
     $status = 'scheduled';
@@ -110,15 +110,23 @@ if ($sendAction !== 'draft') {
     $recipients = $clientRepo->recipientsForCampaign();
     $added = $campaignRepo->addRecipients($campaignId, $recipients);
     $campaignRepo->refreshCounts($campaignId);
-    $campaignRepo->update($campaignId, ['recipient_count' => $added]);
+    $campaignRepo->update($campaignId, [
+        'recipient_count' => $added,
+        'started_at' => $sendAction === 'now' ? now_iso() : null,
+    ]);
 
     if ($sendAction === 'now') {
-        process_campaign_batch($campaignId);
+        $batch = process_campaign_batch($campaignId);
+        if (!empty($batch['error']) && $batch['error'] === 'mail_disabled') {
+            $_SESSION['flash_error'] = 'Campaign queued but mail is not configured. Check Admin → Email settings, then use Retry on the campaign page.';
+            header('Location: /admin/campaign-view?id=' . $campaignId);
+            exit;
+        }
     }
 
     $_SESSION['flash_success'] = $sendAction === 'now'
-        ? 'Campaign queued and first batch started. Remaining emails will send via the queue.'
-        : 'Campaign scheduled for ' . $scheduledAt . ' UTC.';
+        ? 'Campaign started. First batch processed; remaining emails send via the cron queue.'
+        : 'Campaign scheduled for ' . campaign_format_datetime($scheduledAt) . '.';
     header('Location: /admin/campaign-view?id=' . $campaignId);
     exit;
 }

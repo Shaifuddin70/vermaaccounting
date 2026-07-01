@@ -96,13 +96,35 @@ if ($action === 'process_batch') {
         exit;
     }
     $result = process_campaign_batch($campaignId);
-    if ($result['processed'] === 0 && !$result['done']) {
+    if (!empty($result['error']) && $result['error'] === 'mail_disabled') {
+        $_SESSION['flash_error'] = 'Mail is disabled or not configured. Check Admin → Email settings.';
+    } elseif ($result['processed'] === 0 && !$result['done']) {
         $_SESSION['flash_error'] = 'No pending recipients to process.';
     } else {
         $_SESSION['flash_success'] = 'Processed ' . $result['processed'] . ' email(s): '
             . $result['sent'] . ' sent, ' . $result['failed'] . ' failed.'
             . ($result['done'] ? ' Campaign complete.' : '');
     }
+    header('Location: ' . $redirect);
+    exit;
+}
+
+if ($action === 'launch' || $action === 'send_now') {
+    $rebuild = $action === 'send_now' || in_array($campaign['status'], ['draft', 'failed'], true);
+    $launch = launch_campaign_send($campaignId, $rebuild);
+    if (!$launch['ok']) {
+        $_SESSION['flash_error'] = $launch['error'] ?? 'Could not start campaign.';
+        header('Location: ' . $redirect);
+        exit;
+    }
+    $batch = $launch['batch'] ?? ['processed' => 0, 'sent' => 0, 'failed' => 0, 'done' => false];
+    ActivityLog::record('campaign.launched', 'campaign', $campaignId, [
+        'sent' => $batch['sent'] ?? 0,
+        'failed' => $batch['failed'] ?? 0,
+    ]);
+    $_SESSION['flash_success'] = 'Campaign started. Processed ' . ($batch['processed'] ?? 0) . ' email(s): '
+        . ($batch['sent'] ?? 0) . ' sent, ' . ($batch['failed'] ?? 0) . ' failed.'
+        . (!empty($batch['done']) ? ' Campaign complete.' : ' Remaining emails will send via cron.');
     header('Location: ' . $redirect);
     exit;
 }

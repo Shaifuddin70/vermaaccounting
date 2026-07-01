@@ -30,7 +30,7 @@ $body = (string) ($old['body'] ?? $campaign['body_html'] ?? '');
 $sendAction = (string) ($old['send_action'] ?? 'draft');
 $scheduledAt = (string) ($old['scheduled_at'] ?? '');
 if ($scheduledAt === '' && !empty($campaign['scheduled_at'])) {
-    $scheduledAt = substr((string) $campaign['scheduled_at'], 0, 16);
+    $scheduledAt = campaign_datetime_local_value((string) $campaign['scheduled_at']);
 }
 
 $recipientCount = $clientRepo->countWithEmail();
@@ -97,7 +97,7 @@ require __DIR__ . '/includes/layout-start.php';
           <span>Schedule for later</span>
         </label>
         <div class="campaign-schedule-wrap" id="campaign-schedule-wrap" <?= $sendAction === 'schedule' ? '' : 'hidden' ?>>
-          <label for="campaign-scheduled-at">Send date &amp; time (UTC)</label>
+          <label for="campaign-scheduled-at">Send date &amp; time (<?= e(campaign_timezone_label()) ?>)</label>
           <input type="datetime-local" id="campaign-scheduled-at" name="scheduled_at" value="<?= e($scheduledAt) ?>">
         </div>
       </fieldset>
