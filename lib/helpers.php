@@ -38,6 +38,9 @@ function form_field_uses_half_column(string $type, array $field = []): bool
     if (in_array($type, ['text', 'email', 'tel', 'number', 'date', 'select'], true)) {
         return true;
     }
+    if ($type === 'partners') {
+        return true;
+    }
     if ($type === 'yes_no') {
         return empty($field['reasonWhen']);
     }
@@ -121,6 +124,33 @@ function app_base_url(): string
     return $scheme . '://' . $host;
 }
 
+function brand_logo_path(): string
+{
+    return 'images/verma-accounting-logo.png';
+}
+
+function brand_logo_url(): string
+{
+    $base = app_base_url();
+    $path = asset(brand_logo_path());
+    return $base !== '' ? $base . $path : $path;
+}
+
+function brand_logo_img_html(string $class = '', int $width = 200, int $height = 48): string
+{
+    $classAttr = $class !== '' ? ' class="' . e($class) . '"' : '';
+    return '<img src="' . e(brand_logo_url()) . '" alt="Verma Accounting"'
+        . $classAttr
+        . ' width="' . $width . '" height="' . $height . '"'
+        . ' decoding="async">';
+}
+
+function brand_logo_email_html(): string
+{
+    return '<img src="' . e(brand_logo_url()) . '" alt="Verma Accounting" width="200" height="48"'
+        . ' style="display:block;margin:0 auto;max-width:200px;height:auto;border:0;">';
+}
+
 function app_environment(): string
 {
     $env = app_config()['environment'] ?? 'production';
@@ -144,6 +174,7 @@ function field_types(): array
         'select' => 'Dropdown',
         'radio' => 'Single choice',
         'checkbox' => 'Multiple choice',
+        'partners' => 'Partner reference',
         'yes_no' => 'Yes / No',
         'file' => 'File upload',
         'image' => 'Image upload',
@@ -160,7 +191,7 @@ function default_field(string $type = 'text'): array
         'type' => $type,
         'label' => field_types()[$type] ?? 'Field',
         'name' => $id,
-        'required' => !in_array($type, ['heading', 'paragraph', 'checkbox'], true),
+        'required' => !in_array($type, ['heading', 'paragraph', 'checkbox', 'partners'], true),
         'placeholder' => '',
         'helpText' => '',
         'options' => [],
@@ -185,6 +216,13 @@ function default_field(string $type = 'text'): array
         $base['reasonRequired'] = true;
     }
 
+    if ($type === 'partners') {
+        $base['label'] = 'Partner reference';
+        $base['required'] = false;
+        $base['partnerInput'] = 'select';
+        $base['partnerIds'] = [];
+    }
+
     if (in_array($type, ['heading', 'paragraph'], true)) {
         $base['required'] = false;
         $base['label'] = $type === 'heading' ? 'Section title' : 'Instructions for the user…';
@@ -192,7 +230,7 @@ function default_field(string $type = 'text'): array
 
     if (in_array($type, ['file', 'image'], true)) {
         $base['accept'] = $type === 'image' ? 'image/*' : '';
-        $base['maxFiles'] = 1;
+        $base['maxFiles'] = 5;
     }
 
     return $base;
@@ -218,6 +256,19 @@ function normalize_form_schema(array $schema): array
             $merged['reasonLabel'] = trim((string) ($merged['reasonLabel'] ?? 'Please explain your answer'));
             $merged['reasonPlaceholder'] = (string) ($merged['reasonPlaceholder'] ?? '');
             $merged['reasonRequired'] = !empty($merged['reasonRequired']);
+        }
+        if ($type === 'partners') {
+            $input = (string) ($merged['partnerInput'] ?? 'select');
+            $merged['partnerInput'] = in_array($input, ['select', 'text', 'number'], true) ? $input : 'select';
+            $ids = $merged['partnerIds'] ?? [];
+            $merged['partnerIds'] = array_values(array_unique(array_filter(
+                array_map('intval', is_array($ids) ? $ids : []),
+                static fn (int $id): bool => $id > 0
+            )));
+        }
+        if (in_array($type, ['file', 'image'], true)) {
+            $maxFiles = (int) ($merged['maxFiles'] ?? 1);
+            $merged['maxFiles'] = max(1, min(10, $maxFiles));
         }
         $fields[] = $merged;
     }

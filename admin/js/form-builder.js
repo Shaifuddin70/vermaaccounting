@@ -281,7 +281,14 @@
           ? `<div class="admin-field admin-field--full"><label>Placeholder</label><input type="text" id="fe-placeholder" value="${escapeAttr(field.placeholder || '')}"></div>`
           : ['text', 'textarea'].includes(field.type)
             ? `<div class="admin-field admin-field--full"><label>Help text</label><input type="text" id="fe-help" value="${escapeAttr(field.helpText || '')}"></div>`
-            : '';
+            : field.type === 'partners' && ['text', 'number'].includes(field.partnerInput || 'select')
+              ? `<div class="admin-fields-2col">
+                  <div class="admin-field"><label>Placeholder</label><input type="text" id="fe-placeholder" value="${escapeAttr(field.placeholder || '')}"></div>
+                  <div class="admin-field"><label>Help text</label><input type="text" id="fe-help" value="${escapeAttr(field.helpText || '')}"></div>
+                </div>`
+              : field.type === 'partners'
+                ? `<div class="admin-field admin-field--full"><label>Help text</label><input type="text" id="fe-help" value="${escapeAttr(field.helpText || '')}"></div>`
+                : '';
 
     fieldEditor.innerHTML = `
       <div class="admin-fields-2col">
@@ -308,6 +315,7 @@
         }
       </div>
       ${placeholderRow}
+      ${field.type === 'partners' ? renderPartnerFieldEditor(field) : ''}
       ${
         ['select', 'radio', 'checkbox'].includes(field.type)
           ? `<div class="admin-field admin-field--full"><label>Options</label>${optionsHtml}<button type="button" class="admin-btn admin-btn-secondary" id="fe-add-opt">+ Option</button></div>`
@@ -428,6 +436,44 @@
     `;
   }
 
+  function renderPartnerFieldEditor(field) {
+    const partners = config.activePartners || [];
+    const selected = new Set((field.partnerIds || []).map(String));
+    const input = field.partnerInput || 'select';
+    const partnerChecks = partners.length
+      ? partners
+          .map(
+            (p) =>
+              `<label class="admin-checkbox-label" style="display:flex;margin:0.35rem 0;">
+                <input type="checkbox" data-partner-id="${p.id}" ${selected.has(String(p.id)) ? 'checked' : ''}>
+                <span>${escapeHtml(p.name)}${
+                p.reference_code
+                  ? ` <span class="fb-optional">(${escapeHtml(p.reference_code)})</span>`
+                  : ''
+              }</span>
+              </label>`
+          )
+          .join('')
+      : '<p class="admin-note">No active partners yet. Add partners under Team and assign each a reference code.</p>';
+
+    return `
+      <hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
+      <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Partner options</h3>
+      <div class="admin-field admin-field--full">
+        <label for="fe-partner-input">How clients enter the reference</label>
+        <select id="fe-partner-input">
+          <option value="select" ${input === 'select' ? 'selected' : ''}>Dropdown — choose a partner</option>
+          <option value="text" ${input === 'text' ? 'selected' : ''}>Text — type reference code</option>
+          <option value="number" ${input === 'number' ? 'selected' : ''}>Number — type reference code</option>
+        </select>
+      </div>
+      <div class="admin-field admin-field--full">
+        <label>Partners to include</label>
+        <div class="data-match-fields">${partnerChecks}</div>
+        <small class="admin-field-hint">Select which partners appear in the dropdown, or whose codes are accepted for text/number entry.</small>
+      </div>`;
+  }
+
   function bindFieldEditorEvents(field) {
     el('fe-type')?.addEventListener('change', (e) => {
       const newType = e.target.value;
@@ -471,6 +517,20 @@
         node.addEventListener('input', syncYesNoReason);
         node.addEventListener('change', syncYesNoReason);
       }
+    });
+
+    el('fe-partner-input')?.addEventListener('change', (e) => {
+      field.partnerInput = e.target.value;
+      if (!field.partnerIds) field.partnerIds = [];
+      renderFieldEditor();
+    });
+    fieldEditor.querySelectorAll('[data-partner-id]').forEach((cb) => {
+      cb.addEventListener('change', () => {
+        field.partnerIds = [...fieldEditor.querySelectorAll('[data-partner-id]:checked')].map((node) =>
+          Number(node.getAttribute('data-partner-id'))
+        );
+        renderFieldList();
+      });
     });
 
     fieldEditor.querySelectorAll('[data-opt-label]').forEach((input) => {
@@ -556,6 +616,15 @@
         ],
         conditions: [],
       },
+      partners: {
+        type: 'partners',
+        label: 'Partner reference',
+        required: false,
+        partnerInput: 'select',
+        partnerIds: [],
+        options: [],
+        conditions: [],
+      },
       yes_no: {
         type: 'yes_no',
         label: 'Yes / No',
@@ -570,8 +639,8 @@
         reasonRequired: true,
         conditions: [],
       },
-      file: { type: 'file', label: 'File upload', required: false, accept: '', maxFiles: 1, options: [], conditions: [] },
-      image: { type: 'image', label: 'Image upload', required: false, accept: 'image/*', maxFiles: 1, options: [], conditions: [] },
+      file: { type: 'file', label: 'File upload', required: false, accept: '', maxFiles: 5, options: [], conditions: [] },
+      image: { type: 'image', label: 'Image upload', required: false, accept: 'image/*', maxFiles: 5, options: [], conditions: [] },
       heading: { type: 'heading', label: 'Section title', required: false, options: [], conditions: [] },
       paragraph: { type: 'paragraph', label: 'Instructions…', required: false, options: [], conditions: [] },
     };

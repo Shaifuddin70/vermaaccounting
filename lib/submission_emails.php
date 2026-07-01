@@ -216,9 +216,11 @@ function submission_email_layout(string $title, string $bodyHtml, string $footer
         . '<table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#f8fafc;padding:24px 12px;">'
         . '<tr><td align="center">'
         . '<table role="presentation" cellpadding="0" cellspacing="0" width="600" style="max-width:600px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;">'
-        . '<tr><td style="background:#1e3a8a;padding:20px 24px;">'
-        . '<div style="font-size:18px;font-weight:700;color:#ffffff;">Verma Accounting</div>'
-        . '<div style="font-size:14px;color:#bfdbfe;margin-top:4px;">' . e($title) . '</div>'
+        . '<tr><td style="padding:24px 24px 16px;text-align:center;background:#ffffff;border-bottom:1px solid #e2e8f0;">'
+        . brand_logo_email_html()
+        . '</td></tr>'
+        . '<tr><td style="background:#1e3a8a;padding:14px 24px;text-align:center;">'
+        . '<div style="font-size:15px;font-weight:600;color:#ffffff;">' . e($title) . '</div>'
         . '</td></tr>'
         . '<tr><td style="padding:24px;">' . $bodyHtml . '</td></tr>'
         . '<tr><td style="padding:16px 24px;background:#f8fafc;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;">'
@@ -248,10 +250,12 @@ function submission_email_field_rows(array $schema, array $data): array
             continue;
         }
         $raw = $data[$name];
-        if (is_array($raw)) {
-            $value = implode(', ', array_map('strval', $raw));
+        if ($type === 'checkbox') {
+            $value = is_array($raw) ? implode(', ', array_map('strval', $raw)) : trim((string) $raw);
+        } elseif ($type === 'partners') {
+            $value = format_partner_submission_value($raw);
         } else {
-            $value = trim((string) $raw);
+            $value = is_array($raw) ? implode(', ', array_map('strval', $raw)) : trim((string) $raw);
         }
         if ($value === '') {
             continue;
@@ -281,7 +285,13 @@ function submission_email_file_count(array $schema, array $data): int
             continue;
         }
         $name = (string) ($field['name'] ?? '');
-        if ($name !== '' && trim((string) ($data[$name] ?? '')) !== '') {
+        if ($name === '') {
+            continue;
+        }
+        $value = $data[$name] ?? '';
+        if (is_array($value)) {
+            $count += count(array_filter($value, static fn($v) => trim((string) $v) !== ''));
+        } elseif (trim((string) $value) !== '') {
             $count++;
         }
     }

@@ -58,6 +58,8 @@
           <?php endif; ?>
         <?php elseif ($type === 'checkbox'): ?>
           <p class="submission-value"><?= e(format_submission_value($data[$name] ?? [])) ?: '—' ?></p>
+        <?php elseif ($type === 'partners'): ?>
+          <p class="submission-value"><?= e(format_partner_submission_value($data[$name] ?? [])) ?: '—' ?></p>
         <?php elseif ($type === 'textarea'): ?>
           <p class="submission-value submission-value--block"><?= nl2br(e(format_submission_value($data[$name] ?? ''))) ?: '—' ?></p>
         <?php else: ?>

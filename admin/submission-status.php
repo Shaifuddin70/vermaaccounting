@@ -21,12 +21,15 @@ $tab = (string) ($_POST['tab'] ?? 'all');
 $year = (string) ($_POST['year'] ?? '');
 
 $repo = new FormRepository();
+$form = $repo->find($formId);
 $submission = $repo->findSubmissionForForm($submissionId, $formId);
 
-if (!$submission) {
+if (!$form || !$submission) {
     http_response_code(404);
     exit('Submission not found.');
 }
+
+assert_submission_access($form, $submission);
 
 $newStatus = $status === 'pending' ? 'pending' : 'complete';
 $oldStatus = $submission['status'] ?? 'pending';

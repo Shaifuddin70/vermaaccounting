@@ -34,10 +34,13 @@ if ($embed) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/custom-form.css?v=7">
+  <link rel="stylesheet" href="/css/custom-form.css?v=8">
 </head>
 <body class="form-embed-body">
   <div class="form-embed-header">
+    <a href="<?= e(app_base_url() ?: 'https://vermaaccounting.ca') ?>" class="form-embed-logo" aria-label="Verma Accounting home">
+      <?= brand_logo_img_html('form-embed-logo-img', 180, 44) ?>
+    </a>
     <h1><?= e($form['title']) ?></h1>
     <?php if ($form['description']): ?>
       <p><?= e($form['description']) ?></p>
@@ -47,7 +50,7 @@ if ($embed) {
     <?php include __DIR__ . '/components/form-render.php'; ?>
   </div>
   <script>window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;</script>
-  <script src="/components/js/custom-form.js?v=7"></script>
+  <script src="/components/js/custom-form.js?v=8"></script>
 </body>
 </html>
     <?php
@@ -63,18 +66,19 @@ foreach ($schema['fields'] as $f) {
 }
 include __DIR__ . '/components/header.php';
 ?>
-<link rel="stylesheet" href="/css/custom-form.css?v=7">
+<link rel="stylesheet" href="/css/custom-form.css?v=8">
 <main class="main-content vf-page">
   <div class="vf-container">
     <div class="vf-layout">
       <div class="vf-main">
         <div class="vf-card">
           <header class="vf-card-header">
-            <div class="vf-card-header-icon" aria-hidden="true">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 15l2 2 4-4"/></svg>
+            <div class="vf-card-header-logo">
+              <a href="<?= e(app_base_url() ?: '/') ?>" aria-label="Verma Accounting home">
+                <?= brand_logo_img_html('vf-card-logo-img', 200, 48) ?>
+              </a>
             </div>
             <div class="vf-card-header-text">
-              <span class="vf-card-eyebrow">Verma Accounting</span>
               <h1 class="vf-card-title"><?= e($form['title']) ?></h1>
               <?php if ($form['description']): ?>
                 <p class="vf-card-desc"><?= e($form['description']) ?></p>
@@ -128,5 +132,5 @@ include __DIR__ . '/components/header.php';
 <script>
   window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/components/js/custom-form.js?v=7"></script>
+<script src="/components/js/custom-form.js?v=8"></script>
 <?php include __DIR__ . '/components/footer.php'; ?>

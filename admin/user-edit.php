@@ -71,14 +71,24 @@ require __DIR__ . '/includes/layout-start.php';
       <small class="admin-field-hint">Minimum 8 characters.</small>
     </div>
 
+    <div class="admin-field" id="ue-reference-wrap" hidden>
+      <label for="ue-reference-code">Reference code <span class="required">*</span></label>
+      <input type="text" id="ue-reference-code" name="reference_code"
+        value="<?= e($old['referenceCode'] ?? $editUser['reference_code'] ?? '') ?>"
+        placeholder="e.g. 1001 or JV-REF"
+        pattern="[A-Za-z0-9_-]{2,32}">
+      <small class="admin-field-hint">Clients can enter this code on forms, or pick the partner from a dropdown.</small>
+    </div>
+
     <div class="user-edit-row">
       <div class="admin-field">
         <label for="ue-role">Role <span class="required">*</span></label>
         <select id="ue-role" name="role" required>
           <option value="reviewer" <?= ($old['role'] ?? $editUser['role'] ?? 'reviewer') === 'reviewer' ? 'selected' : '' ?>>Reviewer</option>
+          <option value="partner"  <?= ($old['role'] ?? $editUser['role'] ?? '') === 'partner' ? 'selected' : '' ?>>Partner</option>
           <option value="admin"    <?= ($old['role'] ?? $editUser['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
         </select>
-        <small class="admin-field-hint">Reviewers can view and complete submissions. Admins have full access.</small>
+        <small class="admin-field-hint">Partners only see submissions where clients selected them. Reviewers see all published form responses. Admins have full access.</small>
       </div>
 
       <div class="admin-field">
@@ -96,4 +106,18 @@ require __DIR__ . '/includes/layout-start.php';
     </div>
   </form>
 </div>
+<script>
+  (function () {
+    const role = document.getElementById('ue-role');
+    const wrap = document.getElementById('ue-reference-wrap');
+    const input = document.getElementById('ue-reference-code');
+    function sync() {
+      const isPartner = role?.value === 'partner';
+      if (wrap) wrap.hidden = !isPartner;
+      if (input) input.required = !!isPartner;
+    }
+    role?.addEventListener('change', sync);
+    sync();
+  })();
+</script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

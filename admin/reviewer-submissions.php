@@ -11,12 +11,21 @@ if (!in_array($tab, ['all', 'pending'], true)) {
 }
 
 $repo = new FormRepository();
-$submissionCounts = $repo->submissionCountsByFormId();
+$partnerId = partner_user_id();
+$submissionCounts = $repo->submissionCountsByFormId($partnerId);
 $allForms = $repo->all();
 
-$forms = Auth::userRole() === 'admin'
-  ? $allForms
-  : array_values(array_filter($allForms, fn($f) => ($f['status'] ?? '') === 'published'));
+$role = Auth::userRole();
+if ($role === 'admin') {
+  $forms = $allForms;
+} elseif ($role === 'partner') {
+  $forms = array_values(array_filter($allForms, function (array $f) use ($submissionCounts): bool {
+    return ($f['status'] ?? '') === 'published'
+      && (($submissionCounts[(int) $f['id']]['all'] ?? 0) > 0);
+  }));
+} else {
+  $forms = array_values(array_filter($allForms, fn($f) => ($f['status'] ?? '') === 'published'));
+}
 
 usort($forms, function (array $a, array $b) use ($submissionCounts): int {
   $aid = (int) $a['id'];
@@ -86,7 +95,7 @@ require __DIR__ . '/includes/layout-start.php';
           <p class="admin-empty-state-text">Create a form and publish it to start collecting responses.</p>
           <a href="/admin/form-builder" class="admin-btn">Create a form</a>
         <?php else: ?>
-          <p class="admin-empty-state-text">No published forms are available for review yet.</p>
+          <p class="admin-empty-state-text">No published forms are available<?= Auth::userRole() === 'partner' ? ' where you are listed as a reference' : ' for review' ?> yet.</p>
         <?php endif; ?>
       </div>
     <?php elseif (!$visibleForms): ?>

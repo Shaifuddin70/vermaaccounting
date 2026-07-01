@@ -14,6 +14,8 @@ if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
     exit('Invalid session.');
 }
 
+Auth::requireRole('admin');
+
 $submissionId = (int) ($_POST['submission_id'] ?? 0);
 $formId = (int) ($_POST['form_id'] ?? 0);
 
@@ -50,6 +52,11 @@ foreach ($schema['fields'] as $field) {
         if ($field['required'] && count($data[$name]) === 0) {
             $errors[] = $field['label'] . ' is required.';
         }
+        continue;
+    }
+
+    if ($type === 'partners') {
+        $data[$name] = partners_field_from_post($field, $_POST, $errors);
         continue;
     }
 
@@ -152,6 +159,7 @@ if ($errors) {
 }
 
 $repo->updateSubmissionData($submissionId, $data);
+sync_submission_partners_from_data($submissionId, $schema, $data);
 
 ActivityLog::record('submission.edited', 'submission', $submissionId, [
     'form_id' => $formId,

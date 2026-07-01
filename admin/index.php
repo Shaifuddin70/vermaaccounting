@@ -5,8 +5,9 @@ require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
 
 $repo = new FormRepository();
-$submissionCounts = $repo->submissionCountsByFormId();
-$globalSubs = $repo->globalSubmissionCounts();
+$partnerId = partner_user_id();
+$submissionCounts = $repo->submissionCountsByFormId($partnerId);
+$globalSubs = $repo->globalSubmissionCounts($partnerId);
 
 $page = pagination_page_from_request();
 $perPage = pagination_per_page_from_request();
@@ -14,14 +15,21 @@ $formStats = $repo->formStatusCounts();
 $totalForms = $formStats['total'];
 $pagination = pagination_meta($totalForms, $page, $perPage);
 $forms = $repo->allPaginated($pagination['per_page'], $pagination['offset']);
-$recentSubmissions = $repo->recentSubmissions(5);
+$recentSubmissions = $repo->recentSubmissions(5, $partnerId);
 
 $isAdmin = Auth::userRole() === 'admin';
+$isPartner = Auth::userRole() === 'partner';
 $allFormsList = $repo->all();
 if (!$isAdmin) {
     $allFormsList = array_values(array_filter(
         $allFormsList,
         fn (array $f) => ($f['status'] ?? '') === 'published'
+    ));
+}
+if ($isPartner) {
+    $allFormsList = array_values(array_filter(
+        $allFormsList,
+        fn (array $f) => (($submissionCounts[(int) $f['id']]['all'] ?? 0) > 0)
     ));
 }
 

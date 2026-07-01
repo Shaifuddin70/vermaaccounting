@@ -210,10 +210,11 @@ final class FormRepository
         ?string $status = null,
         ?int $taxYear = null,
         ?int $limit = null,
-        ?int $offset = null
+        ?int $offset = null,
+        ?int $partnerUserId = null
     ): array {
-        [$sql, $params] = $this->submissionFilterSql($formId, $status, $taxYear);
-        $sql .= ' ORDER BY created_at DESC';
+        [$sql, $params] = $this->submissionFilterSql($formId, $status, $taxYear, $partnerUserId);
+        $sql .= ' ORDER BY s.created_at DESC';
         if ($limit !== null) {
             $limit = max(1, min(200, $limit));
             $offset = max(0, $offset ?? 0);
@@ -224,16 +225,21 @@ final class FormRepository
         return $stmt->fetchAll();
     }
 
-    public function countSubmissionsForForm(int $formId, ?string $status = null, ?int $taxYear = null): int
-    {
-        $countSql = 'SELECT COUNT(*) FROM submissions WHERE form_id = ?';
-        $countParams = [$formId];
+    public function countSubmissionsForForm(
+        int $formId,
+        ?string $status = null,
+        ?int $taxYear = null,
+        ?int $partnerUserId = null
+    ): int {
+        [$partnerJoin, $partnerParams] = $this->partnerFilterClause($partnerUserId);
+        $countSql = 'SELECT COUNT(*) FROM submissions s' . $partnerJoin . ' WHERE s.form_id = ?';
+        $countParams = array_merge($partnerParams, [$formId]);
         if ($status === 'pending' || $status === 'complete') {
-            $countSql .= ' AND status = ?';
+            $countSql .= ' AND s.status = ?';
             $countParams[] = $status;
         }
         if ($taxYear !== null) {
-            $countSql .= ' AND tax_year = ?';
+            $countSql .= ' AND s.tax_year = ?';
             $countParams[] = $taxYear;
         }
         $stmt = $this->db->prepare($countSql);
@@ -242,19 +248,73 @@ final class FormRepository
     }
 
     /** @return array{0: string, 1: list<mixed>} */
-    private function submissionFilterSql(int $formId, ?string $status, ?int $taxYear): array
-    {
-        $sql = 'SELECT * FROM submissions WHERE form_id = ?';
-        $params = [$formId];
+    private function submissionFilterSql(
+        int $formId,
+        ?string $status,
+        ?int $taxYear,
+        ?int $partnerUserId = null
+    ): array {
+        [$partnerJoin, $partnerParams] = $this->partnerFilterClause($partnerUserId);
+        $sql = 'SELECT s.* FROM submissions s' . $partnerJoin . ' WHERE s.form_id = ?';
+        $params = array_merge($partnerParams, [$formId]);
         if ($status === 'pending' || $status === 'complete') {
-            $sql .= ' AND status = ?';
+            $sql .= ' AND s.status = ?';
             $params[] = $status;
         }
         if ($taxYear !== null) {
-            $sql .= ' AND tax_year = ?';
+            $sql .= ' AND s.tax_year = ?';
             $params[] = $taxYear;
         }
         return [$sql, $params];
+    }
+
+    /** @return array{0: string, 1: list<mixed>} */
+    private function partnerFilterClause(?int $partnerUserId): array
+    {
+        if ($partnerUserId === null || $partnerUserId < 1) {
+            return ['', []];
+        }
+
+        return [
+            ' INNER JOIN submission_partners sp ON sp.submission_id = s.id AND sp.user_id = ?',
+            [$partnerUserId],
+        ];
+    }
+
+    /** @param list<int> $partnerUserIds */
+    public function syncSubmissionPartners(int $submissionId, array $partnerUserIds): void
+    {
+        $partnerUserIds = array_values(array_unique(array_filter(
+            array_map('intval', $partnerUserIds),
+            static fn (int $id): bool => $id > 0
+        )));
+
+        $this->db->prepare('DELETE FROM submission_partners WHERE submission_id = ?')
+            ->execute([$submissionId]);
+
+        if ($partnerUserIds === []) {
+            return;
+        }
+
+        $validIds = active_partner_ids();
+        $stmt = $this->db->prepare('
+            INSERT INTO submission_partners (submission_id, user_id) VALUES (?, ?)
+        ');
+        foreach ($partnerUserIds as $userId) {
+            if (!in_array($userId, $validIds, true)) {
+                continue;
+            }
+            $stmt->execute([$submissionId, $userId]);
+        }
+    }
+
+    public function partnerHasAccessToSubmission(int $submissionId, int $userId): bool
+    {
+        $stmt = $this->db->prepare('
+            SELECT 1 FROM submission_partners WHERE submission_id = ? AND user_id = ? LIMIT 1
+        ');
+        $stmt->execute([$submissionId, $userId]);
+        return (bool) $stmt->fetch();
     }
 
     /**
@@ -290,18 +350,20 @@ final class FormRepository
         return null;
     }
 
-    public function submissionStatusCounts(int $formId, ?int $taxYear = null): array
+    public function submissionStatusCounts(int $formId, ?int $taxYear = null, ?int $partnerUserId = null): array
     {
+        [$partnerJoin, $partnerParams] = $this->partnerFilterClause($partnerUserId);
         $sql = '
             SELECT
                 COUNT(*) AS total,
-                SUM(CASE WHEN status = \'pending\' THEN 1 ELSE 0 END) AS pending,
-                SUM(CASE WHEN status = \'complete\' THEN 1 ELSE 0 END) AS complete
-            FROM submissions WHERE form_id = ?
+                SUM(CASE WHEN s.status = \'pending\' THEN 1 ELSE 0 END) AS pending,
+                SUM(CASE WHEN s.status = \'complete\' THEN 1 ELSE 0 END) AS complete
+            FROM submissions s' . $partnerJoin . '
+            WHERE s.form_id = ?
         ';
-        $params = [$formId];
+        $params = array_merge($partnerParams, [$formId]);
         if ($taxYear !== null) {
-            $sql .= ' AND tax_year = ?';
+            $sql .= ' AND s.tax_year = ?';
             $params[] = $taxYear;
         }
         $stmt = $this->db->prepare($sql);
@@ -326,35 +388,37 @@ final class FormRepository
     }
 
     /** @return array{all: int, pending: int, complete: int} */
-    public function globalSubmissionCounts(): array
+    public function globalSubmissionCounts(?int $partnerUserId = null): array
     {
+        [$partnerJoin, $partnerParams] = $this->partnerFilterClause($partnerUserId);
         $stmt = $this->db->prepare('
             SELECT
                 COUNT(*) AS total,
                 SUM(CASE WHEN s.status = \'pending\' THEN 1 ELSE 0 END) AS pending,
                 SUM(CASE WHEN s.status = \'complete\' THEN 1 ELSE 0 END) AS complete
             FROM submissions s
-            INNER JOIN forms f ON f.id = s.form_id
+            INNER JOIN forms f ON f.id = s.form_id' . $partnerJoin . '
             WHERE f.slug != ?
         ');
-        $stmt->execute([file_manager_form_slug()]);
+        $stmt->execute(array_merge($partnerParams, [file_manager_form_slug()]));
         return $this->mapSubmissionCountRow($stmt->fetch() ?: []);
     }
 
     /** @return array<int, array{all: int, pending: int, complete: int}> */
-    public function submissionCountsByFormId(): array
+    public function submissionCountsByFormId(?int $partnerUserId = null): array
     {
+        [$partnerJoin, $partnerParams] = $this->partnerFilterClause($partnerUserId);
         $stmt = $this->db->prepare('
             SELECT s.form_id,
                 COUNT(*) AS total,
                 SUM(CASE WHEN s.status = \'pending\' THEN 1 ELSE 0 END) AS pending,
                 SUM(CASE WHEN s.status = \'complete\' THEN 1 ELSE 0 END) AS complete
             FROM submissions s
-            INNER JOIN forms f ON f.id = s.form_id
+            INNER JOIN forms f ON f.id = s.form_id' . $partnerJoin . '
             WHERE f.slug != ?
             GROUP BY s.form_id
         ');
-        $stmt->execute([file_manager_form_slug()]);
+        $stmt->execute(array_merge($partnerParams, [file_manager_form_slug()]));
         $map = [];
         foreach ($stmt->fetchAll() as $row) {
             $map[(int) $row['form_id']] = $this->mapSubmissionCountRow($row);
@@ -362,19 +426,20 @@ final class FormRepository
         return $map;
     }
 
-    public function recentSubmissions(int $limit = 8): array
+    public function recentSubmissions(int $limit = 8, ?int $partnerUserId = null): array
     {
         $limit = max(1, min(50, $limit));
+        [$partnerJoin, $partnerParams] = $this->partnerFilterClause($partnerUserId);
         $stmt = $this->db->prepare('
             SELECT s.id, s.form_id, s.status, s.created_at, s.updated_at,
                    f.title AS form_title, f.slug AS form_slug
             FROM submissions s
-            INNER JOIN forms f ON f.id = s.form_id
+            INNER JOIN forms f ON f.id = s.form_id' . $partnerJoin . '
             WHERE f.slug != ?
             ORDER BY s.created_at DESC
             LIMIT ' . $limit
         );
-        $stmt->execute([file_manager_form_slug()]);
+        $stmt->execute(array_merge($partnerParams, [file_manager_form_slug()]));
         return $stmt->fetchAll();
     }
 

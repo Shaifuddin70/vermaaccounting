@@ -32,6 +32,7 @@ $dataMatchCfg = $schema['settings']['dataMatch'] ?? [];
 
 <form class="custom-form" id="custom-form" enctype="multipart/form-data" novalidate<?= $taxYearOn ? ' hidden' : '' ?>>
   <input type="hidden" name="form_slug" value="<?= e($form['slug']) ?>">
+  <input type="hidden" name="upload_session" id="upload-session" value="">
   <?php if ($taxYearOn): ?>
     <input type="hidden" name="tax_year" id="tax-year-input" value="">
     <div class="tax-year-selected-bar" id="tax-year-selected-bar" hidden>
@@ -138,10 +139,56 @@ $dataMatchCfg = $schema['settings']['dataMatch'] ?? [];
             <?php endforeach; ?>
           </div>
 
-        <?php elseif ($type === 'file' || $type === 'image'): ?>
-          <input type="file" id="cf-<?= $id ?>" name="<?= $name ?>"
-            accept="<?= e($field['accept'] ?? ($type === 'image' ? 'image/*' : '')) ?>"
-            <?= $required ? 'required' : '' ?>>
+        <?php elseif ($type === 'partners'):
+          $partnerInput = normalize_partner_input_type($field);
+          $fieldPartners = partners_for_field($field);
+        ?>
+          <?php if ($partnerInput === 'select'): ?>
+            <select id="cf-<?= $id ?>" name="<?= $name ?>" <?= $required ? 'required' : '' ?>>
+              <option value="">Select…</option>
+              <?php foreach ($fieldPartners as $partner):
+                $code = trim((string) ($partner['reference_code'] ?? ''));
+                $label = $partner['name'] . ($code !== '' ? ' (' . $code . ')' : '');
+              ?>
+                <option value="<?= (int) $partner['id'] ?>"><?= e($label) ?></option>
+              <?php endforeach; ?>
+            </select>
+            <?php if ($fieldPartners === []): ?>
+              <small class="custom-form-help">No partners configured for this field.</small>
+            <?php endif; ?>
+          <?php else: ?>
+            <input type="<?= $partnerInput === 'number' ? 'number' : 'text' ?>"
+              id="cf-<?= $id ?>" name="<?= $name ?>"
+              placeholder="<?= e($field['placeholder'] ?? 'Enter partner reference code') ?>"
+              <?= $required ? 'required' : '' ?>
+              <?= $partnerInput === 'number' ? 'inputmode="numeric" pattern="[0-9]*"' : '' ?>>
+          <?php endif; ?>
+
+        <?php elseif ($type === 'file' || $type === 'image'):
+          $maxFiles = max(1, min(10, (int) ($field['maxFiles'] ?? 5)));
+          $accept = $field['accept'] ?? ($type === 'image' ? 'image/*' : '');
+        ?>
+          <div class="custom-form-file-field"
+            data-file-field="1"
+            data-field-id="<?= $id ?>"
+            data-field-name="<?= $name ?>"
+            data-field-type="<?= e($type) ?>"
+            data-max-files="<?= $maxFiles ?>"
+            data-required="<?= $required ? '1' : '0' ?>"
+            data-accept="<?= e($accept) ?>">
+            <input type="file"
+              id="cf-<?= $id ?>"
+              class="custom-form-file-input"
+              accept="<?= e($accept) ?>"
+              <?= $maxFiles > 1 ? 'multiple' : '' ?>>
+            <div class="custom-form-file-queue" id="cf-queue-<?= $id ?>" aria-live="polite"></div>
+            <div class="custom-form-file-tokens" id="cf-tokens-<?= $id ?>"></div>
+            <?php if ($maxFiles > 1): ?>
+              <small class="custom-form-help">You can upload up to <?= (int) $maxFiles ?> files. Upload starts as soon as you select each file.</small>
+            <?php else: ?>
+              <small class="custom-form-help">Upload starts as soon as you select a file.</small>
+            <?php endif; ?>
+          </div>
 
         <?php else: ?>
           <input type="<?= e($type === 'tel' ? 'tel' : ($type === 'email' ? 'email' : ($type === 'number' ? 'number' : ($type === 'date' ? 'date' : 'text')))) ?>"

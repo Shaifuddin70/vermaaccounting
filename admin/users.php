@@ -59,6 +59,10 @@ require __DIR__ . '/includes/layout-start.php';
     <span class="users-stat-value" id="stat-reviewers"><?= $counts['reviewers'] ?></span>
     <span class="users-stat-label">Reviewers</span>
   </div>
+  <div class="users-stat">
+    <span class="users-stat-value" id="stat-partners"><?= $counts['partners'] ?></span>
+    <span class="users-stat-label">Partners</span>
+  </div>
 </div>
 
 <div class="admin-card">
@@ -85,7 +89,7 @@ require __DIR__ . '/includes/layout-start.php';
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
               </span>
               <h2 class="admin-empty-state-title">No team members yet</h2>
-              <p class="admin-empty-state-text">Add reviewers to help process submissions, or other admins to manage the whole workspace.</p>
+              <p class="admin-empty-state-text">Add reviewers, partners, or admins to help process submissions.</p>
               <button type="button" class="admin-btn" id="btn-add-user-empty">Add your first team member</button>
             </div>
           </td>
@@ -113,7 +117,8 @@ require __DIR__ . '/includes/layout-start.php';
                 data-user-name="<?= e($u['name']) ?>"
                 data-user-email="<?= e($u['email']) ?>"
                 data-user-role="<?= e($u['role']) ?>"
-                data-user-status="<?= e($u['status']) ?>">
+                data-user-status="<?= e($u['status']) ?>"
+                data-user-reference="<?= e($u['reference_code'] ?? '') ?>">
                 Edit
               </button>
               <?php if ($u['status'] === 'active'): ?>
@@ -194,9 +199,10 @@ require __DIR__ . '/includes/layout-start.php';
             <label for="umodal-role">Role <span class="required">*</span></label>
             <select id="umodal-role" name="role" required>
               <option value="reviewer">Reviewer</option>
+              <option value="partner">Partner</option>
               <option value="admin">Admin</option>
             </select>
-            <small class="admin-field-hint">Reviewers view &amp; complete submissions. Admins have full access.</small>
+            <small class="admin-field-hint">Partners only see submissions where they are selected as a reference.</small>
           </div>
 
           <div class="admin-field">
@@ -206,6 +212,13 @@ require __DIR__ . '/includes/layout-start.php';
               <option value="inactive">Inactive</option>
             </select>
           </div>
+        </div>
+
+        <div class="admin-field" id="umodal-reference-wrap" hidden>
+          <label for="umodal-reference-code">Reference code <span class="required">*</span></label>
+          <input type="text" id="umodal-reference-code" name="reference_code"
+            placeholder="e.g. 1001 or JV-REF" pattern="[A-Za-z0-9_-]{2,32}">
+          <small class="admin-field-hint">Shown on dropdowns and used when clients enter a reference code.</small>
         </div>
       </div>
 
@@ -236,6 +249,8 @@ require __DIR__ . '/includes/layout-start.php';
   const pwInput   = document.getElementById('umodal-password');
   const roleSelect= document.getElementById('umodal-role');
   const statSelect= document.getElementById('umodal-status');
+  const refWrap   = document.getElementById('umodal-reference-wrap');
+  const refInput  = document.getElementById('umodal-reference-code');
   const title     = document.getElementById('umodal-title');
   const submitBtn = document.getElementById('umodal-submit');
   const submitTxt = document.getElementById('umodal-submit-text');
@@ -246,6 +261,12 @@ require __DIR__ . '/includes/layout-start.php';
 
   function isOpen() {
     return modal.classList.contains('is-open');
+  }
+
+  function syncPartnerFields() {
+    const isPartner = roleSelect.value === 'partner';
+    if (refWrap) refWrap.hidden = !isPartner;
+    if (refInput) refInput.required = isPartner;
   }
 
   // ── Open / close ─────────────────────────────────────────────────────────
@@ -259,9 +280,11 @@ require __DIR__ . '/includes/layout-start.php';
     pwInput.value         = '';
     roleSelect.value      = isNew ? 'reviewer' : user.role;
     statSelect.value      = isNew ? 'active' : user.status;
+    if (refInput) refInput.value = isNew ? '' : (user.reference_code || '');
     pwInput.required      = isNew;
     pwReq.style.display   = isNew ? '' : 'none';
     pwOpt.style.display   = isNew ? 'none' : '';
+    syncPartnerFields();
     hideErrors();
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
@@ -379,6 +402,8 @@ require __DIR__ . '/includes/layout-start.php';
     if (e.key === 'Escape' && isOpen()) closeModal();
   });
 
+  roleSelect?.addEventListener('change', syncPartnerFields);
+
   document.querySelectorAll('.btn-edit-user').forEach(function(btn){
     btn.addEventListener('click', function(){
       openModal({
@@ -387,6 +412,7 @@ require __DIR__ . '/includes/layout-start.php';
         email:  btn.dataset.userEmail || '',
         role:   btn.dataset.userRole || 'reviewer',
         status: btn.dataset.userStatus || 'active',
+        reference_code: btn.dataset.userReference || '',
       });
     });
   });

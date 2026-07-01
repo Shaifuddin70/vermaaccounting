@@ -17,6 +17,148 @@
   const taxYearRequired = document.getElementById('custom-form-app')?.dataset.taxYear === '1';
   let prefillDismissed = false;
   let lastLookupKey = '';
+  let pendingUploads = 0;
+
+  const uploadSessionInput = document.getElementById('upload-session');
+  const uploadSession = (() => {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  })();
+  if (uploadSessionInput) uploadSessionInput.value = uploadSession;
+
+  function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
+  function getFormSlug() {
+    return form.querySelector('input[name="form_slug"]')?.value || '';
+  }
+
+  function updateSubmitState() {
+    const btn = document.getElementById('custom-form-submit');
+    if (!btn) return;
+    btn.disabled = pendingUploads > 0;
+    if (pendingUploads > 0) {
+      btn.setAttribute('aria-busy', 'true');
+    } else {
+      btn.removeAttribute('aria-busy');
+    }
+  }
+
+  function addHiddenToken(container, fieldName, token) {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = 'staged_' + fieldName + '[]';
+    input.value = token;
+    input.dataset.stagedToken = token;
+    container.appendChild(input);
+  }
+
+  function removeHiddenToken(container, token) {
+    container.querySelectorAll('input[data-staged-token="' + token + '"]').forEach((node) => node.remove());
+  }
+
+  function countStagedTokens(container) {
+    return container.querySelectorAll('input[data-staged-token]').length;
+  }
+
+  function initFileFields() {
+    form.querySelectorAll('[data-file-field]').forEach((wrap) => {
+      const input = wrap.querySelector('.custom-form-file-input');
+      const queue = wrap.querySelector('.custom-form-file-queue');
+      const tokenBox = wrap.querySelector('.custom-form-file-tokens');
+      if (!input || !queue || !tokenBox) return;
+
+      const fieldId = wrap.getAttribute('data-field-id');
+      const fieldName = wrap.getAttribute('data-field-name');
+      const maxFiles = parseInt(wrap.getAttribute('data-max-files') || '1', 10);
+
+      input.addEventListener('change', async () => {
+        const files = Array.from(input.files || []);
+        input.value = '';
+        if (!files.length) return;
+
+        const current = countStagedTokens(tokenBox);
+        const remaining = Math.max(0, maxFiles - current);
+        if (remaining <= 0) {
+          if (statusEl) {
+            statusEl.textContent = 'Maximum number of files reached for this field.';
+            statusEl.className = 'custom-form-status is-error';
+          }
+          return;
+        }
+
+        const batch = files.slice(0, remaining);
+        for (const file of batch) {
+          const item = document.createElement('div');
+          item.className = 'custom-form-file-item is-uploading';
+          item.innerHTML =
+            '<div class="custom-form-file-item-main">' +
+            '<span class="custom-form-file-item-name"></span>' +
+            '<span class="custom-form-file-item-meta">Uploading…</span>' +
+            '</div>' +
+            '<button type="button" class="custom-form-file-remove" disabled>Remove</button>';
+          item.querySelector('.custom-form-file-item-name').textContent = file.name;
+          queue.appendChild(item);
+
+          pendingUploads += 1;
+          updateSubmitState();
+
+          const fd = new FormData();
+          fd.append('form_slug', getFormSlug());
+          fd.append('field_id', fieldId);
+          fd.append('upload_session', uploadSession);
+          fd.append('file', file);
+
+          try {
+            const res = await fetch('/api/stage-upload', { method: 'POST', body: fd });
+            const json = await res.json();
+            if (!res.ok) {
+              throw new Error(json.error || 'Upload failed');
+            }
+            item.classList.remove('is-uploading');
+            item.classList.add('is-done');
+            item.querySelector('.custom-form-file-item-meta').textContent =
+              formatFileSize(json.size || file.size) + ' · Uploaded';
+            const removeBtn = item.querySelector('.custom-form-file-remove');
+            removeBtn.disabled = false;
+            removeBtn.addEventListener('click', async () => {
+              removeBtn.disabled = true;
+              const rm = new FormData();
+              rm.append('form_slug', getFormSlug());
+              rm.append('field_id', fieldId);
+              rm.append('upload_session', uploadSession);
+              rm.append('token', json.token);
+              try {
+                await fetch('/api/stage-upload-remove', { method: 'POST', body: rm });
+              } catch (err) {
+                /* keep token hidden if remove fails */
+              }
+              removeHiddenToken(tokenBox, json.token);
+              item.remove();
+            });
+            addHiddenToken(tokenBox, fieldName, json.token);
+          } catch (err) {
+            item.classList.remove('is-uploading');
+            item.classList.add('is-error');
+            item.querySelector('.custom-form-file-item-meta').textContent = err.message || 'Upload failed';
+            const removeBtn = item.querySelector('.custom-form-file-remove');
+            removeBtn.disabled = false;
+            removeBtn.textContent = 'Dismiss';
+            removeBtn.addEventListener('click', () => item.remove());
+          } finally {
+            pendingUploads = Math.max(0, pendingUploads - 1);
+            updateSubmitState();
+          }
+        }
+      });
+    });
+  }
+
+  initFileFields();
 
   function selectTaxYear(year) {
     if (taxYearInput) taxYearInput.value = String(year);
@@ -52,6 +194,17 @@
     }
   }
 
+  function clearFileUploads() {
+    form.querySelectorAll('.custom-form-file-queue').forEach((queue) => {
+      queue.innerHTML = '';
+    });
+    form.querySelectorAll('.custom-form-file-tokens').forEach((box) => {
+      box.innerHTML = '';
+    });
+    pendingUploads = 0;
+    updateSubmitState();
+  }
+
   function resetTaxYearStep() {
     hideSuccessConfirmation();
     prefillDismissed = false;
@@ -63,6 +216,7 @@
     if (taxYearStep) taxYearStep.hidden = false;
     form.hidden = true;
     form.reset();
+    clearFileUploads();
     if (statusEl) {
       statusEl.textContent = '';
       statusEl.className = 'custom-form-status';
@@ -81,6 +235,7 @@
     }
     form.hidden = false;
     form.reset();
+    clearFileUploads();
     applyConditions();
     if (statusEl) {
       statusEl.textContent = '';
@@ -437,6 +592,24 @@
         taxYearStep.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
       return;
+    }
+
+    if (pendingUploads > 0) {
+      statusEl.textContent = 'Please wait for file uploads to finish.';
+      statusEl.className = 'custom-form-status is-error';
+      return;
+    }
+
+    for (const wrap of form.querySelectorAll('[data-file-field][data-required="1"]')) {
+      const fieldWrap = wrap.closest('[data-field-id]');
+      if (fieldWrap && fieldWrap.style.display === 'none') continue;
+      const tokenBox = wrap.querySelector('.custom-form-file-tokens');
+      const hasTokens = tokenBox && tokenBox.querySelector('input[data-staged-token]');
+      if (!hasTokens) {
+        statusEl.textContent = 'Please upload all required files.';
+        statusEl.className = 'custom-form-status is-error';
+        return;
+      }
     }
 
     statusEl.textContent = 'Submitting…';

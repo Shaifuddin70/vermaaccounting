@@ -153,7 +153,7 @@ final class Auth
         return (string) ($_SESSION['admin_user_name'] ?? $_SESSION['admin_username'] ?? 'Admin');
     }
 
-    /** Currently logged-in user role: 'admin' or 'reviewer'. */
+    /** Currently logged-in user role: admin, reviewer, or partner. */
     public static function userRole(): string
     {
         if (!self::check()) {

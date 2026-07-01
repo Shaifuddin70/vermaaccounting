@@ -22,6 +22,7 @@ $schema = $repo->decodeSchema($form);
 $config = app_config();
 $maxBytes = (int) ($config['max_upload_bytes'] ?? 10485760);
 $allowedMimes = $config['allowed_upload_mimes'] ?? [];
+$uploadSession = normalize_upload_session_id(trim((string) ($_POST['upload_session'] ?? '')));
 
 $data = [];
 $filesMeta = [];
@@ -45,56 +46,26 @@ foreach ($schema['fields'] as $field) {
         continue;
     }
 
+    if ($type === 'partners') {
+        $data[$name] = partners_field_from_post($field, $_POST, $errors);
+        continue;
+    }
+
     if (in_array($type, ['file', 'image'], true)) {
-        $fileKey = $name;
-        if (!isset($_FILES[$fileKey]) || $_FILES[$fileKey]['error'] === UPLOAD_ERR_NO_FILE) {
-            if ($field['required']) {
-                $errors[] = $field['label'] . ' is required.';
-            }
-            continue;
+        [$fileValue, $fieldFilesMeta] = process_field_file_uploads(
+            $field,
+            $form,
+            $schema,
+            $uploadSession,
+            $_POST,
+            $maxBytes,
+            $allowedMimes,
+            $errors
+        );
+        $data[$name] = $fileValue;
+        foreach ($fieldFilesMeta as $meta) {
+            $filesMeta[] = $meta;
         }
-
-        $upload = $_FILES[$fileKey];
-        if ($upload['error'] !== UPLOAD_ERR_OK) {
-            $errors[] = 'Upload failed for ' . $field['label'];
-            continue;
-        }
-        if ($upload['size'] > $maxBytes) {
-            $errors[] = $field['label'] . ' exceeds max file size.';
-            continue;
-        }
-
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($upload['tmp_name']) ?: $upload['type'];
-        if ($type === 'image' && !str_starts_with($mime, 'image/')) {
-            $errors[] = $field['label'] . ' must be an image.';
-            continue;
-        }
-        if ($allowedMimes && !in_array($mime, $allowedMimes, true)) {
-            $errors[] = $field['label'] . ' file type is not allowed.';
-            continue;
-        }
-
-        $ext = pathinfo($upload['name'], PATHINFO_EXTENSION);
-        $stored = bin2hex(random_bytes(16)) . ($ext ? '.' . preg_replace('/[^a-zA-Z0-9]/', '', $ext) : '');
-        $destDir = UPLOADS_DIR . '/' . $form['id'];
-        if (!is_dir($destDir)) {
-            mkdir($destDir, 0755, true);
-        }
-        $dest = $destDir . '/' . $stored;
-        if (!move_uploaded_file($upload['tmp_name'], $dest)) {
-            $errors[] = 'Could not save ' . $field['label'];
-            continue;
-        }
-
-        $data[$name] = $stored;
-        $filesMeta[] = [
-            'field_id' => $id,
-            'stored_name' => $form['id'] . '/' . $stored,
-            'original_name' => client_upload_original_name($upload['name'], $schema, $_POST),
-            'mime' => $mime,
-            'size' => (int) $upload['size'],
-        ];
         continue;
     }
 
@@ -143,6 +114,7 @@ if ($errors) {
 }
 
 $submissionId = $repo->saveSubmission((int) $form['id'], $data, $filesMeta, $taxYear > 0 ? $taxYear : null);
+sync_submission_partners_from_data($submissionId, $schema, $data);
 
 $clientRepo = new ClientRepository();
 $clientRepo->linkFromSubmission([

@@ -42,10 +42,25 @@
 
 .vf-card-header {
   display: flex;
+  flex-direction: column;
   gap: 1rem;
   align-items: flex-start;
   padding: 1.6rem 1.85rem 1.4rem;
   border-bottom: 1px solid var(--verma-border);
+}
+
+.vf-card-header-logo a {
+  display: inline-flex;
+  line-height: 0;
+  text-decoration: none;
+}
+
+.vf-card-logo-img {
+  display: block;
+  width: auto;
+  height: 48px;
+  max-width: 220px;
+  object-fit: contain;
 }
 
 .vf-card-header-icon {
@@ -730,9 +745,23 @@ body.form-embed-body {
 
 .form-embed-header h1 {
   font-size: 1.1rem;
-  margin: 0 0 0.2rem;
+  margin: 0.75rem 0 0.2rem;
   color: var(--verma-heading);
   font-weight: 700;
+}
+
+.form-embed-logo {
+  display: inline-flex;
+  line-height: 0;
+  text-decoration: none;
+}
+
+.form-embed-logo-img {
+  display: block;
+  width: auto;
+  height: 44px;
+  max-width: 200px;
+  object-fit: contain;
 }
 
 .form-embed-header p {
@@ -845,6 +874,93 @@ body.form-embed-body {
 .custom-form[hidden],
 .tax-year-step[hidden] {
   display: none !important;
+}
+
+/* Immediate file uploads */
+.custom-form-file-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.custom-form-file-input {
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.custom-form-file-queue {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.custom-form-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--verma-border);
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.custom-form-file-item.is-uploading {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.custom-form-file-item.is-done {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.custom-form-file-item.is-error {
+  border-color: #fca5a5;
+  background: #fef2f2;
+}
+
+.custom-form-file-item-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.custom-form-file-item-name {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--verma-heading);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.custom-form-file-item-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--verma-muted);
+  margin-top: 0.1rem;
+}
+
+.custom-form-file-remove {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: #b91c1c;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0.2rem 0.35rem;
+}
+
+.custom-form-file-remove:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.custom-form-file-tokens {
+  display: contents;
 }
 
 /* Prefill popup */

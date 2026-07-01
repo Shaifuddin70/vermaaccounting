@@ -23,8 +23,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $ok = $mailer->send(
                 $to,
                 'Verma Accounting — test email',
-                '<p>This is a test email sent at <strong>' . e(gmdate('Y-m-d H:i:s')) . ' UTC</strong>.</p>'
-                    . '<p>If you received this, submission notifications are configured correctly.</p>',
+                submission_email_layout(
+                    'Test email',
+                    '<p style="margin:0 0 16px;color:#334155;">This is a test email sent at <strong>'
+                        . e(gmdate('Y-m-d H:i:s')) . ' UTC</strong>.</p>'
+                        . '<p style="margin:0;color:#334155;">If you received this, submission notifications are configured correctly.</p>',
+                    'Test message from the Verma Accounting admin panel.'
+                ),
                 'Test email from Verma Accounting admin panel.'
             );
             if ($ok) {

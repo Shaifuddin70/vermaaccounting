@@ -28,8 +28,9 @@ $isNew    = ($editId === null);
 $name     = trim($_POST['name'] ?? '');
 $email    = trim(strtolower($_POST['email'] ?? ''));
 $password = $_POST['password'] ?? '';
-$role     = in_array($_POST['role'] ?? '', ['admin', 'reviewer'], true) ? $_POST['role'] : 'reviewer';
+$role     = in_array($_POST['role'] ?? '', ['admin', 'reviewer', 'partner'], true) ? $_POST['role'] : 'reviewer';
 $status   = in_array($_POST['status'] ?? '', ['active', 'inactive'], true) ? $_POST['status'] : 'active';
+$referenceCode = trim((string) ($_POST['reference_code'] ?? ''));
 
 $errors = [];
 
@@ -52,6 +53,18 @@ if ($email !== '' && $userRepo->emailExists($email, $editId)) {
     $errors[] = 'That email address is already in use.';
 }
 
+if ($role === 'partner') {
+    if ($referenceCode === '') {
+        $errors[] = 'Reference code is required for partners.';
+    } elseif (!preg_match('/^[A-Za-z0-9_-]{2,32}$/', $referenceCode)) {
+        $errors[] = 'Reference code must be 2–32 characters (letters, numbers, hyphen, underscore).';
+    } elseif ($userRepo->referenceCodeExists($referenceCode, $editId)) {
+        $errors[] = 'That reference code is already in use.';
+    }
+} else {
+    $referenceCode = '';
+}
+
 if ($errors) {
     if ($isAjax) {
         header('Content-Type: application/json');
@@ -59,20 +72,33 @@ if ($errors) {
         exit;
     }
     $_SESSION['user_edit_errors'] = $errors;
-    $_SESSION['user_edit_old']    = compact('name', 'email', 'role', 'status');
+    $_SESSION['user_edit_old']    = compact('name', 'email', 'role', 'status', 'referenceCode');
     $back = $isNew ? '/admin/user-edit' : '/admin/user-edit?id=' . $editId;
     header('Location: ' . $back);
     exit;
 }
 
 if ($isNew) {
-    $newId = $userRepo->create(compact('name', 'email', 'password', 'role', 'status'));
+    $newId = $userRepo->create([
+        'name' => $name,
+        'email' => $email,
+        'password' => $password,
+        'role' => $role,
+        'status' => $status,
+        'reference_code' => $referenceCode,
+    ]);
     ActivityLog::record('user.created', 'user', $newId, [
         'name' => $name, 'email' => $email, 'role' => $role,
     ]);
     $successMsg = "Team member {$name} created successfully.";
 } else {
-    $data = compact('name', 'email', 'role', 'status');
+    $data = [
+        'name' => $name,
+        'email' => $email,
+        'role' => $role,
+        'status' => $status,
+        'reference_code' => $referenceCode,
+    ];
     if ($password !== '') {
         $data['password'] = $password;
     }

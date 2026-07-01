@@ -2671,6 +2671,11 @@ a.md-form-slug:hover { color: var(--admin-primary); }
   color: #6b21a8;
 }
 
+.role-badge--partner {
+  background: #fef3c7;
+  color: #b45309;
+}
+
 /* Status dot */
 .status-dot {
   display: inline-block;

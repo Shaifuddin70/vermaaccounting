@@ -20,9 +20,11 @@ $repo = new FormRepository();
 $form = $repo->find($formId);
 
 if (!$form || is_file_manager_form($form)) {
-    header('Location: /admin/forms');
+    header('Location: /admin/' . (Auth::userRole() === 'admin' ? 'forms' : 'reviewer-submissions'));
     exit;
 }
+
+assert_form_submissions_access($form);
 
 $schema = $repo->decodeSchema($form);
 $taxYearOn = form_tax_year_enabled($schema);
@@ -33,18 +35,20 @@ $yearOptions = $taxYearOn
     : [];
 rsort($yearOptions, SORT_NUMERIC);
 
-$counts = $repo->submissionStatusCounts($formId, $taxYearFilter);
+$partnerId = partner_user_id();
+$counts = $repo->submissionStatusCounts($formId, $taxYearFilter, $partnerId);
 $statusFilter = $tab === 'all' ? null : $tab;
 $page = pagination_page_from_request();
 $perPage = pagination_per_page_from_request();
-$submissionTotal = $repo->countSubmissionsForForm($formId, $statusFilter, $taxYearFilter);
+$submissionTotal = $repo->countSubmissionsForForm($formId, $statusFilter, $taxYearFilter, $partnerId);
 $pagination = pagination_meta($submissionTotal, $page, $perPage);
 $submissions = $repo->submissionsForForm(
     $formId,
     $statusFilter,
     $taxYearFilter,
     $pagination['per_page'],
-    $pagination['offset']
+    $pagination['offset'],
+    $partnerId
 );
 $inputFields = array_filter($schema['fields'], fn ($f) => !in_array($f['type'], ['heading', 'paragraph'], true));
 $csrf = Auth::csrfToken();
@@ -75,7 +79,7 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Responses: <?= e($form['title']) ?></h1>
   <div class="admin-header-actions">
-    <?php if ($counts['all'] > 0): ?>
+    <?php if ($counts['all'] > 0 && Auth::userRole() !== 'partner'): ?>
       <?php
         $exportQs = 'form_id=' . $formId;
         if ($taxYearFilter) {

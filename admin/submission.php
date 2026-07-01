@@ -14,9 +14,11 @@ $form = $repo->find($formId);
 $submission = $repo->findSubmissionForForm($submissionId, $formId);
 
 if (!$form || !$submission) {
-    header('Location: /admin/forms');
+    header('Location: /admin/' . (Auth::userRole() === 'admin' ? 'forms' : 'reviewer-submissions'));
     exit;
 }
+
+assert_submission_access($form, $submission);
 
 $schema = $repo->decodeSchema($form);
 $data = json_decode($submission['data_json'], true) ?: [];
@@ -28,13 +30,13 @@ $editErrors = $_SESSION['submission_edit_errors'] ?? [];
 unset($_SESSION['submission_edit_errors']);
 
 $pageTitle = 'Submission #' . $submissionId;
-$activeNav = 'forms';
+$activeNav = Auth::userRole() === 'admin' ? 'forms' : 'submissions';
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>Submission #<?= $submissionId ?></h1>
   <div class="admin-header-actions">
-    <?php if (!$editMode): ?>
+    <?php if (!$editMode && Auth::userRole() === 'admin'): ?>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>&edit=1" class="admin-btn admin-btn-primary">Edit</a>
     <?php else: ?>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>

@@ -4,6 +4,11 @@ declare(strict_types=1);
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
 
+if (Auth::userRole() === 'partner') {
+    http_response_code(403);
+    exit('Export is not available for partner accounts.');
+}
+
 $formId = (int) ($_GET['form_id'] ?? 0);
 $repo = new FormRepository();
 $form = $repo->find($formId);
@@ -13,6 +18,8 @@ if (!$form) {
     exit('Form not found.');
 }
 
+assert_form_submissions_access($form);
+
 $schema = $repo->decodeSchema($form);
 $taxYearOn = form_tax_year_enabled($schema);
 $yearParam = $_GET['year'] ?? '';
@@ -20,7 +27,8 @@ $taxYearFilter = ($yearParam !== '' && $yearParam !== 'all') ? (int) $yearParam 
 if ($taxYearFilter !== null && $taxYearFilter < 1) {
     $taxYearFilter = null;
 }
-$submissions = $repo->submissionsForForm($formId, null, $taxYearFilter);
+$partnerId = partner_user_id();
+$submissions = $repo->submissionsForForm($formId, null, $taxYearFilter, null, null, $partnerId);
 $filesBySubmission = $repo->filesGroupedBySubmission($formId);
 
 $inputFields = array_values(array_filter(

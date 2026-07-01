@@ -241,8 +241,9 @@ require __DIR__ . '/includes/layout-start.php';
   window.FORM_BUILDER_CONFIG = {
     csrfToken: <?= json_encode($csrf) ?>,
     initial: <?= json_encode($initial, JSON_UNESCAPED_UNICODE) ?>,
-    fieldTypes: <?= json_encode(field_types(), JSON_UNESCAPED_UNICODE) ?>
+    fieldTypes: <?= json_encode(field_types(), JSON_UNESCAPED_UNICODE) ?>,
+    activePartners: <?= json_encode((new UserRepository())->activePartners(), JSON_UNESCAPED_UNICODE) ?>
   };
 </script>
-<script src="/admin/js/form-builder.js?v=7"></script>
+<script src="/admin/js/form-builder.js?v=9"></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

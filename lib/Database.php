@@ -162,6 +162,9 @@ final class Database
         $this->ensureFormsSiteCtaColumns();
         $this->ensureClientsTables();
         $this->ensureClientsCinColumn();
+        $this->ensurePartnerRole();
+        $this->ensureSubmissionPartnersTable();
+        $this->ensureUsersReferenceCodeColumn();
     }
 
     private function migrateSqlite(): void
@@ -231,6 +234,71 @@ final class Database
         $this->ensureFormsSiteCtaColumns();
         $this->ensureClientsTables();
         $this->ensureClientsCinColumn();
+        $this->ensurePartnerRole();
+        $this->ensureSubmissionPartnersTable();
+        $this->ensureUsersReferenceCodeColumn();
+    }
+
+    private function ensurePartnerRole(): void
+    {
+        if ($this->driver !== 'mysql') {
+            return;
+        }
+
+        $stmt = $this->pdo->query("SHOW COLUMNS FROM users LIKE 'role'");
+        $col = $stmt->fetch();
+        $type = (string) ($col['Type'] ?? '');
+        if ($type !== '' && !str_contains($type, 'partner')) {
+            $this->pdo->exec("ALTER TABLE users MODIFY role ENUM('admin', 'reviewer', 'partner') NOT NULL DEFAULT 'reviewer'");
+        }
+    }
+
+    private function ensureSubmissionPartnersTable(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS submission_partners (
+                    submission_id INT UNSIGNED NOT NULL,
+                    user_id INT UNSIGNED NOT NULL,
+                    PRIMARY KEY (submission_id, user_id),
+                    KEY idx_sp_user (user_id),
+                    CONSTRAINT fk_sp_submission
+                        FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE,
+                    CONSTRAINT fk_sp_user
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS submission_partners (
+                submission_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                PRIMARY KEY (submission_id, user_id),
+                FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_sp_user ON submission_partners(user_id)');
+    }
+
+    private function ensureUsersReferenceCodeColumn(): void
+    {
+        if ($this->driver === 'mysql') {
+            if (!$this->columnExists('users', 'reference_code')) {
+                $this->pdo->exec('ALTER TABLE users ADD COLUMN reference_code VARCHAR(64) DEFAULT NULL AFTER email');
+            }
+            if (!$this->indexExists('users', 'uk_users_reference_code')) {
+                $this->pdo->exec('ALTER TABLE users ADD UNIQUE KEY uk_users_reference_code (reference_code)');
+            }
+            return;
+        }
+
+        if (!$this->sqliteColumnExists('users', 'reference_code')) {
+            $this->pdo->exec('ALTER TABLE users ADD COLUMN reference_code TEXT');
+        }
+        $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS uk_users_reference_code ON users(reference_code)');
     }
 
     private function ensureClientsTables(): void
