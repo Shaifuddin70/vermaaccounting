@@ -121,7 +121,11 @@ require __DIR__ . '/includes/layout-start.php';
   <p class="admin-field-hint" style="margin-top:0;">
     Scheduled campaigns are sent in batches. Add this cron job on your server (every 5 minutes):
   </p>
-  <pre class="campaign-cron-snippet">*/5 * * * * php <?= e(PROJECT_ROOT) ?>/scripts/send-campaign-batch.php</pre>
+  <pre class="campaign-cron-snippet">*/5 * * * * VERMA_ENV=production /usr/local/bin/php <?= e(PROJECT_ROOT) ?>/scripts/send-campaign-batch.php >> ~/campaign-cron.log 2>&1</pre>
+  <p class="admin-field-hint">
+    On shared hosting (Namecheap/cPanel), use the full PHP path from Cron Jobs and
+    <code>VERMA_ENV=production</code> so the script uses your live database, not local MAMP settings.
+  </p>
   <p class="admin-field-hint">You can also process the queue manually from a campaign’s detail page.</p>
 </div>
 

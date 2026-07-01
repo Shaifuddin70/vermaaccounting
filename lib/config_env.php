@@ -38,6 +38,10 @@ if (!function_exists('verma_resolve_environment')) {
         }
 
         if (PHP_SAPI === 'cli') {
+            $projectRoot = dirname(__DIR__);
+            if (str_contains($projectRoot, 'public_html') || str_contains($projectRoot, '/home/')) {
+                return 'production';
+            }
             return 'local';
         }
 
