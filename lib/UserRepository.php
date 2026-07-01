@@ -27,7 +27,7 @@ final class UserRepository
         $limit = max(1, min(200, $limit));
         $offset = max(0, $offset);
         $stmt = $this->db->query(
-            'SELECT id, name, email, reference_code, role, status, created_at, updated_at FROM users ORDER BY name ASC LIMIT '
+            'SELECT id, name, email, reference_code, avatar_path, role, status, created_at, updated_at FROM users ORDER BY name ASC LIMIT '
             . $limit . ' OFFSET ' . $offset
         );
         return $stmt->fetchAll();
@@ -36,7 +36,7 @@ final class UserRepository
     public function find(int $id): ?array
     {
         $stmt = $this->db->prepare('
-            SELECT id, name, email, reference_code, role, status, created_at, updated_at
+            SELECT id, name, email, reference_code, avatar_path, role, status, created_at, updated_at
             FROM users WHERE id = ?
         ');
         $stmt->execute([$id]);
@@ -118,6 +118,42 @@ final class UserRepository
             $fields['name'], $fields['email'], $fields['reference_code'], $fields['role'], $fields['status'],
             now_iso(), $id,
         ]);
+    }
+
+    /** @param array{name?: string, email?: string, password?: string, avatar_path?: string|null} $data */
+    public function updateProfile(int $id, array $data): bool
+    {
+        $existing = $this->find($id);
+        if (!$existing) {
+            return false;
+        }
+
+        $name = trim((string) ($data['name'] ?? $existing['name']));
+        $email = strtolower(trim((string) ($data['email'] ?? $existing['email'])));
+        $avatarPath = array_key_exists('avatar_path', $data)
+            ? ($data['avatar_path'] !== null && $data['avatar_path'] !== '' ? (string) $data['avatar_path'] : null)
+            : ($existing['avatar_path'] ?? null);
+
+        if (!empty($data['password'])) {
+            $stmt = $this->db->prepare('
+                UPDATE users
+                SET name = ?, email = ?, avatar_path = ?, password_hash = ?, updated_at = ?
+                WHERE id = ?
+            ');
+            return $stmt->execute([
+                $name,
+                $email,
+                $avatarPath,
+                password_hash((string) $data['password'], PASSWORD_BCRYPT),
+                now_iso(),
+                $id,
+            ]);
+        }
+
+        $stmt = $this->db->prepare('
+            UPDATE users SET name = ?, email = ?, avatar_path = ?, updated_at = ? WHERE id = ?
+        ');
+        return $stmt->execute([$name, $email, $avatarPath, now_iso(), $id]);
     }
 
     private function normalizeReferenceCode(mixed $code, string $role): ?string

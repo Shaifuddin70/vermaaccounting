@@ -165,6 +165,7 @@ final class Database
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
+        $this->ensureUsersAvatarColumn();
         $this->ensureAppSettingsTable();
         $this->ensureEmailCampaignsTables();
     }
@@ -239,6 +240,7 @@ final class Database
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
+        $this->ensureUsersAvatarColumn();
         $this->ensureAppSettingsTable();
         $this->ensureEmailCampaignsTables();
     }
@@ -303,6 +305,20 @@ final class Database
             $this->pdo->exec('ALTER TABLE users ADD COLUMN reference_code TEXT');
         }
         $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS uk_users_reference_code ON users(reference_code)');
+    }
+
+    private function ensureUsersAvatarColumn(): void
+    {
+        if ($this->driver === 'mysql') {
+            if (!$this->columnExists('users', 'avatar_path')) {
+                $this->pdo->exec('ALTER TABLE users ADD COLUMN avatar_path VARCHAR(255) DEFAULT NULL AFTER reference_code');
+            }
+            return;
+        }
+
+        if (!$this->sqliteColumnExists('users', 'avatar_path')) {
+            $this->pdo->exec('ALTER TABLE users ADD COLUMN avatar_path TEXT');
+        }
     }
 
     private function ensureClientsTables(): void

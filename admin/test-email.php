@@ -44,6 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $mail = mail_config();
+$mailCanSend = Mailer::fromAppConfig() !== null;
+$mailEnv = app_environment();
 $pageTitle = 'Test email';
 $activeNav = 'email';
 require __DIR__ . '/includes/layout-start.php';
@@ -75,30 +77,35 @@ require __DIR__ . '/includes/layout-start.php';
     </form>
   </div>
 
-  <div class="admin-card">
+  <div class="admin-card email-server-card">
     <h2 class="admin-card-title">Current mail config</h2>
-    <table class="admin-table clients-import-guide">
-      <tbody>
-        <tr><td>Enabled</td><td><?= !empty($mail['enabled']) ? 'Yes' : 'No' ?></td></tr>
-        <tr><td>Transport</td><td><?= e((string) ($mail['transport'] ?? '')) ?></td></tr>
-        <tr><td>From</td><td><?= e((string) ($mail['from_email'] ?? '')) ?></td></tr>
-        <tr><td>Admin notifications</td>
-          <td>
-            <?php if (!empty($mail['admin_emails'])): ?>
-              <?= e(implode(', ', $mail['admin_emails'])) ?>
-            <?php else: ?>
-              —
-            <?php endif; ?>
-          </td>
-        </tr>
-        <tr><td>SMTP host</td><td><?= e((string) ($mail['smtp']['host'] ?? '')) ?></td></tr>
-        <tr><td>SMTP port</td><td><?= e((string) ($mail['smtp']['port'] ?? '')) ?></td></tr>
-        <tr><td>SMTP user</td><td><?= e((string) ($mail['smtp']['username'] ?? '')) ?></td></tr>
-      </tbody>
-    </table>
-    <p class="admin-note" style="margin-top:1rem;">
-      Test from your <strong>live server</strong> after updating DNS/SMTP. Local MAMP often cannot send through hosting mail.
-    </p>
+    <div class="email-server-meta">
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">Environment</span>
+        <span class="campaign-status-badge campaign-status-badge--<?= $mailEnv === 'production' ? 'sent' : 'draft' ?>">
+          <?= $mailEnv === 'production' ? 'Production' : 'Local development' ?>
+        </span>
+      </div>
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">Ready to send</span>
+        <span class="campaign-status-badge campaign-status-badge--<?= $mailCanSend ? 'sent' : 'failed' ?>">
+          <?= $mailCanSend ? 'Yes' : 'No' ?>
+        </span>
+      </div>
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">From</span>
+        <strong><?= e((string) ($mail['from_email'] ?? '—')) ?></strong>
+      </div>
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">Admin notifications</span>
+        <strong><?= !empty($mail['admin_emails']) ? e(implode(', ', $mail['admin_emails'])) : '—' ?></strong>
+      </div>
+    </div>
+    <?php if ($mailEnv === 'local'): ?>
+      <p class="admin-note" style="margin-top:1rem;">
+        Local development uses disabled mail. Test from the <strong>live server</strong> to verify production SMTP.
+      </p>
+    <?php endif; ?>
   </div>
 </div>
 

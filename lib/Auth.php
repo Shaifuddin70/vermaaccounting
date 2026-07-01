@@ -74,6 +74,14 @@ final class Auth
             $_SESSION['admin_user_name'] = 'Admin';
             $_SESSION['admin_user_role'] = 'admin';
             $_SESSION['admin_user_email'] = '';
+            $profile = config_admin_profile();
+            if ($profile['name'] !== '') {
+                $_SESSION['admin_user_name'] = $profile['name'];
+            }
+            if ($profile['email'] !== '') {
+                $_SESSION['admin_user_email'] = $profile['email'];
+            }
+            $_SESSION['admin_user_avatar'] = $profile['avatar_path'] ?? '';
             return true;
         }
 
@@ -102,6 +110,7 @@ final class Auth
         $_SESSION['admin_user_name']  = $user['name'];
         $_SESSION['admin_user_role']  = $user['role'];
         $_SESSION['admin_user_email'] = $user['email'];
+        $_SESSION['admin_user_avatar'] = (string) ($user['avatar_path'] ?? '');
         return true;
     }
 
@@ -130,8 +139,24 @@ final class Auth
             'name'  => $_SESSION['admin_user_name'] ?? ($_SESSION['admin_username'] ?? 'Admin'),
             'email' => $_SESSION['admin_user_email'] ?? '',
             'role'  => $_SESSION['admin_user_role'] ?? 'admin',
+            'avatar_path' => (string) ($_SESSION['admin_user_avatar'] ?? ''),
             'is_config_admin' => ($_SESSION['admin_user_id'] ?? null) === null,
         ];
+    }
+
+    /** @param array{name?: string, email?: string, avatar_path?: string} $profile */
+    public static function syncProfileToSession(array $profile): void
+    {
+        self::startSession();
+        if (array_key_exists('name', $profile)) {
+            $_SESSION['admin_user_name'] = trim((string) $profile['name']);
+        }
+        if (array_key_exists('email', $profile)) {
+            $_SESSION['admin_user_email'] = strtolower(trim((string) $profile['email']));
+        }
+        if (array_key_exists('avatar_path', $profile)) {
+            $_SESSION['admin_user_avatar'] = trim((string) $profile['avatar_path']);
+        }
     }
 
     /** Currently logged-in user ID (null for config admin). */

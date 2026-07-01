@@ -34,6 +34,8 @@ $clientSubject = (string) ($old['client_confirmation_subject']
     ?? 'We received your submission — {form_title}');
 
 $csrf = Auth::csrfToken();
+$mailCanSend = Mailer::fromAppConfig() !== null;
+$mailEnv = app_environment();
 $pageTitle = 'Email settings';
 $activeNav = 'email';
 require __DIR__ . '/includes/layout-start.php';
@@ -112,23 +114,55 @@ require __DIR__ . '/includes/layout-start.php';
     </form>
   </div>
 
-  <div class="admin-card">
+  <div class="admin-card email-server-card">
     <h2 class="admin-card-title">Server mail config</h2>
     <p class="admin-field-hint" style="margin-top:0;">
-      SMTP credentials and the From address are configured in <code>config.local.php</code> on the server.
+      SMTP credentials and the From address are set in <code>config.local.php</code> on the server.
     </p>
-    <table class="admin-table clients-import-guide">
-      <tbody>
-        <tr><td>Mail enabled</td><td><?= !empty($mail['enabled']) ? 'Yes' : 'No' ?></td></tr>
-        <tr><td>Transport</td><td><?= e((string) ($mail['transport'] ?? '')) ?></td></tr>
-        <tr><td>From</td><td><?= e((string) ($mail['from_email'] ?? '')) ?></td></tr>
-        <tr><td>SMTP host</td><td><?= e((string) ($mail['smtp']['host'] ?? '')) ?></td></tr>
-        <tr><td>SMTP port</td><td><?= e((string) ($mail['smtp']['port'] ?? '')) ?></td></tr>
-        <tr><td>SMTP user</td><td><?= e((string) ($mail['smtp']['username'] ?? '')) ?></td></tr>
-      </tbody>
-    </table>
-    <p class="admin-note" style="margin-top:1rem;">
-      If no admin emails are saved here yet, the app falls back to <strong><?= e((string) ($mail['admin_email'] ?: 'config mail.admin_email')) ?></strong> from config.
+
+    <div class="email-server-meta">
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">Environment</span>
+        <span class="campaign-status-badge campaign-status-badge--<?= $mailEnv === 'production' ? 'sent' : 'draft' ?>">
+          <?= $mailEnv === 'production' ? 'Production' : 'Local development' ?>
+        </span>
+      </div>
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">Ready to send</span>
+        <span class="campaign-status-badge campaign-status-badge--<?= $mailCanSend ? 'sent' : 'failed' ?>">
+          <?= $mailCanSend ? 'Yes' : 'No' ?>
+        </span>
+      </div>
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">From</span>
+        <strong><?= e((string) ($mail['from_email'] ?? '—')) ?></strong>
+      </div>
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">Transport</span>
+        <strong><?= e((string) ($mail['transport'] ?? '—')) ?></strong>
+      </div>
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">SMTP host</span>
+        <strong><?= e((string) ($mail['smtp']['host'] ?? '—')) ?></strong>
+      </div>
+      <div class="email-server-meta-item">
+        <span class="submission-meta-label">SMTP user</span>
+        <strong><?= e((string) ($mail['smtp']['username'] ?? '—')) ?></strong>
+      </div>
+    </div>
+
+    <?php if ($mailEnv === 'local'): ?>
+      <div class="admin-alert admin-alert-info" style="margin-top:1rem;">
+        Mail is disabled on local development (MAMP). On the live site, production mail settings from config are used automatically.
+      </div>
+    <?php elseif (!$mailCanSend): ?>
+      <div class="admin-alert admin-alert-error" style="margin-top:1rem;">
+        Mail is not ready. Check <code>mail.enabled</code> and <code>from_email</code> in <code>config.local.php</code> on the server.
+      </div>
+    <?php endif; ?>
+
+    <p class="admin-field-hint" style="margin-top:1rem;">
+      Admin notification fallback: <strong><?= e((string) ($mail['admin_email'] ?: 'not set')) ?></strong>
     </p>
   </div>
 </div>
