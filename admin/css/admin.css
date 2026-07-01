@@ -116,6 +116,12 @@ body.admin-body {
   color: var(--admin-muted);
 }
 
+.admin-nav-section:not(:first-child) {
+  margin-top: 0.65rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--admin-border);
+}
+
 .admin-nav-item {
   display: flex;
   align-items: center;
@@ -168,9 +174,6 @@ body.admin-body {
 }
 
 .admin-sidebar-foot {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
   padding: 0.85rem 1rem 1.15rem;
   border-top: 1px solid var(--admin-border);
   background: var(--admin-surface-variant);
@@ -179,25 +182,68 @@ body.admin-body {
 .admin-sidebar-user-card {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.65rem 0.75rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem 0.5rem 0.65rem;
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: 12px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  text-decoration: none;
-  color: inherit;
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.admin-sidebar-user-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
 }
 
 .admin-sidebar-user-card.is-active {
   border-color: #93c5fd;
   background: rgba(30, 58, 138, 0.04);
+}
+
+.admin-sidebar-user-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+  text-decoration: none;
+  color: inherit;
+  border-radius: 8px;
+  transition: opacity 0.15s ease;
+}
+
+.admin-sidebar-user-main:hover {
+  opacity: 0.88;
+}
+
+.admin-sidebar-user-tools {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.admin-sidebar-tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--admin-surface-variant);
+  color: var(--admin-muted);
+  border: 1px solid var(--admin-border);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.admin-sidebar-tool-btn:hover {
+  background: var(--admin-secondary-container);
+  border-color: var(--admin-secondary-border);
+  color: var(--admin-secondary);
+}
+
+.admin-sidebar-tool-btn--logout:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
 }
 
 .admin-sidebar-avatar {
@@ -226,61 +272,6 @@ body.admin-body {
   flex-direction: column;
   gap: 0.1rem;
   min-width: 0;
-}
-
-.admin-sidebar-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.admin-sidebar-action {
-  display: flex;
-  align-items: center;
-  gap: 0.65rem;
-  min-height: 40px;
-  padding: 0 0.5rem;
-  border-radius: 10px;
-  color: var(--admin-text);
-  text-decoration: none;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.admin-sidebar-action-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  flex-shrink: 0;
-  border-radius: 8px;
-  background: var(--admin-surface);
-  color: var(--admin-muted);
-  border: 1px solid var(--admin-border);
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
-}
-
-.admin-sidebar-action:hover {
-  background: var(--admin-secondary-container);
-  color: var(--admin-secondary);
-}
-
-.admin-sidebar-action:hover .admin-sidebar-action-icon {
-  background: var(--admin-secondary-container);
-  border-color: var(--admin-secondary-border);
-  color: var(--admin-secondary);
-}
-
-.admin-sidebar-action--logout:hover {
-  color: #b91c1c;
-}
-
-.admin-sidebar-action--logout:hover .admin-sidebar-action-icon {
-  background: #fef2f2;
-  border-color: #fecaca;
-  color: #dc2626;
 }
 
 .admin-main {
@@ -1059,12 +1050,6 @@ body.admin-body {
 
 .profile-config-admin-note {
   margin-bottom: 1rem;
-}
-
-.admin-sidebar-action.is-active {
-  background: rgba(30, 58, 138, 0.08);
-  color: var(--admin-secondary);
-  font-weight: 600;
 }
 
 /* Form builder: settings + tax year side by side on large screens */
