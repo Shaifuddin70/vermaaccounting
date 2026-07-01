@@ -73,6 +73,9 @@ try {
         $msg .= ' (Database does not exist — create verma_forms in phpMyAdmin.)';
     } elseif (str_contains($hint, '1045')) {
         $msg .= ' (Wrong username or password.)';
+    } elseif (str_contains($hint, '2013') || str_contains($hint, 'handshake')) {
+        $env = function_exists('app_environment') ? app_environment() : 'unknown';
+        $msg .= ' (Cron may be using the wrong environment — current: ' . $env . '. On hosting, use VERMA_ENV=production in the cron command.)';
     }
     if (PHP_SAPI === 'cli') {
         fwrite(STDERR, $msg . ' [' . $hint . ']' . PHP_EOL);

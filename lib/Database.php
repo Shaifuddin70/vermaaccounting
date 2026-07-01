@@ -54,7 +54,9 @@ final class Database
             throw new RuntimeException('MySQL database name and user are required in config.local.php');
         }
 
-        $dsn = sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $name, $charset);
+        $dsn = $host === 'localhost'
+            ? sprintf('mysql:host=%s;dbname=%s;charset=%s', $host, $name, $charset)
+            : sprintf('mysql:host=%s;port=%d;dbname=%s;charset=%s', $host, $port, $name, $charset);
 
         return new PDO($dsn, $user, $pass, [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,

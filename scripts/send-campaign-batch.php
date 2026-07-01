@@ -3,14 +3,24 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../lib/bootstrap.php';
+$projectRoot = dirname(__DIR__);
+if (
+    (str_contains($projectRoot, 'public_html') || str_contains($projectRoot, '/home/'))
+    && getenv('VERMA_ENV') !== 'local'
+) {
+    putenv('VERMA_ENV=production');
+}
+
+require_once $projectRoot . '/lib/bootstrap.php';
 
 $result = process_due_campaign_batches();
+$env = app_environment();
 
 if (PHP_SAPI === 'cli') {
     $line = sprintf(
-        "[%s] Campaign batch: %d campaign(s), %d processed, %d sent, %d failed\n",
+        "[%s] [%s] Campaign batch: %d campaign(s), %d processed, %d sent, %d failed\n",
         gmdate('Y-m-d H:i:s'),
+        $env,
         $result['campaigns'],
         $result['processed'],
         $result['sent'],
