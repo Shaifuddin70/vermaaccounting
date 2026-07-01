@@ -90,7 +90,14 @@ require __DIR__ . '/includes/layout-start.php';
             <td><?= $recipientTotal > 0 ? number_format($recipientTotal) : '—' ?></td>
             <td>
               <?php if (!empty($campaign['scheduled_at'])): ?>
-                <?= e((string) $campaign['scheduled_at']) ?> UTC
+                <?php
+                  $schedUtc = (string) $campaign['scheduled_at'];
+                  $schedFuture = $status === 'scheduled' && $schedUtc > now_iso();
+                ?>
+                <?= e(campaign_format_datetime($schedUtc)) ?>
+                <?php if ($schedFuture): ?>
+                  <div class="admin-table-sub">Waiting — <a href="/admin/campaign-view?id=<?= $id ?>">send now</a></div>
+                <?php endif; ?>
               <?php else: ?>
                 —
               <?php endif; ?>
