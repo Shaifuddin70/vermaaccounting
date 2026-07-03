@@ -13,6 +13,6 @@
   <script src="/admin/js/admin-fancybox.js?v=1" defer></script>
   <script src="/admin/js/admin-topbar.js?v=2" defer></script>
   <script src="/admin/js/admin-nav.js?v=1" defer></script>
-  <script src="/admin/js/admin-ui.js?v=2" defer></script>
+  <script src="/admin/js/admin-ui.js?v=3" defer></script>
 </body>
 </html>

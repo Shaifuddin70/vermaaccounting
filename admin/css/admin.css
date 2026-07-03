@@ -1329,6 +1329,138 @@ body.admin-body {
   margin-top: 0.75rem;
 }
 
+.campaigns-list-card {
+  padding-top: 0.25rem;
+}
+
+.campaigns-list-card .admin-table-wrap {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.campaigns-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 920px;
+}
+
+.campaigns-col-name { width: 22%; }
+.campaigns-col-status { width: 10%; }
+.campaigns-col-recipients { width: 8%; }
+.campaigns-col-scheduled { width: 24%; }
+.campaigns-col-progress { width: 14%; }
+.campaigns-col-actions { width: 22%; }
+
+.campaigns-th-actions {
+  text-align: right;
+}
+
+.campaigns-cell-name {
+  min-width: 0;
+}
+
+.campaigns-name-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.campaigns-name-link:hover strong {
+  color: var(--admin-secondary);
+}
+
+.campaigns-cell-num {
+  white-space: nowrap;
+}
+
+.campaigns-cell-scheduled {
+  min-width: 0;
+}
+
+.campaigns-scheduled-time {
+  display: block;
+  font-weight: 500;
+  color: var(--admin-text);
+  line-height: 1.35;
+}
+
+.campaigns-cell-progress {
+  min-width: 0;
+}
+
+.campaigns-progress-text {
+  display: block;
+  font-weight: 500;
+}
+
+.campaigns-cell-actions {
+  vertical-align: middle;
+  overflow: visible;
+}
+
+.campaigns-actions-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.campaigns-action-form {
+  display: inline-flex;
+  margin: 0;
+}
+
+.campaigns-cell-actions .admin-btn-sm {
+  padding: 0.38rem 0.62rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.campaigns-more-menu {
+  position: relative;
+}
+
+.campaigns-more-trigger {
+  list-style: none;
+  cursor: pointer;
+}
+
+.campaigns-more-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.campaigns-more-menu[open] .campaigns-more-trigger {
+  background: var(--admin-secondary-container);
+  border-color: var(--admin-secondary-border);
+}
+
+.campaigns-more-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.35rem);
+  z-index: 30;
+  min-width: 8.5rem;
+  padding: 0.35rem;
+  background: #fff;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.campaigns-more-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.campaigns-btn-delete:hover {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
 .admin-table-sub {
   font-size: 0.82rem;
   color: #64748b;

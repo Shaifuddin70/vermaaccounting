@@ -15,11 +15,12 @@ if ($editId && !$campaign) {
     exit;
 }
 
-if ($campaign && ($campaign['status'] ?? '') !== 'draft') {
+if ($campaign && !campaign_is_editable($campaign)) {
     header('Location: /admin/campaign-view?id=' . $editId);
     exit;
 }
 
+$campaignStatus = (string) ($campaign['status'] ?? '');
 $errors = $_SESSION['campaign_edit_errors'] ?? [];
 $old = $_SESSION['campaign_edit_old'] ?? [];
 unset($_SESSION['campaign_edit_errors'], $_SESSION['campaign_edit_old']);
@@ -27,7 +28,10 @@ unset($_SESSION['campaign_edit_errors'], $_SESSION['campaign_edit_old']);
 $name = (string) ($old['name'] ?? $campaign['name'] ?? '');
 $subject = (string) ($old['subject'] ?? $campaign['subject'] ?? '');
 $body = (string) ($old['body'] ?? $campaign['body_html'] ?? '');
-$sendAction = (string) ($old['send_action'] ?? 'draft');
+$sendAction = (string) ($old['send_action'] ?? '');
+if ($sendAction === '') {
+    $sendAction = $campaignStatus === 'scheduled' ? 'schedule' : 'draft';
+}
 $scheduledAt = (string) ($old['scheduled_at'] ?? '');
 if ($scheduledAt === '' && !empty($campaign['scheduled_at'])) {
     $scheduledAt = campaign_datetime_local_value((string) $campaign['scheduled_at']);
@@ -43,6 +47,13 @@ require __DIR__ . '/includes/layout-start.php';
   <h1><?= $campaign ? 'Edit campaign' : 'New campaign' ?></h1>
   <a href="/admin/campaigns" class="admin-btn admin-btn-secondary">← All campaigns</a>
 </div>
+
+<?php if ($campaignStatus === 'scheduled'): ?>
+  <div class="admin-alert admin-alert-info">
+    Scheduled for <?= e(campaign_format_datetime((string) ($campaign['scheduled_at'] ?? ''))) ?>.
+    Update the content or send time below, or choose <strong>Send now</strong> to send immediately.
+  </div>
+<?php endif; ?>
 
 <?php if ($errors): ?>
   <div class="admin-alert admin-alert-error">
@@ -103,7 +114,9 @@ require __DIR__ . '/includes/layout-start.php';
       </fieldset>
 
       <div class="admin-form-actions">
-        <button type="submit" class="admin-btn admin-btn-primary">Save campaign</button>
+        <button type="submit" class="admin-btn admin-btn-primary">
+          <?= $campaignStatus === 'scheduled' ? 'Save changes' : 'Save campaign' ?>
+        </button>
         <?php if ($campaign): ?>
           <button type="submit" formaction="/admin/campaign-action" name="action" value="send_test" class="admin-btn admin-btn-secondary"
             formnovalidate>Send test to me</button>

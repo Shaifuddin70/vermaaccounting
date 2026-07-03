@@ -22,9 +22,9 @@ function campaign_parse_scheduled_at(string $raw): ?string
     return app_parse_local_datetime($raw);
 }
 
-function campaign_format_datetime(?string $utc): string
+function campaign_format_datetime(?string $utc, bool $includeTimezone = true): string
 {
-    return app_format_datetime($utc);
+    return app_format_datetime($utc, $includeTimezone);
 }
 
 /** Value for HTML datetime-local inputs in the app schedule timezone. */
@@ -44,6 +44,15 @@ function campaign_status_label(string $status): string
         'failed' => 'Failed',
         default => ucfirst($status),
     };
+}
+
+/** @param array<string, mixed>|null $campaign */
+function campaign_is_editable(?array $campaign): bool
+{
+    if ($campaign === null) {
+        return true;
+    }
+    return in_array((string) ($campaign['status'] ?? ''), ['draft', 'scheduled'], true);
 }
 
 /** @param array<string, mixed> $client */

@@ -115,4 +115,19 @@
       }
     });
   });
+
+  document.addEventListener('click', function (e) {
+    document.querySelectorAll('.campaigns-more-menu[open]').forEach(function (menu) {
+      if (!menu.contains(e.target)) menu.removeAttribute('open');
+    });
+  });
+
+  document.querySelectorAll('.campaigns-more-menu').forEach(function (menu) {
+    menu.addEventListener('toggle', function () {
+      if (!menu.open) return;
+      document.querySelectorAll('.campaigns-more-menu[open]').forEach(function (other) {
+        if (other !== menu) other.open = false;
+      });
+    });
+  });
 })();

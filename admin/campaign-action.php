@@ -130,8 +130,9 @@ if ($action === 'launch' || $action === 'send_now') {
 }
 
 if ($action === 'delete') {
-    if (($campaign['status'] ?? '') !== 'draft') {
-        $_SESSION['flash_error'] = 'Only draft campaigns can be deleted.';
+    $status = (string) ($campaign['status'] ?? '');
+    if (in_array($status, ['sending', 'sent'], true)) {
+        $_SESSION['flash_error'] = 'Cannot delete a campaign that is sending or has already been sent.';
         header('Location: ' . $redirect);
         exit;
     }

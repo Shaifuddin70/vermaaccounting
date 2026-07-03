@@ -32,7 +32,7 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1><?= e((string) $campaign['name']) ?></h1>
   <div class="admin-header-actions">
-    <?php if ($status === 'draft'): ?>
+    <?php if (campaign_is_editable($campaign)): ?>
       <a href="/admin/campaign-edit?id=<?= $campaignId ?>" class="admin-btn admin-btn-secondary">Edit</a>
     <?php endif; ?>
     <a href="/admin/campaigns" class="admin-btn admin-btn-secondary">← All campaigns</a>

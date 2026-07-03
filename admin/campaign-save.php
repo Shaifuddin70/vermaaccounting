@@ -37,25 +37,28 @@ if (!in_array($sendAction, ['draft', 'now', 'schedule'], true)) {
     $sendAction = 'draft';
 }
 
+$campaignRepo = new EmailCampaignRepository();
+$clientRepo = new ClientRepository();
+$existing = $editId ? $campaignRepo->find($editId) : null;
+
+if ($editId && (!$existing || !campaign_is_editable($existing))) {
+    $_SESSION['flash_error'] = 'This campaign cannot be edited.';
+    header('Location: /admin/campaigns');
+    exit;
+}
+
 $scheduledAt = null;
 if ($sendAction === 'schedule') {
     $scheduledAt = campaign_parse_scheduled_at($scheduledRaw);
     if ($scheduledAt === null) {
         $errors[] = 'Choose a valid schedule date and time.';
     } elseif ($scheduledAt <= now_iso()) {
-        $errors[] = 'Schedule time must be in the future.';
-    }
-}
-
-$campaignRepo = new EmailCampaignRepository();
-$clientRepo = new ClientRepository();
-
-if ($editId) {
-    $existing = $campaignRepo->find($editId);
-    if (!$existing || ($existing['status'] ?? '') !== 'draft') {
-        $_SESSION['flash_error'] = 'Only draft campaigns can be edited.';
-        header('Location: /admin/campaigns');
-        exit;
+        $unchanged = $existing
+            && ($existing['status'] ?? '') === 'scheduled'
+            && (string) ($existing['scheduled_at'] ?? '') === $scheduledAt;
+        if (!$unchanged) {
+            $errors[] = 'Schedule time must be in the future.';
+        }
     }
 }
 
@@ -91,7 +94,7 @@ $data = [
     'subject' => $subject,
     'body_html' => $body,
     'status' => $status,
-    'scheduled_at' => $scheduledAt,
+    'scheduled_at' => $sendAction === 'draft' ? null : $scheduledAt,
     'created_by_user_id' => $user['id'] ?? null,
     'created_by_name' => (string) ($user['name'] ?? 'Admin'),
 ];
@@ -105,32 +108,48 @@ if ($editId) {
     ActivityLog::record('campaign.created', 'campaign', $campaignId, ['name' => $name, 'status' => $status]);
 }
 
-if ($sendAction !== 'draft') {
-    $campaignRepo->clearRecipients($campaignId);
-    $recipients = $clientRepo->recipientsForCampaign();
-    $added = $campaignRepo->addRecipients($campaignId, $recipients);
-    $campaignRepo->refreshCounts($campaignId);
-    $campaignRepo->update($campaignId, [
-        'recipient_count' => $added,
-        'started_at' => $sendAction === 'now' ? now_iso() : null,
-    ]);
-
-    if ($sendAction === 'now') {
-        $batch = process_campaign_batch($campaignId);
-        if (!empty($batch['error']) && $batch['error'] === 'mail_disabled') {
-            $_SESSION['flash_error'] = 'Campaign queued but mail is not configured. Check Admin → Email settings, then use Retry on the campaign page.';
-            header('Location: /admin/campaign-view?id=' . $campaignId);
-            exit;
-        }
+if ($sendAction === 'draft') {
+    if ($editId) {
+        $campaignRepo->clearRecipients($campaignId);
+        $campaignRepo->update($campaignId, [
+            'recipient_count' => 0,
+            'sent_count' => 0,
+            'failed_count' => 0,
+            'started_at' => null,
+            'completed_at' => null,
+        ]);
     }
-
-    $_SESSION['flash_success'] = $sendAction === 'now'
-        ? 'Campaign started. Remaining emails will send automatically.'
-        : 'Campaign scheduled for ' . campaign_format_datetime($scheduledAt) . '.';
-    header('Location: /admin/campaign-view?id=' . $campaignId);
+    $_SESSION['flash_success'] = 'Campaign saved as draft.';
+    header('Location: /admin/campaign-edit?id=' . $campaignId);
     exit;
 }
 
-$_SESSION['flash_success'] = 'Campaign saved as draft.';
-header('Location: ' . ($editId ? '/admin/campaign-edit?id=' . $campaignId : '/admin/campaign-edit?id=' . $campaignId));
+$campaignRepo->clearRecipients($campaignId);
+$recipients = $clientRepo->recipientsForCampaign();
+$added = $campaignRepo->addRecipients($campaignId, $recipients);
+$campaignRepo->refreshCounts($campaignId);
+$campaignRepo->update($campaignId, [
+    'recipient_count' => $added,
+    'started_at' => $sendAction === 'now' ? now_iso() : null,
+    'completed_at' => null,
+]);
+
+if ($sendAction === 'now') {
+    $batch = process_campaign_batch($campaignId);
+    if (!empty($batch['error']) && $batch['error'] === 'mail_disabled') {
+        $_SESSION['flash_error'] = 'Campaign queued but mail is not configured. Check Admin → Email settings, then use Retry on the campaign page.';
+        header('Location: /admin/campaign-view?id=' . $campaignId);
+        exit;
+    }
+}
+
+if ($sendAction === 'now') {
+    $_SESSION['flash_success'] = 'Campaign started. Remaining emails will send automatically.';
+} elseif ($editId && ($existing['status'] ?? '') === 'scheduled') {
+    $_SESSION['flash_success'] = 'Scheduled campaign updated.';
+} else {
+    $_SESSION['flash_success'] = 'Campaign scheduled for ' . campaign_format_datetime($scheduledAt) . '.';
+}
+
+header('Location: /admin/campaign-view?id=' . $campaignId);
 exit;
