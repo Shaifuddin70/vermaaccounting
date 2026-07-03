@@ -46,6 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $mail = mail_config();
 $pageTitle = 'Test email';
 $activeNav = 'email';
+if ($result) {
+    $adminToastMessages = [['type' => 'success', 'message' => $result]];
+} elseif ($error && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $adminToastMessages = [['type' => 'error', 'message' => $error]];
+}
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
@@ -54,13 +59,6 @@ require __DIR__ . '/includes/layout-start.php';
     <a href="/admin/email-settings" class="admin-btn admin-btn-secondary">← Email settings</a>
   </div>
 </div>
-
-<?php if ($result): ?>
-  <div class="admin-alert admin-alert-success"><?= e($result) ?></div>
-<?php endif; ?>
-<?php if ($error): ?>
-  <div class="admin-alert admin-alert-error"><?= e($error) ?></div>
-<?php endif; ?>
 
 <div class="admin-card email-test-card">
   <h2 class="admin-card-title">Send test</h2>

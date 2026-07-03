@@ -85,6 +85,8 @@ $repo = new SettingsRepository();
 $repo->saveMailSettings($settings);
 $repo->saveAppTimezone($appTimezone);
 
+$_SESSION['flash_success'] = 'Email settings saved.';
+
 ActivityLog::record('settings.email_updated', 'settings', null, [
     'admin_emails' => $adminEmails,
     'admin_notification_enabled' => $adminEnabled,
@@ -92,5 +94,5 @@ ActivityLog::record('settings.email_updated', 'settings', null, [
     'app_timezone' => $appTimezone,
 ]);
 
-header('Location: /admin/email-settings?saved=1');
+header('Location: /admin/email-settings');
 exit;

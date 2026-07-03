@@ -21,10 +21,6 @@ $paginationLabel = 'campaigns';
 $paginationAriaLabel = 'Campaign list pages';
 $paginationUrl = fn (int $p) => pagination_url('/admin/campaigns', [], $p, $pagination['per_page']);
 
-$flashSuccess = $_SESSION['flash_success'] ?? null;
-$flashError = $_SESSION['flash_error'] ?? null;
-unset($_SESSION['flash_success'], $_SESSION['flash_error']);
-
 $pageTitle = 'Email campaigns';
 $activeNav = 'campaigns';
 require __DIR__ . '/includes/layout-start.php';
@@ -35,13 +31,6 @@ require __DIR__ . '/includes/layout-start.php';
     <a href="/admin/campaign-edit" class="admin-btn admin-btn-primary">+ New campaign</a>
   </div>
 </div>
-
-<?php if ($flashSuccess): ?>
-  <div class="admin-alert admin-alert-success"><?= e($flashSuccess) ?></div>
-<?php endif; ?>
-<?php if ($flashError): ?>
-  <div class="admin-alert admin-alert-error"><?= e($flashError) ?></div>
-<?php endif; ?>
 
 <div class="admin-card campaign-summary-card">
   <p class="admin-field-hint" style="margin:0;">

@@ -8,10 +8,6 @@ Auth::requireRole('admin');
 $uploadRepo = new UploadRepository();
 $stats = $uploadRepo->storageStats();
 
-$flashSuccess = $_SESSION['flash_success'] ?? null;
-$flashError = $_SESSION['flash_error'] ?? null;
-unset($_SESSION['flash_success'], $_SESSION['flash_error']);
-
 $csrf = Auth::csrfToken();
 $pageTitle = 'Files';
 $activeNav = 'files';
@@ -24,13 +20,6 @@ require __DIR__ . '/includes/layout-start.php';
     <button type="button" class="admin-btn" data-open-file-manager>Open file manager</button>
   </div>
 </div>
-
-<?php if ($flashSuccess): ?>
-  <div class="admin-alert admin-alert-success"><?= e($flashSuccess) ?></div>
-<?php endif; ?>
-<?php if ($flashError): ?>
-  <div class="admin-alert admin-alert-error"><?= e($flashError) ?></div>
-<?php endif; ?>
 
 <div class="files-storage-card admin-card">
   <div class="files-storage-head">

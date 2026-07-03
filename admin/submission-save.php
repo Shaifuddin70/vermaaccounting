@@ -165,5 +165,6 @@ ActivityLog::record('submission.edited', 'submission', $submissionId, [
     'form_id' => $formId,
 ]);
 
-header('Location: /admin/submission?id=' . $submissionId . '&form_id=' . $formId . '&saved=1');
+$_SESSION['flash_success'] = 'Submission saved.';
+header('Location: /admin/submission?id=' . $submissionId . '&form_id=' . $formId);
 exit;

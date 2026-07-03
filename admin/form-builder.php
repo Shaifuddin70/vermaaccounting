@@ -50,8 +50,6 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 </div>
 
-<div id="save-status" class="admin-alert" style="display:none;"></div>
-
 <div class="fb-page">
   <section class="admin-card fb-essentials" aria-label="Form essentials">
     <div class="fb-essentials-grid">

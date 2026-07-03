@@ -118,5 +118,6 @@ Auth::syncProfileToSession([
     'avatar_path' => $newAvatar,
 ]);
 
-header('Location: /admin/profile?saved=1');
+$_SESSION['flash_success'] = 'Profile updated.';
+header('Location: /admin/profile');
 exit;

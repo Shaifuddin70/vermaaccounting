@@ -7,7 +7,6 @@ Auth::requireLogin();
 $formId = (int) ($_GET['form_id'] ?? 0);
 $submissionId = (int) ($_GET['id'] ?? 0);
 $editMode = isset($_GET['edit']) && Auth::userRole() === 'admin';
-$saved = isset($_GET['saved']);
 
 $repo = new FormRepository();
 $form = $repo->find($formId);
@@ -44,10 +43,6 @@ require __DIR__ . '/includes/layout-start.php';
     <a href="/admin/submissions?form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">← All responses</a>
   </div>
 </div>
-
-<?php if ($saved): ?>
-  <div class="admin-alert admin-alert-success">Submission saved.</div>
-<?php endif; ?>
 
 <?php if ($editErrors): ?>
   <div class="admin-alert admin-alert-error">

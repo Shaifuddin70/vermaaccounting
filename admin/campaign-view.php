@@ -24,10 +24,6 @@ $clientEmailCount = (new ClientRepository())->countWithEmail();
 $scheduledAt = (string) ($campaign['scheduled_at'] ?? '');
 $scheduledFuture = $status === 'scheduled' && $scheduledAt !== '' && $scheduledAt > now_iso();
 
-$flashSuccess = $_SESSION['flash_success'] ?? null;
-$flashError = $_SESSION['flash_error'] ?? null;
-unset($_SESSION['flash_success'], $_SESSION['flash_error']);
-
 $csrf = Auth::csrfToken();
 $pageTitle = 'Campaign: ' . ($campaign['name'] ?? '');
 $activeNav = 'campaigns';
@@ -42,13 +38,6 @@ require __DIR__ . '/includes/layout-start.php';
     <a href="/admin/campaigns" class="admin-btn admin-btn-secondary">← All campaigns</a>
   </div>
 </div>
-
-<?php if ($flashSuccess): ?>
-  <div class="admin-alert admin-alert-success"><?= e($flashSuccess) ?></div>
-<?php endif; ?>
-<?php if ($flashError): ?>
-  <div class="admin-alert admin-alert-error"><?= e($flashError) ?></div>
-<?php endif; ?>
 
 <?php if (!$mailReady): ?>
   <div class="admin-alert admin-alert-error">

@@ -9,7 +9,6 @@ $errors = $_SESSION['profile_errors'] ?? [];
 $old = $_SESSION['profile_old'] ?? [];
 unset($_SESSION['profile_errors'], $_SESSION['profile_old']);
 
-$saved = isset($_GET['saved']);
 $name = (string) ($old['name'] ?? $profile['name'] ?? '');
 $email = (string) ($old['email'] ?? $profile['email'] ?? '');
 $avatarUrl = user_avatar_url([
@@ -26,10 +25,6 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>My profile</h1>
 </div>
-
-<?php if ($saved): ?>
-  <div class="admin-alert admin-alert-success">Profile updated.</div>
-<?php endif; ?>
 
 <?php if ($errors): ?>
   <div class="admin-alert admin-alert-error">

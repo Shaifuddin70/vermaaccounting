@@ -2,6 +2,12 @@
 declare(strict_types=1);
 $pageTitle = $pageTitle ?? 'Admin';
 $activeNav = $activeNav ?? '';
+
+require_once __DIR__ . '/flash-toasts.php';
+$adminToastMessages = array_merge(
+    admin_pull_toast_messages(),
+    $adminToastMessages ?? []
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -13,7 +19,7 @@ $activeNav = $activeNav ?? '';
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/css/admin.css?v=46">
+  <link rel="stylesheet" href="/admin/css/admin.css?v=47">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.css">
 </head>
 <body class="admin-body">

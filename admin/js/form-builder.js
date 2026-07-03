@@ -35,7 +35,16 @@
   }
 
   function showStatus(msg, ok) {
+    if (window.AdminToast) {
+      if (ok) {
+        window.AdminToast.success(msg);
+      } else {
+        window.AdminToast.error(msg);
+      }
+      return;
+    }
     const box = el('save-status');
+    if (!box) return;
     box.style.display = 'block';
     box.className = 'admin-alert ' + (ok ? 'admin-alert-success' : 'admin-alert-error');
     box.textContent = msg;

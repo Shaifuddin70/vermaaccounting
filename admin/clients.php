@@ -36,10 +36,6 @@ $paginationLabel = 'clients';
 $paginationAriaLabel = 'Client list pages';
 $paginationUrl = fn (int $p) => clients_page_url($search, $p, $pagination['per_page']);
 
-$flashSuccess = $_SESSION['flash_success'] ?? null;
-$flashError = $_SESSION['flash_error'] ?? null;
-unset($_SESSION['flash_success'], $_SESSION['flash_error']);
-
 $pageTitle = 'Clients';
 $activeNav = 'clients';
 
@@ -65,13 +61,6 @@ require __DIR__ . '/includes/layout-start.php';
     <a href="/admin/clients-export" class="admin-btn admin-btn-secondary">Export CSV</a>
   </div>
 </div>
-
-<?php if ($flashSuccess): ?>
-  <div class="admin-alert admin-alert-success"><?= e($flashSuccess) ?></div>
-<?php endif; ?>
-<?php if ($flashError): ?>
-  <div class="admin-alert admin-alert-error"><?= e($flashError) ?></div>
-<?php endif; ?>
 
 <div class="admin-card clients-filters-card">
   <form method="get" action="/admin/clients" class="clients-filter-form">

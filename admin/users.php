@@ -20,9 +20,6 @@ $paginationLabel = 'team members';
 $paginationAriaLabel = 'Team list pages';
 $paginationUrl = fn (int $p) => pagination_url('/admin/users', [], $p, $pagination['per_page']);
 
-$flash = $_SESSION['flash_success'] ?? null;
-unset($_SESSION['flash_success']);
-
 $pageTitle = 'Team';
 $activeNav = 'users';
 require __DIR__ . '/includes/layout-start.php';
@@ -33,14 +30,6 @@ require __DIR__ . '/includes/layout-start.php';
     <button type="button" class="admin-btn" id="btn-add-user">+ Add team member</button>
   </div>
 </div>
-
-<div id="users-flash" class="admin-alert admin-alert-success" style="display:<?= $flash ? 'block' : 'none' ?>;">
-  <?= e($flash ?? '') ?>
-</div>
-<?php if (!empty($_SESSION['flash_error'])): ?>
-  <div class="admin-alert admin-alert-error"><?= e($_SESSION['flash_error']) ?></div>
-  <?php unset($_SESSION['flash_error']); ?>
-<?php endif; ?>
 
 <div class="users-stats" id="users-stats">
   <div class="users-stat">
@@ -257,7 +246,6 @@ require __DIR__ . '/includes/layout-start.php';
   const submitSpin= document.getElementById('umodal-submit-spinner');
   const pwReq     = document.getElementById('umodal-pw-required');
   const pwOpt     = document.getElementById('umodal-pw-optional');
-  const flash     = document.getElementById('users-flash');
 
   function isOpen() {
     return modal.classList.contains('is-open');
@@ -321,10 +309,9 @@ require __DIR__ . '/includes/layout-start.php';
 
   // ── Show flash ────────────────────────────────────────────────────────────
   function showFlash(msg) {
-    if (!flash) return;
-    flash.textContent = msg;
-    flash.style.display = 'block';
-    setTimeout(function(){ flash.style.display = 'none'; }, 4000);
+    if (window.AdminToast) {
+      window.AdminToast.success(msg);
+    }
   }
 
   // ── Submit via fetch ──────────────────────────────────────────────────────

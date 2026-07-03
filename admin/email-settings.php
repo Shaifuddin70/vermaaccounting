@@ -10,7 +10,6 @@ $errors = $_SESSION['email_settings_errors'] ?? [];
 $old = $_SESSION['email_settings_old'] ?? [];
 unset($_SESSION['email_settings_errors'], $_SESSION['email_settings_old']);
 
-$saved = isset($_GET['saved']);
 $adminEmails = $old['admin_emails'] ?? $mail['admin_emails'] ?? [];
 if (!is_array($adminEmails)) {
     $adminEmails = [$adminEmails];
@@ -47,10 +46,6 @@ require __DIR__ . '/includes/layout-start.php';
     <a href="/admin/test-email" class="admin-btn admin-btn-secondary">Send test email</a>
   </div>
 </div>
-
-<?php if ($saved): ?>
-  <div class="admin-alert admin-alert-success">Email settings saved.</div>
-<?php endif; ?>
 
 <?php if ($errors): ?>
   <div class="admin-alert admin-alert-error">
