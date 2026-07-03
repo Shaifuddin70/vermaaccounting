@@ -125,7 +125,7 @@ if ($sendAction !== 'draft') {
     }
 
     $_SESSION['flash_success'] = $sendAction === 'now'
-        ? 'Campaign started. First batch processed; remaining emails send via the cron queue.'
+        ? 'Campaign started. Remaining emails will send automatically.'
         : 'Campaign scheduled for ' . campaign_format_datetime($scheduledAt) . '.';
     header('Location: /admin/campaign-view?id=' . $campaignId);
     exit;

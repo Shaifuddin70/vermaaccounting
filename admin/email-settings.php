@@ -33,9 +33,10 @@ $clientSubject = (string) ($old['client_confirmation_subject']
     ?? $mail['client_confirmation']['subject']
     ?? 'We received your submission — {form_title}');
 
+$settingsRepo = new SettingsRepository();
+$appTimezone = (string) ($old['app_timezone'] ?? $settingsRepo->getAppTimezone());
+
 $csrf = Auth::csrfToken();
-$mailCanSend = Mailer::fromAppConfig() !== null;
-$mailEnv = app_environment();
 $pageTitle = 'Email settings';
 $activeNav = 'email';
 require __DIR__ . '/includes/layout-start.php';
@@ -61,116 +62,103 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 <?php endif; ?>
 
-<div class="admin-grid-2">
-  <div class="admin-card">
-    <h2 class="admin-card-title">Notification settings</h2>
-    <form method="post" action="/admin/email-settings-save" id="email-settings-form">
-      <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+<div class="admin-card email-settings-page">
+  <form method="post" action="/admin/email-settings-save" id="email-settings-form">
+    <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
 
-      <div class="admin-field">
-        <label>Admin notification emails</label>
-        <p class="admin-field-hint" style="margin-top:0;">Submission alerts are sent to every address listed below.</p>
-        <div class="admin-email-list" id="admin-email-list">
-          <?php foreach ($adminEmails as $email): ?>
-            <div class="admin-email-row">
-              <input type="email" name="admin_emails[]" value="<?= e($email) ?>" placeholder="admin@example.com" autocomplete="email">
-              <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm admin-email-remove" aria-label="Remove email">Remove</button>
-            </div>
-          <?php endforeach; ?>
+    <div class="email-settings-grid">
+      <section class="email-settings-tile email-settings-tile--admin">
+        <div class="email-settings-section-head">
+          <h2 class="email-settings-section-title">Admin alerts</h2>
+          <p class="email-settings-section-desc">Notify your team when someone submits a form.</p>
         </div>
-        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" id="admin-email-add" style="margin-top:0.75rem;">Add email</button>
-      </div>
-
-      <div class="admin-field">
-        <label class="admin-checkbox-label">
-          <input type="checkbox" name="admin_notification_enabled" value="1" <?= $adminEnabled ? 'checked' : '' ?>>
+        <label class="email-settings-toggle">
+          <input type="checkbox" name="admin_notification_enabled" value="1" id="admin-notification-enabled" <?= $adminEnabled ? 'checked' : '' ?>>
           <span>Send admin notification on new submissions</span>
         </label>
-      </div>
+        <div class="email-settings-panel" id="admin-notification-panel" <?= $adminEnabled ? '' : 'hidden' ?>>
+          <div class="admin-field" style="margin-bottom:0;">
+            <label for="admin-email-first">Notification emails</label>
+            <div class="admin-email-list" id="admin-email-list">
+              <?php foreach ($adminEmails as $i => $email): ?>
+                <div class="admin-email-row">
+                  <input type="email" name="admin_emails[]" value="<?= e($email) ?>" placeholder="admin@example.com" autocomplete="email"<?= $i === 0 ? ' id="admin-email-first"' : '' ?>>
+                  <button type="button" class="admin-email-remove" aria-label="Remove email" title="Remove">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                  </button>
+                </div>
+              <?php endforeach; ?>
+            </div>
+            <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" id="admin-email-add">+ Add email</button>
+          </div>
+          <div class="admin-field">
+            <label for="admin-notification-subject">Subject line</label>
+            <input type="text" id="admin-notification-subject" name="admin_notification_subject"
+              value="<?= e($adminSubject) ?>"
+              placeholder="New submission: {form_title} (#{submission_id})">
+            <small class="admin-field-hint">{form_title}, {submission_id}, {client_name}, {client_email}, {tax_year}</small>
+          </div>
+        </div>
+      </section>
 
-      <div class="admin-field">
-        <label for="admin-notification-subject">Admin notification subject</label>
-        <input type="text" id="admin-notification-subject" name="admin_notification_subject"
-          value="<?= e($adminSubject) ?>"
-          placeholder="New submission: {form_title} (#{submission_id})">
-        <small class="admin-field-hint">Tokens: {form_title}, {submission_id}, {client_name}, {client_email}, {tax_year}</small>
-      </div>
-
-      <div class="admin-field">
-        <label class="admin-checkbox-label">
-          <input type="checkbox" name="client_confirmation_enabled" value="1" <?= $clientEnabled ? 'checked' : '' ?>>
+      <section class="email-settings-tile email-settings-tile--client">
+        <div class="email-settings-section-head">
+          <h2 class="email-settings-section-title">Client confirmation</h2>
+          <p class="email-settings-section-desc">Automatic reply when a client submits a form.</p>
+        </div>
+        <label class="email-settings-toggle">
+          <input type="checkbox" name="client_confirmation_enabled" value="1" id="client-confirmation-enabled" <?= $clientEnabled ? 'checked' : '' ?>>
           <span>Send confirmation email to the client</span>
         </label>
-      </div>
+        <div class="email-settings-panel" id="client-confirmation-panel" <?= $clientEnabled ? '' : 'hidden' ?>>
+          <div class="admin-field" style="margin-bottom:0;">
+            <label for="client-confirmation-subject">Subject line</label>
+            <input type="text" id="client-confirmation-subject" name="client_confirmation_subject"
+              value="<?= e($clientSubject) ?>"
+              placeholder="We received your submission — {form_title}">
+          </div>
+        </div>
+      </section>
 
-      <div class="admin-field">
-        <label for="client-confirmation-subject">Client confirmation subject</label>
-        <input type="text" id="client-confirmation-subject" name="client_confirmation_subject"
-          value="<?= e($clientSubject) ?>"
-          placeholder="We received your submission — {form_title}">
-      </div>
-
-      <button type="submit" class="admin-btn admin-btn-primary">Save settings</button>
-    </form>
-  </div>
-
-  <div class="admin-card email-server-card">
-    <h2 class="admin-card-title">Server mail config</h2>
-    <p class="admin-field-hint" style="margin-top:0;">
-      SMTP credentials and the From address are set in <code>config.local.php</code> on the server.
-    </p>
-
-    <div class="email-server-meta">
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">Environment</span>
-        <span class="campaign-status-badge campaign-status-badge--<?= $mailEnv === 'production' ? 'sent' : 'draft' ?>">
-          <?= $mailEnv === 'production' ? 'Production' : 'Local development' ?>
-        </span>
-      </div>
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">Ready to send</span>
-        <span class="campaign-status-badge campaign-status-badge--<?= $mailCanSend ? 'sent' : 'failed' ?>">
-          <?= $mailCanSend ? 'Yes' : 'No' ?>
-        </span>
-      </div>
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">From</span>
-        <strong><?= e((string) ($mail['from_email'] ?? '—')) ?></strong>
-      </div>
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">Transport</span>
-        <strong><?= e((string) ($mail['transport'] ?? '—')) ?></strong>
-      </div>
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">SMTP host</span>
-        <strong><?= e((string) ($mail['smtp']['host'] ?? '—')) ?></strong>
-      </div>
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">SMTP user</span>
-        <strong><?= e((string) ($mail['smtp']['username'] ?? '—')) ?></strong>
-      </div>
+      <section class="email-settings-tile email-settings-tile--campaign">
+        <div class="email-settings-section-head">
+          <h2 class="email-settings-section-title">Campaign scheduling</h2>
+          <p class="email-settings-section-desc">Timezone for viewing and scheduling bulk email campaigns.</p>
+        </div>
+        <div class="admin-field" style="margin-bottom:0;">
+          <label for="app-timezone">Timezone</label>
+          <select id="app-timezone" name="app_timezone">
+            <?php foreach (app_timezone_option_groups() as $groupLabel => $zones): ?>
+              <optgroup label="<?= e($groupLabel) ?>">
+                <?php foreach ($zones as $tzId => $tzLabel): ?>
+                  <option value="<?= e($tzId) ?>" title="<?= e($tzId) ?>" <?= $appTimezone === $tzId ? 'selected' : '' ?>>
+                    <?= e($tzLabel) ?>
+                  </option>
+                <?php endforeach; ?>
+              </optgroup>
+            <?php endforeach; ?>
+          </select>
+          <div class="email-settings-clock-card" id="email-settings-clock">
+            <span class="email-settings-clock-label">Current time</span>
+            <strong class="email-settings-clock-time"><?= e(app_now_local_formatted($appTimezone)) ?></strong>
+            <span class="email-settings-clock-tz"><?= e(app_timezone_label($appTimezone)) ?></span>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <?php if ($mailEnv === 'local'): ?>
-      <div class="admin-alert admin-alert-info" style="margin-top:1rem;">
-        Mail is disabled on local development (MAMP). On the live site, production mail settings from config are used automatically.
-      </div>
-    <?php elseif (!$mailCanSend): ?>
-      <div class="admin-alert admin-alert-error" style="margin-top:1rem;">
-        Mail is not ready. Check <code>mail.enabled</code> and <code>from_email</code> in <code>config.local.php</code> on the server.
-      </div>
-    <?php endif; ?>
-
-    <p class="admin-field-hint" style="margin-top:1rem;">
-      Admin notification fallback: <strong><?= e((string) ($mail['admin_email'] ?: 'not set')) ?></strong>
-    </p>
-  </div>
+    <div class="email-settings-form-actions">
+      <button type="submit" class="admin-btn admin-btn-primary">Save settings</button>
+    </div>
+  </form>
 </div>
 
 <template id="admin-email-row-template">
   <div class="admin-email-row">
     <input type="email" name="admin_emails[]" value="" placeholder="admin@example.com" autocomplete="email">
-    <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm admin-email-remove" aria-label="Remove email">Remove</button>
+    <button type="button" class="admin-email-remove" aria-label="Remove email" title="Remove">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
   </div>
 </template>
 
@@ -179,6 +167,20 @@ require __DIR__ . '/includes/layout-start.php';
   const list = document.getElementById('admin-email-list');
   const template = document.getElementById('admin-email-row-template');
   const addBtn = document.getElementById('admin-email-add');
+
+  function bindPanelToggle(checkboxId, panelId) {
+    const checkbox = document.getElementById(checkboxId);
+    const panel = document.getElementById(panelId);
+    if (!checkbox || !panel) return;
+    const sync = function () {
+      panel.hidden = !checkbox.checked;
+    };
+    checkbox.addEventListener('change', sync);
+    sync();
+  }
+
+  bindPanelToggle('admin-notification-enabled', 'admin-notification-panel');
+  bindPanelToggle('client-confirmation-enabled', 'client-confirmation-panel');
 
   function bindRemove(row) {
     const btn = row.querySelector('.admin-email-remove');

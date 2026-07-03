@@ -9,50 +9,28 @@ function campaign_batch_size(): int
 
 function campaign_schedule_timezone(): DateTimeZone
 {
-    return new DateTimeZone('America/Toronto');
+    return app_timezone();
 }
 
 function campaign_timezone_label(): string
 {
-    return 'Eastern Time (Toronto)';
+    return app_timezone_label();
 }
 
 function campaign_parse_scheduled_at(string $raw): ?string
 {
-    $raw = trim($raw);
-    if ($raw === '') {
-        return null;
-    }
-    $raw = str_replace('T', ' ', $raw);
-    if (preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/', $raw)) {
-        $raw .= ':00';
-    }
-    $dt = DateTime::createFromFormat('Y-m-d H:i:s', $raw, campaign_schedule_timezone());
-    if (!$dt) {
-        return null;
-    }
-    return $dt->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+    return app_parse_local_datetime($raw);
 }
 
 function campaign_format_datetime(?string $utc): string
 {
-    if ($utc === null || $utc === '') {
-        return '';
-    }
-    $dt = new DateTime($utc, new DateTimeZone('UTC'));
-    $dt->setTimezone(campaign_schedule_timezone());
-    return $dt->format('Y-m-d g:i A') . ' ' . campaign_timezone_label();
+    return app_format_datetime($utc);
 }
 
-/** Value for HTML datetime-local inputs (Eastern time). */
+/** Value for HTML datetime-local inputs in the app schedule timezone. */
 function campaign_datetime_local_value(?string $utc): string
 {
-    if ($utc === null || $utc === '') {
-        return '';
-    }
-    $dt = new DateTime($utc, new DateTimeZone('UTC'));
-    $dt->setTimezone(campaign_schedule_timezone());
-    return $dt->format('Y-m-d\TH:i');
+    return app_datetime_local_value($utc);
 }
 
 function campaign_status_label(string $status): string

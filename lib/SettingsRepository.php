@@ -60,4 +60,18 @@ final class SettingsRepository
     {
         $this->set('mail', $settings);
     }
+
+    public function getAppTimezone(): string
+    {
+        $stored = $this->get('app_timezone', null);
+        return is_string($stored) && app_timezone_is_valid($stored) ? $stored : app_timezone_default();
+    }
+
+    public function saveAppTimezone(string $timezone): void
+    {
+        if (!app_timezone_is_valid($timezone)) {
+            throw new InvalidArgumentException('Invalid timezone.');
+        }
+        $this->set('app_timezone', $timezone);
+    }
 }

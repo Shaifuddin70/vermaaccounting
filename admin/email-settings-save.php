@@ -27,6 +27,11 @@ $adminEnabled = !empty($_POST['admin_notification_enabled']);
 $clientEnabled = !empty($_POST['client_confirmation_enabled']);
 $adminSubject = trim((string) ($_POST['admin_notification_subject'] ?? ''));
 $clientSubject = trim((string) ($_POST['client_confirmation_subject'] ?? ''));
+$appTimezone = trim((string) ($_POST['app_timezone'] ?? ''));
+
+if ($appTimezone === '' || !app_timezone_is_valid($appTimezone)) {
+    $errors[] = 'Choose a valid campaign schedule timezone.';
+}
 
 if ($adminEnabled && $adminEmails === []) {
     $errors[] = 'Add at least one admin notification email, or turn off admin notifications.';
@@ -58,6 +63,7 @@ if ($errors) {
         'client_confirmation_enabled' => $clientEnabled,
         'admin_notification_subject' => $adminSubject,
         'client_confirmation_subject' => $clientSubject,
+        'app_timezone' => $appTimezone,
     ];
     header('Location: /admin/email-settings');
     exit;
@@ -77,11 +83,13 @@ $settings = [
 
 $repo = new SettingsRepository();
 $repo->saveMailSettings($settings);
+$repo->saveAppTimezone($appTimezone);
 
 ActivityLog::record('settings.email_updated', 'settings', null, [
     'admin_emails' => $adminEmails,
     'admin_notification_enabled' => $adminEnabled,
     'client_confirmation_enabled' => $clientEnabled,
+    'app_timezone' => $appTimezone,
 ]);
 
 header('Location: /admin/email-settings?saved=1');

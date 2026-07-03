@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $mailer = Mailer::fromAppConfig();
         if ($mailer === null) {
-            $error = 'Mail is disabled or From email is missing in config.local.php.';
+            $error = 'Mail is not available. Check your email settings or try again from the live site.';
         } else {
             $mail = mail_config();
             $ok = $mailer->send(
@@ -37,15 +37,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($ok) {
                 $result = 'Test email sent to ' . $to . '. Check your inbox and spam folder.';
             } else {
-                $error = $mailer->getLastError() ?: 'Send failed with no error details.';
+                $error = $mailer->getLastError() ?: 'Send failed. Please try again.';
             }
         }
     }
 }
 
 $mail = mail_config();
-$mailCanSend = Mailer::fromAppConfig() !== null;
-$mailEnv = app_environment();
 $pageTitle = 'Test email';
 $activeNav = 'email';
 require __DIR__ . '/includes/layout-start.php';
@@ -64,49 +62,17 @@ require __DIR__ . '/includes/layout-start.php';
   <div class="admin-alert admin-alert-error"><?= e($error) ?></div>
 <?php endif; ?>
 
-<div class="admin-grid-2">
-  <div class="admin-card">
-    <h2 class="admin-card-title">Send test</h2>
-    <form method="post">
-      <input type="hidden" name="csrf_token" value="<?= e(Auth::csrfToken()) ?>">
-      <div class="admin-field">
-        <label for="test-email-to">Send to</label>
-        <input type="email" id="test-email-to" name="to" value="<?= e($to) ?>" required>
-      </div>
-      <button type="submit" class="admin-btn" <?= empty($mail['enabled']) ? 'disabled' : '' ?>>Send test email</button>
-    </form>
-  </div>
-
-  <div class="admin-card email-server-card">
-    <h2 class="admin-card-title">Current mail config</h2>
-    <div class="email-server-meta">
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">Environment</span>
-        <span class="campaign-status-badge campaign-status-badge--<?= $mailEnv === 'production' ? 'sent' : 'draft' ?>">
-          <?= $mailEnv === 'production' ? 'Production' : 'Local development' ?>
-        </span>
-      </div>
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">Ready to send</span>
-        <span class="campaign-status-badge campaign-status-badge--<?= $mailCanSend ? 'sent' : 'failed' ?>">
-          <?= $mailCanSend ? 'Yes' : 'No' ?>
-        </span>
-      </div>
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">From</span>
-        <strong><?= e((string) ($mail['from_email'] ?? '—')) ?></strong>
-      </div>
-      <div class="email-server-meta-item">
-        <span class="submission-meta-label">Admin notifications</span>
-        <strong><?= !empty($mail['admin_emails']) ? e(implode(', ', $mail['admin_emails'])) : '—' ?></strong>
-      </div>
+<div class="admin-card email-test-card">
+  <h2 class="admin-card-title">Send test</h2>
+  <p class="admin-field-hint" style="margin-top:0;">Send a test message to confirm email delivery is working.</p>
+  <form method="post">
+    <input type="hidden" name="csrf_token" value="<?= e(Auth::csrfToken()) ?>">
+    <div class="admin-field">
+      <label for="test-email-to">Send to</label>
+      <input type="email" id="test-email-to" name="to" value="<?= e($to) ?>" required>
     </div>
-    <?php if ($mailEnv === 'local'): ?>
-      <p class="admin-note" style="margin-top:1rem;">
-        Local development uses disabled mail. Test from the <strong>live server</strong> to verify production SMTP.
-      </p>
-    <?php endif; ?>
-  </div>
+    <button type="submit" class="admin-btn admin-btn-primary" <?= empty($mail['enabled']) ? 'disabled' : '' ?>>Send test email</button>
+  </form>
 </div>
 
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

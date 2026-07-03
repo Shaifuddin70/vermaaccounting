@@ -124,7 +124,7 @@ if ($action === 'launch' || $action === 'send_now') {
     ]);
     $_SESSION['flash_success'] = 'Campaign started. Processed ' . ($batch['processed'] ?? 0) . ' email(s): '
         . ($batch['sent'] ?? 0) . ' sent, ' . ($batch['failed'] ?? 0) . ' failed.'
-        . (!empty($batch['done']) ? ' Campaign complete.' : ' Remaining emails will send via cron.');
+        . (!empty($batch['done']) ? ' Campaign complete.' : ' Remaining emails will send automatically.');
     header('Location: ' . $redirect);
     exit;
 }

@@ -52,25 +52,24 @@ require __DIR__ . '/includes/layout-start.php';
 
 <?php if (!$mailReady): ?>
   <div class="admin-alert admin-alert-error">
-    Mail is not configured for this environment. Campaigns cannot send until SMTP is set up in
-    <a href="/admin/email-settings">Email settings</a>.
+    Email is not set up yet. Check <a href="/admin/email-settings">Email settings</a> or contact your administrator.
   </div>
 <?php elseif ($status === 'draft'): ?>
   <div class="admin-alert admin-alert-warning">
-    This campaign is a <strong>draft</strong>. The cron job does not send drafts — click <strong>Start sending now</strong> below when you are ready.
+    This campaign is a <strong>draft</strong>. Click <strong>Start sending now</strong> below when you are ready.
   </div>
 <?php elseif ($scheduledFuture): ?>
   <div class="admin-alert admin-alert-warning">
-    Scheduled for <?= e(campaign_format_datetime($scheduledAt)) ?>. The cron job will start sending at that time, or you can send immediately below.
+    Scheduled for <?= e(campaign_format_datetime($scheduledAt)) ?>. Emails will send automatically at that time, or you can send immediately below.
   </div>
 <?php elseif ($status === 'failed'): ?>
   <div class="admin-alert admin-alert-error">
     This campaign could not send<?= $recipientTotal === 0 ? ' — no recipients were queued' : '' ?>.
-    Click <strong>Retry sending</strong> below after fixing the issue.
+    Click <strong>Retry sending</strong> below.
   </div>
 <?php elseif ($status === 'sending' && $pending > 0): ?>
   <div class="admin-alert admin-alert-success">
-  Sending in progress — <?= number_format($pending) ?> email<?= $pending === 1 ? '' : 's' ?> remaining. Cron runs every few minutes, or use <strong>Process next batch</strong> below.
+    Sending in progress — <?= number_format($pending) ?> email<?= $pending === 1 ? '' : 's' ?> remaining.
   </div>
 <?php elseif ($clientEmailCount === 0 && in_array($status, ['draft', 'scheduled', 'sending', 'failed'], true)): ?>
   <div class="admin-alert admin-alert-error">
@@ -112,7 +111,7 @@ require __DIR__ . '/includes/layout-start.php';
       <?php if (!empty($campaign['completed_at'])): ?>
         <div>
           <span class="submission-meta-label">Completed</span>
-          <strong><?= e((string) $campaign['completed_at']) ?> UTC</strong>
+          <strong><?= e(campaign_format_datetime((string) $campaign['completed_at'])) ?></strong>
         </div>
       <?php endif; ?>
     </div>
@@ -152,12 +151,6 @@ require __DIR__ . '/includes/layout-start.php';
         </form>
       <?php endif; ?>
       <?php if (in_array($status, ['scheduled', 'sending'], true)): ?>
-        <form method="post" action="/admin/campaign-action" class="inline-form">
-          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-          <input type="hidden" name="campaign_id" value="<?= $campaignId ?>">
-          <input type="hidden" name="action" value="process_batch">
-          <button type="submit" class="admin-btn admin-btn-primary">Process next batch (<?= campaign_batch_size() ?>)</button>
-        </form>
         <form method="post" action="/admin/campaign-action" class="inline-form"
           onsubmit="return confirm('Cancel this campaign? Pending emails will not be sent.');">
           <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
@@ -184,7 +177,7 @@ require __DIR__ . '/includes/layout-start.php';
     <div class="campaign-body-preview"><?= nl2br(e((string) $campaign['body_html'])) ?></div>
     <p class="admin-field-hint" style="margin-top:1rem;">
       Created by <?= e((string) ($campaign['created_by_name'] ?? 'Admin')) ?>
-      on <?= e((string) $campaign['created_at']) ?> UTC
+      on <?= e(campaign_format_datetime((string) $campaign['created_at'])) ?>
     </p>
   </div>
 </div>
