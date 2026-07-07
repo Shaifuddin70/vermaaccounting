@@ -58,6 +58,9 @@ require_once __DIR__ . '/pagination_helpers.php';
 require_once __DIR__ . '/Mailer.php';
 require_once __DIR__ . '/submission_emails.php';
 require_once __DIR__ . '/campaign_emails.php';
+require_once __DIR__ . '/HolidayScheduleRepository.php';
+require_once __DIR__ . '/holiday_emails.php';
+require_once __DIR__ . '/FileFolderRepository.php';
 require_once __DIR__ . '/profile_helpers.php';
 require_once __DIR__ . '/partner_helpers.php';
 

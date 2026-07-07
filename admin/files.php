@@ -16,9 +16,6 @@ require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>Files</h1>
-  <div class="admin-header-actions">
-    <button type="button" class="admin-btn" data-open-file-manager>Open file manager</button>
-  </div>
 </div>
 
 <div class="files-storage-card admin-card">
@@ -51,20 +48,5 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 </div>
 
-<div class="admin-card files-launch-card">
-  <div class="files-launch-body">
-    <div class="files-launch-icon" aria-hidden="true">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-    </div>
-    <div>
-      <h2 class="files-launch-title">Browse all uploaded files</h2>
-      <p class="files-launch-text">
-        View files in a grid, upload new files, rename, delete, select multiple items, and download as a ZIP archive.
-      </p>
-      <button type="button" class="admin-btn" data-open-file-manager>Open file manager</button>
-    </div>
-  </div>
-</div>
-
-<?php require __DIR__ . '/includes/file-manager-modal.php'; ?>
+<?php require __DIR__ . '/includes/file-manager.php'; ?>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

@@ -21,6 +21,7 @@ function files_api_item(array $file): array
         'form_id' => (int) ($file['form_id'] ?? 0),
         'form_title' => (string) ($file['form_title'] ?? ''),
         'submission_id' => (int) ($file['submission_id'] ?? 0),
+        'folder_id' => isset($file['folder_id']) && $file['folder_id'] !== null ? (int) $file['folder_id'] : null,
         'is_image' => is_image_mime($mime),
         'ext' => file_extension_label($file['original_name'] ?? '', $mime),
         'view_url' => '/admin/view-file?file_id=' . $fileId,
@@ -28,7 +29,27 @@ function files_api_item(array $file): array
     ];
 }
 
+function files_api_folder_item(array $folder): array
+{
+    return [
+        'id' => (int) $folder['id'],
+        'name' => (string) ($folder['name'] ?? ''),
+        'parent_id' => isset($folder['parent_id']) && $folder['parent_id'] !== null ? (int) $folder['parent_id'] : null,
+        'item_count' => (int) ($folder['item_count'] ?? 0),
+    ];
+}
+
+function files_api_parse_folder_id(mixed $raw): ?int
+{
+    if ($raw === null || $raw === '') {
+        return null;
+    }
+    $id = (int) $raw;
+    return $id > 0 ? $id : null;
+}
+
 $uploadRepo = new UploadRepository();
+$folderRepo = new FileFolderRepository();
 $formRepo = new FormRepository();
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
@@ -36,17 +57,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($formId !== null && $formId < 1) {
         $formId = null;
     }
+    $folderId = files_api_parse_folder_id($_GET['folder_id'] ?? null);
+    if ($folderId !== null && !$folderRepo->find($folderId)) {
+        json_response(['ok' => false, 'error' => 'Folder not found.'], 404);
+    }
     $search = trim((string) ($_GET['q'] ?? ''));
     $sort = (string) ($_GET['sort'] ?? 'date');
     if (!in_array($sort, ['date', 'name', 'size'], true)) {
         $sort = 'date';
     }
 
-    $files = $uploadRepo->listFilesForManager($formId, $search, $sort);
+    $files = $uploadRepo->listFilesForManager($formId, $search, $sort, $folderId);
     $forms = array_values(array_filter($formRepo->all(), fn (array $form): bool => !is_file_manager_form($form)));
 
     json_response([
         'ok' => true,
+        'folder_id' => $folderId,
+        'breadcrumb' => $folderRepo->breadcrumb($folderId),
+        'folders' => array_map('files_api_folder_item', $folderRepo->listForApi($folderId)),
+        'folder_options' => array_map(static fn (array $row): array => [
+            'id' => (int) $row['id'],
+            'path' => (string) $row['path'],
+        ], $folderRepo->listAllForPicker()),
         'stats' => $uploadRepo->storageStats(),
         'forms' => array_map(static fn (array $form): array => [
             'id' => (int) $form['id'],
@@ -66,6 +98,127 @@ if (!Auth::verifyCsrf($csrf)) {
 }
 
 $action = (string) ($_POST['action'] ?? '');
+
+if ($action === 'create_folder') {
+    $parentId = files_api_parse_folder_id($_POST['parent_id'] ?? null);
+    $name = trim((string) ($_POST['name'] ?? ''));
+    if ($name === '') {
+        json_response(['ok' => false, 'error' => 'Folder name is required.'], 422);
+    }
+
+    try {
+        $folderId = $folderRepo->create($parentId, $name);
+    } catch (RuntimeException $e) {
+        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+    }
+
+    $folder = $folderRepo->find($folderId);
+    ActivityLog::record('folder.created', 'folder', $folderId, [
+        'name' => $name,
+        'parent_id' => $parentId,
+    ]);
+
+    json_response([
+        'ok' => true,
+        'folder' => files_api_folder_item([
+            'id' => $folderId,
+            'name' => (string) ($folder['name'] ?? $name),
+            'parent_id' => $parentId,
+            'item_count' => 0,
+        ]),
+    ]);
+}
+
+if ($action === 'rename_folder') {
+    $folderId = (int) ($_POST['folder_id'] ?? 0);
+    $name = trim((string) ($_POST['name'] ?? ''));
+    if ($folderId < 1 || $name === '') {
+        json_response(['ok' => false, 'error' => 'Folder and name are required.'], 422);
+    }
+
+    try {
+        $folder = $folderRepo->rename($folderId, $name);
+    } catch (RuntimeException $e) {
+        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+    }
+    if (!$folder) {
+        json_response(['ok' => false, 'error' => 'Folder not found.'], 404);
+    }
+
+    ActivityLog::record('folder.renamed', 'folder', $folderId, ['name' => $folder['name'] ?? '']);
+    json_response([
+        'ok' => true,
+        'folder' => files_api_folder_item([
+            'id' => $folderId,
+            'name' => (string) ($folder['name'] ?? ''),
+            'parent_id' => $folder['parent_id'] ?? null,
+            'item_count' => $folderRepo->itemCount($folderId),
+        ]),
+    ]);
+}
+
+if ($action === 'delete_folder') {
+    $folderId = (int) ($_POST['folder_id'] ?? 0);
+    if ($folderId < 1) {
+        json_response(['ok' => false, 'error' => 'Folder is required.'], 422);
+    }
+
+    $folder = $folderRepo->find($folderId);
+    if (!$folder) {
+        json_response(['ok' => false, 'error' => 'Folder not found.'], 404);
+    }
+
+    try {
+        $folderRepo->delete($folderId);
+    } catch (RuntimeException $e) {
+        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+    }
+
+    ActivityLog::record('folder.deleted', 'folder', $folderId, [
+        'name' => (string) ($folder['name'] ?? ''),
+    ]);
+    json_response(['ok' => true]);
+}
+
+if ($action === 'move_files') {
+    $folderId = files_api_parse_folder_id($_POST['folder_id'] ?? null);
+    $rawIds = $_POST['file_ids'] ?? [];
+    if (is_string($rawIds)) {
+        $rawIds = array_filter(array_map('trim', explode(',', $rawIds)));
+    }
+    if (!is_array($rawIds)) {
+        $rawIds = [];
+    }
+
+    try {
+        $moved = $uploadRepo->moveFilesToFolder($rawIds, $folderId);
+    } catch (RuntimeException $e) {
+        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+    }
+
+    ActivityLog::record('file.moved', 'folder', $folderId, ['count' => $moved]);
+    json_response(['ok' => true, 'moved' => $moved]);
+}
+
+if ($action === 'move_folder') {
+    $folderId = (int) ($_POST['folder_id'] ?? 0);
+    $parentId = files_api_parse_folder_id($_POST['parent_id'] ?? null);
+    if ($folderId < 1) {
+        json_response(['ok' => false, 'error' => 'Folder is required.'], 422);
+    }
+
+    try {
+        $folder = $folderRepo->move($folderId, $parentId);
+    } catch (RuntimeException $e) {
+        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+    }
+    if (!$folder) {
+        json_response(['ok' => false, 'error' => 'Folder not found.'], 404);
+    }
+
+    ActivityLog::record('folder.moved', 'folder', $folderId, ['parent_id' => $parentId]);
+    json_response(['ok' => true]);
+}
 
 if ($action === 'rename') {
     $fileId = (int) ($_POST['file_id'] ?? 0);
@@ -116,6 +269,7 @@ if ($action === 'upload') {
         json_response(['ok' => false, 'error' => 'No files uploaded.'], 422);
     }
 
+    $folderId = files_api_parse_folder_id($_POST['folder_id'] ?? null);
     $uploads = $_FILES['files'];
     $uploaded = [];
     $errors = [];
@@ -130,13 +284,14 @@ if ($action === 'upload') {
         ];
 
         try {
-            $result = $uploadRepo->uploadManagerFile($fileUpload);
+            $result = $uploadRepo->uploadManagerFile($fileUpload, $folderId);
             if ($result) {
                 $full = $uploadRepo->findWithContext($result['id']);
                 if ($full) {
                     $uploaded[] = files_api_item($full);
                     ActivityLog::record('file.uploaded', 'file', $result['id'], [
                         'original_name' => $result['original_name'],
+                        'folder_id' => $folderId,
                     ]);
                 }
             } else {

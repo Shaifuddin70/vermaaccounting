@@ -193,9 +193,9 @@ final class UploadRepository
     /**
      * @return list<array>
      */
-    public function listFilesForManager(?int $formId = null, string $search = '', string $sort = 'date'): array
+    public function listFilesForManager(?int $formId = null, string $search = '', string $sort = 'date', ?int $folderId = null): array
     {
-        [$where, $params] = $this->buildFilters($formId, $search);
+        [$where, $params] = $this->buildFilters($formId, $search, $folderId, true);
         $order = match ($sort) {
             'name' => 'sf.original_name ASC, sf.id ASC',
             'size' => 'sf.size DESC, sf.id DESC',
@@ -289,7 +289,7 @@ final class UploadRepository
      * @param array{name: string, tmp_name: string, size: int, error: int} $upload
      * @return array{id: int, original_name: string, stored_name: string, mime: string, size: int}|null
      */
-    public function uploadManagerFile(array $upload): ?array
+    public function uploadManagerFile(array $upload, ?int $folderId = null): ?array
     {
         if (($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
             return null;
@@ -332,13 +332,29 @@ final class UploadRepository
         }
 
         $storedName = $formId . '/' . $stored;
-        $formRepo = new FormRepository();
-        $formRepo->addSubmissionFile($submissionId, [
-            'field_id' => 'manager_upload',
-            'stored_name' => $storedName,
-            'original_name' => $originalName,
-            'mime' => $mime,
-            'size' => $size,
+        if ($folderId !== null && $folderId > 0) {
+            $folder = (new FileFolderRepository())->find($folderId);
+            if (!$folder) {
+                @unlink($dest);
+                throw new RuntimeException('Destination folder not found.');
+            }
+        } else {
+            $folderId = null;
+        }
+
+        $stmt = $this->db->prepare('
+            INSERT INTO submission_files (submission_id, folder_id, field_id, stored_name, original_name, mime, size, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ');
+        $stmt->execute([
+            $submissionId,
+            $folderId,
+            'manager_upload',
+            $storedName,
+            $originalName,
+            $mime,
+            $size,
+            now_iso(),
         ]);
 
         $fileId = (int) $this->db->lastInsertId();
@@ -349,6 +365,34 @@ final class UploadRepository
             'mime' => $mime,
             'size' => $size,
         ];
+    }
+
+    /** @param list<int> $fileIds */
+    public function moveFilesToFolder(array $fileIds, ?int $folderId): int
+    {
+        if ($folderId !== null && $folderId > 0) {
+            $folder = (new FileFolderRepository())->find($folderId);
+            if (!$folder) {
+                throw new RuntimeException('Destination folder not found.');
+            }
+        } else {
+            $folderId = null;
+        }
+
+        $fileIds = array_values(array_unique(array_filter(array_map('intval', $fileIds), fn (int $id) => $id > 0)));
+        if ($fileIds === []) {
+            return 0;
+        }
+
+        $placeholders = implode(',', array_fill(0, count($fileIds), '?'));
+        $params = array_merge([$folderId], $fileIds);
+        $stmt = $this->db->prepare('
+            UPDATE submission_files
+            SET folder_id = ?
+            WHERE id IN (' . $placeholders . ')
+        ');
+        $stmt->execute($params);
+        return $stmt->rowCount();
     }
 
     public function resolvePhysicalPath(string $storedName): ?string
@@ -416,10 +460,19 @@ final class UploadRepository
     }
 
     /** @return array{0: string, 1: list<mixed>} */
-    private function buildFilters(?int $formId, string $search): array
+    private function buildFilters(?int $formId, string $search, ?int $folderId = null, bool $folderScoped = false): array
     {
         $where = [];
         $params = [];
+
+        if ($folderScoped) {
+            if ($folderId !== null && $folderId > 0) {
+                $where[] = 'sf.folder_id = ?';
+                $params[] = $folderId;
+            } else {
+                $where[] = 'sf.folder_id IS NULL';
+            }
+        }
 
         if ($formId !== null && $formId > 0) {
             $where[] = 's.form_id = ?';

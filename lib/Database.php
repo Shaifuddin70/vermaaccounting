@@ -170,6 +170,8 @@ final class Database
         $this->ensureUsersAvatarColumn();
         $this->ensureAppSettingsTable();
         $this->ensureEmailCampaignsTables();
+        $this->ensureHolidaySchedulesTable();
+        $this->ensureFileFoldersTable();
     }
 
     private function migrateSqlite(): void
@@ -245,6 +247,8 @@ final class Database
         $this->ensureUsersAvatarColumn();
         $this->ensureAppSettingsTable();
         $this->ensureEmailCampaignsTables();
+        $this->ensureHolidaySchedulesTable();
+        $this->ensureFileFoldersTable();
     }
 
     private function ensurePartnerRole(): void
@@ -535,6 +539,96 @@ final class Database
         ');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_campaigns_status ON email_campaigns(status)');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_recipients_campaign ON email_campaign_recipients(campaign_id)');
+    }
+
+    private function ensureHolidaySchedulesTable(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS holiday_email_schedules (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    holiday_month TINYINT UNSIGNED NOT NULL,
+                    holiday_day TINYINT UNSIGNED NOT NULL,
+                    send_time TIME NOT NULL DEFAULT "09:00:00",
+                    subject VARCHAR(500) NOT NULL,
+                    body_html LONGTEXT NOT NULL,
+                    enabled TINYINT(1) NOT NULL DEFAULT 1,
+                    last_sent_year SMALLINT UNSIGNED NULL,
+                    last_campaign_id INT UNSIGNED NULL,
+                    created_by_user_id INT UNSIGNED NULL,
+                    created_by_name VARCHAR(191) NOT NULL DEFAULT "",
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    KEY idx_holiday_date (holiday_month, holiday_day),
+                    KEY idx_holiday_enabled (enabled)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS holiday_email_schedules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                holiday_month INTEGER NOT NULL,
+                holiday_day INTEGER NOT NULL,
+                send_time TEXT NOT NULL DEFAULT "09:00:00",
+                subject TEXT NOT NULL,
+                body_html TEXT NOT NULL,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                last_sent_year INTEGER NULL,
+                last_campaign_id INTEGER NULL,
+                created_by_user_id INTEGER NULL,
+                created_by_name TEXT NOT NULL DEFAULT "",
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        ');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_holiday_date ON holiday_email_schedules(holiday_month, holiday_day)');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_holiday_enabled ON holiday_email_schedules(enabled)');
+    }
+
+    private function ensureFileFoldersTable(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS file_folders (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    parent_id INT UNSIGNED NULL,
+                    name VARCHAR(255) NOT NULL,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    KEY idx_folders_parent (parent_id),
+                    CONSTRAINT fk_folders_parent
+                        FOREIGN KEY (parent_id) REFERENCES file_folders(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+            if (!$this->columnExists('submission_files', 'folder_id')) {
+                $this->pdo->exec('
+                    ALTER TABLE submission_files
+                    ADD COLUMN folder_id INT UNSIGNED NULL AFTER submission_id,
+                    ADD KEY idx_files_folder (folder_id)
+                ');
+            }
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS file_folders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                parent_id INTEGER NULL,
+                name TEXT NOT NULL,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (parent_id) REFERENCES file_folders(id) ON DELETE CASCADE
+            )
+        ');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_folders_parent ON file_folders(parent_id)');
+        if (!$this->sqliteColumnExists('submission_files', 'folder_id')) {
+            $this->pdo->exec('ALTER TABLE submission_files ADD COLUMN folder_id INTEGER NULL');
+            $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_files_folder ON submission_files(folder_id)');
+        }
     }
 
     private function ensureAppSettingsTable(): void
