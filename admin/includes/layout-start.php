@@ -19,8 +19,11 @@ $adminToastMessages = array_merge(
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/css/admin.css?v=58">
+  <link rel="stylesheet" href="/admin/css/admin.css?v=59">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.css">
+  <?php if (!empty($loadEmailEditor)): ?>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.snow.css">
+  <?php endif; ?>
 </head>
 <body class="admin-body">
   <div class="admin-sidebar-overlay" id="admin-sidebar-overlay" aria-hidden="true"></div>

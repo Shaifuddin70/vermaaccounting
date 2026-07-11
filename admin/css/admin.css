@@ -1355,9 +1355,129 @@ body.admin-body {
   border: 1px solid #e2e8f0;
   border-radius: 8px;
   color: #334155;
-  white-space: pre-wrap;
   max-height: 320px;
   overflow: auto;
+}
+
+.campaign-body-preview--text {
+  white-space: pre-wrap;
+}
+
+.campaign-body-preview img {
+  max-width: 100%;
+  height: auto;
+}
+
+.email-editor-field .email-editor {
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.email-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.email-editor-mode-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  background: #e2e8f0;
+  border-radius: 8px;
+}
+
+.email-editor-mode-btn {
+  border: 0;
+  background: transparent;
+  color: #475569;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.email-editor-mode-btn.is-active {
+  background: #fff;
+  color: #1e3a8a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.email-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.email-editor-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.email-editor-action-btn:hover {
+  border-color: #94a3b8;
+  color: #1e3a8a;
+}
+
+.email-editor-action-btn.is-loading {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.email-editor-panel--visual .ql-toolbar.ql-snow {
+  border: 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.email-editor-panel--visual .ql-container.ql-snow {
+  border: 0;
+  min-height: 280px;
+  font-family: inherit;
+  font-size: 0.95rem;
+}
+
+.email-editor-panel--visual .ql-editor {
+  min-height: 280px;
+}
+
+.email-editor-html {
+  width: 100%;
+  min-height: 320px;
+  border: 0;
+  padding: 0.9rem 1rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: #0f172a;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.email-editor-html:focus {
+  outline: none;
+}
+
+.email-editor-panel--html {
+  background: #fff;
 }
 
 .campaign-cron-snippet {

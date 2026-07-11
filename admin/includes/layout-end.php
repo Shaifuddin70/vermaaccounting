@@ -14,5 +14,9 @@
   <script src="/admin/js/admin-topbar.js?v=3" defer></script>
   <script src="/admin/js/admin-nav.js?v=1" defer></script>
   <script src="/admin/js/admin-ui.js?v=3" defer></script>
+  <?php if (!empty($loadEmailEditor)): ?>
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.2/dist/quill.js" defer></script>
+  <script src="/admin/js/email-editor.js?v=1" defer></script>
+  <?php endif; ?>
 </body>
 </html>

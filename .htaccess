@@ -22,6 +22,9 @@ RewriteRule ^(.*)$ / [R=301,L]
 # Custom forms: /form/client-intake -> form.php?slug=client-intake
 RewriteRule ^form/([a-zA-Z0-9_-]+)/?$ form.php?slug=$1 [L,QSA]
 
+# Public email images (used in campaign / holiday HTML)
+RewriteRule ^email-asset/([A-Za-z0-9._-]+)$ email-asset.php?f=$1 [L,QSA]
+
 # Admin dashboard: /admin -> admin/index.php
 RewriteRule ^admin/?$ admin/index.php [L]
 

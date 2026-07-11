@@ -29,6 +29,7 @@ $enabled = array_key_exists('enabled', $old) ? !empty($old['enabled']) : ($sched
 
 $recipientCount = $clientRepo->countWithEmail();
 $csrf = Auth::csrfToken();
+$loadEmailEditor = true;
 $pageTitle = $schedule ? 'Edit holiday email' : 'Add holiday email';
 $activeNav = 'holidays';
 require __DIR__ . '/includes/layout-start.php';
@@ -106,11 +107,13 @@ require __DIR__ . '/includes/layout-start.php';
         <small class="admin-field-hint">Tokens: {client_name}, {client_email}, {cin}, {company}</small>
       </div>
 
-      <div class="admin-field">
-        <label for="holiday-body">Email message <span class="required">*</span></label>
-        <textarea id="holiday-body" name="body" rows="12" required placeholder="Write your holiday greeting…"><?= e($body) ?></textarea>
-        <small class="admin-field-hint">Plain text is fine — line breaks are preserved. HTML is also supported.</small>
-      </div>
+      <?php
+      $emailEditorId = 'holiday-body';
+      $emailEditorValue = $body;
+      $emailEditorPlaceholder = 'Write your holiday greeting…';
+      $emailEditorHint = 'Use Visual mode for rich text or HTML mode to edit the source. Tokens: {client_name}, {client_email}, {cin}, {company}';
+      include __DIR__ . '/includes/email-editor.php';
+      ?>
 
       <label class="admin-checkbox-label">
         <input type="checkbox" name="enabled" value="1" <?= $enabled ? 'checked' : '' ?>>

@@ -5,6 +5,7 @@ declare(strict_types=1);
 const PROJECT_ROOT = __DIR__ . '/..';
 const DATA_DIR = PROJECT_ROOT . '/data';
 const UPLOADS_DIR = DATA_DIR . '/uploads';
+const EMAIL_ASSETS_DIR = DATA_DIR . '/email-assets';
 
 function app_config(): array
 {
@@ -28,7 +29,7 @@ function app_config(): array
 
 function ensure_data_dirs(): void
 {
-    foreach ([DATA_DIR, UPLOADS_DIR, DATA_DIR . '/forms', UPLOADS_DIR . '/staging', UPLOADS_DIR . '/avatars'] as $dir) {
+    foreach ([DATA_DIR, UPLOADS_DIR, DATA_DIR . '/forms', UPLOADS_DIR . '/staging', UPLOADS_DIR . '/avatars', EMAIL_ASSETS_DIR] as $dir) {
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
@@ -36,6 +37,10 @@ function ensure_data_dirs(): void
     $stagingGuard = UPLOADS_DIR . '/staging/.htaccess';
     if (!is_file($stagingGuard)) {
         file_put_contents($stagingGuard, "Require all denied\n");
+    }
+    $emailAssetsGuard = EMAIL_ASSETS_DIR . '/.htaccess';
+    if (!is_file($emailAssetsGuard)) {
+        file_put_contents($emailAssetsGuard, "Require all denied\n");
     }
 }
 
@@ -63,6 +68,7 @@ require_once __DIR__ . '/holiday_emails.php';
 require_once __DIR__ . '/FileFolderRepository.php';
 require_once __DIR__ . '/profile_helpers.php';
 require_once __DIR__ . '/partner_helpers.php';
+require_once __DIR__ . '/email_assets.php';
 
 ensure_data_dirs();
 

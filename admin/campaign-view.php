@@ -163,7 +163,17 @@ require __DIR__ . '/includes/layout-start.php';
   <div class="admin-card">
     <h2 class="admin-card-title">Email preview</h2>
     <p><strong>Subject:</strong> <?= e((string) $campaign['subject']) ?></p>
-    <div class="campaign-body-preview"><?= nl2br(e((string) $campaign['body_html'])) ?></div>
+    <?php
+    $previewBody = (string) $campaign['body_html'];
+    $previewIsHtml = str_contains($previewBody, '<');
+    ?>
+    <div class="campaign-body-preview<?= $previewIsHtml ? '' : ' campaign-body-preview--text' ?>">
+      <?php if ($previewIsHtml): ?>
+        <?= $previewBody ?>
+      <?php else: ?>
+        <?= nl2br(e($previewBody)) ?>
+      <?php endif; ?>
+    </div>
     <p class="admin-field-hint" style="margin-top:1rem;">
       Created by <?= e((string) ($campaign['created_by_name'] ?? 'Admin')) ?>
       on <?= e(campaign_format_datetime((string) $campaign['created_at'])) ?>

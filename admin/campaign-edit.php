@@ -39,6 +39,7 @@ if ($scheduledAt === '' && !empty($campaign['scheduled_at'])) {
 
 $recipientCount = $clientRepo->countWithEmail();
 $csrf = Auth::csrfToken();
+$loadEmailEditor = true;
 $pageTitle = $campaign ? 'Edit campaign' : 'New campaign';
 $activeNav = 'campaigns';
 require __DIR__ . '/includes/layout-start.php';
@@ -87,11 +88,12 @@ require __DIR__ . '/includes/layout-start.php';
         <small class="admin-field-hint">Tokens: {client_name}, {client_email}, {cin}, {company}</small>
       </div>
 
-      <div class="admin-field">
-        <label for="campaign-body">Email message <span class="required">*</span></label>
-        <textarea id="campaign-body" name="body" rows="12" required placeholder="Write your message…"><?= e($body) ?></textarea>
-        <small class="admin-field-hint">Plain text is fine — line breaks are preserved. HTML is also supported.</small>
-      </div>
+      <?php
+      $emailEditorId = 'campaign-body';
+      $emailEditorValue = $body;
+      $emailEditorPlaceholder = 'Write your message…';
+      include __DIR__ . '/includes/email-editor.php';
+      ?>
 
       <fieldset class="admin-field campaign-send-options">
         <legend>When to send</legend>
