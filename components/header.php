@@ -6,20 +6,17 @@ require_once __DIR__ . '/../lib/seo.php';
 
 $siteCta = site_cta_resolve();
 
-$canonicalPath = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
-if ($canonicalPath === '' || $canonicalPath === false) {
-  $canonicalPath = '/';
-}
-$canonicalPath = rtrim($canonicalPath, '/') ?: '/';
+$canonicalPath = seo_normalize_path($_SERVER['REQUEST_URI'] ?? '/');
 
 $seoTitleOverride = $seoTitle ?? ($pageTitle ?? null);
 $seoDescriptionOverride = $seoDescription ?? null;
 $seoMeta = seo_resolve($canonicalPath, $seoTitleOverride, $seoDescriptionOverride);
+$seoPageSchema = seo_page_schema($canonicalPath);
 
 if ($canonicalPath !== '/') {
-  $canonicalUrl = 'https://vermaaccounting.ca' . $canonicalPath;
+  $canonicalUrl = seo_site_base_url() . $canonicalPath;
 } else {
-  $canonicalUrl = 'https://vermaaccounting.ca/';
+  $canonicalUrl = seo_site_base_url() . '/';
 }
 ?>
 <!DOCTYPE html>
@@ -92,6 +89,16 @@ if ($canonicalPath !== '/') {
   <?php if ($canonicalPath === '/'): ?>
   <!-- Structured Data for Local Business (home page only) -->
   <script type="application/ld+json"><?= json_encode(seo_local_business_schema(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+  <script type="application/ld+json"><?= json_encode([
+    '@context' => 'https://schema.org',
+    '@type' => 'WebSite',
+    '@id' => seo_site_base_url() . '/#website',
+    'url' => seo_site_base_url() . '/',
+    'name' => 'Verma Accounting & Financial Services',
+    'publisher' => ['@id' => seo_site_base_url() . '/#business'],
+  ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+  <?php elseif ($seoPageSchema !== null): ?>
+  <script type="application/ld+json"><?= json_encode($seoPageSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
   <?php endif; ?>
 
   <link rel="stylesheet" href="<?= asset('css/styles.css') ?>" />

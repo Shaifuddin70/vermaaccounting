@@ -5,8 +5,8 @@
   <!-- Page Header -->
   <section class="page-header">
     <div class="container">
-      <h1>Contact Us</h1>
-      <p>Get in touch with our professional team today</p>
+      <h1>Contact Verma Accounting</h1>
+      <p>Reach our Ontario tax and accounting team by phone, email, or the form below.</p>
     </div>
     <a class="appointment-button" href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"> <i class="fas fa-calendar-alt"></i>Book an Appointment</a>
   </section>

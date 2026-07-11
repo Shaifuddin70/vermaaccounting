@@ -5,11 +5,10 @@
   <!-- Page Header -->
   <section class="page-header">
     <div class="scroll-animate">
-      <h1>Professional Accounting Services in Canada</h1>
+      <h1>Our Accounting Services in Ontario</h1>
       <p>
-        Comprehensive accounting services, bookkeeping, payroll management,
-        tax preparation, and business registration solutions for individuals
-        and businesses across Canada
+        Explore personal and corporate tax, bookkeeping, payroll, business
+        registration, and loan support for individuals and businesses across Ontario.
       </p>
     </div>
   </section>

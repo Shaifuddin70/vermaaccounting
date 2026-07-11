@@ -1,12 +1,7 @@
 User-agent: *
 Allow: /
 
-# Sitemap location
-Sitemap: https://vermaaccounting.ca/sitemap.xml
+# Legacy .php URLs 301-redirect to clean URLs and should not be crawled or indexed.
+Disallow: /*.php$
 
-# Allow all main pages
-Allow: /
-Allow: /services
-Allow: /resources
-Allow: /contact
-Allow: /about
+Sitemap: https://vermaaccounting.ca/sitemap.xml

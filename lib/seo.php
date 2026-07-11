@@ -71,8 +71,86 @@ function seo_normalize_path(string $path): string
     if ($path === '' || $path === false) {
         $path = '/';
     }
+
+    $lower = strtolower($path);
+    if ($lower === '/index.php' || $lower === '/index') {
+        return '/';
+    }
+    if (str_ends_with($lower, '.php')) {
+        $path = substr($path, 0, -4) ?: '/';
+    }
+
     $path = rtrim($path, '/');
     return $path === '' ? '/' : $path;
+}
+
+function seo_site_base_url(): string
+{
+    return 'https://vermaaccounting.ca';
+}
+
+/**
+ * Page-level structured data for key landing pages.
+ *
+ * @return array<string, mixed>|null
+ */
+function seo_page_schema(string $path): ?array
+{
+    $path = seo_normalize_path($path);
+    $base = seo_site_base_url();
+    $meta = seo_meta_for_path($path);
+
+    if ($path === '/contact') {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'ContactPage',
+            '@id' => $base . '/contact#webpage',
+            'url' => $base . '/contact',
+            'name' => $meta['title'],
+            'description' => $meta['description'],
+            'isPartOf' => ['@id' => $base . '/#website'],
+            'about' => ['@id' => $base . '/#business'],
+            'mainEntity' => ['@id' => $base . '/#business'],
+        ];
+    }
+
+    if ($path === '/services') {
+        $services = [
+            ['name' => 'Bookkeeping Services', 'url' => $base . '/bookkeeping'],
+            ['name' => 'Accounting Services', 'url' => $base . '/accounting'],
+            ['name' => 'Payroll Services', 'url' => $base . '/payroll'],
+            ['name' => 'Personal Tax Preparation', 'url' => $base . '/personal-tax'],
+            ['name' => 'Corporate Tax Filing', 'url' => $base . '/corporate-tax'],
+            ['name' => 'Business Registration', 'url' => $base . '/business-registration'],
+            ['name' => 'Business Loan Services', 'url' => $base . '/loan'],
+        ];
+
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'CollectionPage',
+            '@id' => $base . '/services#webpage',
+            'url' => $base . '/services',
+            'name' => $meta['title'],
+            'description' => $meta['description'],
+            'isPartOf' => ['@id' => $base . '/#website'],
+            'about' => ['@id' => $base . '/#business'],
+            'mainEntity' => [
+                '@type' => 'ItemList',
+                'itemListElement' => array_map(
+                    static fn(array $service, int $index): array => [
+                        '@type' => 'ListItem',
+                        'position' => $index + 1,
+                        'name' => $service['name'],
+                        'url' => $service['url'],
+                    ],
+                    $services,
+                    array_keys($services)
+                ),
+            ],
+        ];
+    }
+
+    return null;
 }
 
 /**
@@ -105,9 +183,9 @@ function seo_local_business_schema(): array
     return [
         '@context' => 'https://schema.org',
         '@type' => 'AccountingService',
-        '@id' => 'https://vermaaccounting.ca/#business',
+        '@id' => seo_site_base_url() . '/#business',
         'name' => 'Verma Accounting & Financial Services',
-        'url' => 'https://vermaaccounting.ca/',
+        'url' => seo_site_base_url() . '/',
         'image' => $logo,
         'logo' => $logo,
         'description' => 'Certified accountants providing personal tax, corporate tax, bookkeeping, payroll, and business registration services across Ontario, Canada.',
