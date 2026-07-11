@@ -91,7 +91,7 @@ require __DIR__ . '/includes/layout-start.php';
       <?php
       $emailEditorId = 'campaign-body';
       $emailEditorValue = $body;
-      $emailEditorPlaceholder = 'Write your message…';
+      $emailEditorPlaceholder = 'Write your HTML email…';
       include __DIR__ . '/includes/email-editor.php';
       ?>
 

@@ -6,8 +6,8 @@ $emailEditorName = $emailEditorName ?? 'body';
 $emailEditorValue = $emailEditorValue ?? '';
 $emailEditorLabel = $emailEditorLabel ?? 'Email message';
 $emailEditorRequired = $emailEditorRequired ?? true;
-$emailEditorPlaceholder = $emailEditorPlaceholder ?? 'Write your message…';
-$emailEditorHint = $emailEditorHint ?? 'Use Visual mode for rich text or HTML mode to edit the source. Tokens: {client_name}, {client_email}, {cin}, {company}';
+$emailEditorPlaceholder = $emailEditorPlaceholder ?? 'Write your HTML email…';
+$emailEditorHint = $emailEditorHint ?? 'Edit the email as HTML. Use Image to upload and insert an img tag. Tokens: {client_name}, {client_email}, {cin}, {company}';
 $emailEditorUploadUrl = $emailEditorUploadUrl ?? '/admin/email-editor-api';
 $emailEditorCsrf = $emailEditorCsrf ?? Auth::csrfToken();
 ?>
@@ -19,13 +19,8 @@ $emailEditorCsrf = $emailEditorCsrf ?? Auth::csrfToken();
     data-email-editor
     data-input-id="<?= e($emailEditorId) ?>"
     data-upload-url="<?= e($emailEditorUploadUrl) ?>"
-    data-csrf="<?= e($emailEditorCsrf) ?>"
-    data-placeholder="<?= e($emailEditorPlaceholder) ?>">
+    data-csrf="<?= e($emailEditorCsrf) ?>">
     <div class="email-editor-toolbar" role="toolbar" aria-label="Email editor tools">
-      <div class="email-editor-mode-toggle" role="tablist" aria-label="Editor mode">
-        <button type="button" class="email-editor-mode-btn is-active" data-mode="visual" role="tab" aria-selected="true">Visual</button>
-        <button type="button" class="email-editor-mode-btn" data-mode="html" role="tab" aria-selected="false">HTML</button>
-      </div>
       <div class="email-editor-actions">
         <button type="button" class="email-editor-action-btn" data-action="image" title="Upload image">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
@@ -39,23 +34,15 @@ $emailEditorCsrf = $emailEditorCsrf ?? Auth::csrfToken();
       <input type="file" class="email-editor-image-input" accept="image/jpeg,image/png,image/gif,image/webp" hidden>
     </div>
 
-    <div class="email-editor-panel email-editor-panel--visual is-active" data-panel="visual">
-      <div class="email-editor-quill" aria-label="Visual email editor"></div>
-    </div>
-
-    <div class="email-editor-panel email-editor-panel--html" data-panel="html" hidden>
-      <textarea class="email-editor-html" rows="14" spellcheck="false" placeholder="<?= e($emailEditorPlaceholder) ?>"></textarea>
-    </div>
-
     <textarea
       id="<?= e($emailEditorId) ?>"
       name="<?= e($emailEditorName) ?>"
-      class="email-editor-output"
-      <?= $emailEditorRequired ? 'required' : '' ?>
-      hidden><?= e($emailEditorValue) ?></textarea>
+      class="email-editor-html"
+      rows="16"
+      spellcheck="false"
+      placeholder="<?= e($emailEditorPlaceholder) ?>"
+      <?= $emailEditorRequired ? 'required' : '' ?>><?= e($emailEditorValue) ?></textarea>
   </div>
 
   <small class="admin-field-hint"><?= e($emailEditorHint) ?></small>
 </div>
-
-<script type="application/json" class="email-editor-initial" data-for="<?= e($emailEditorId) ?>"><?= json_encode(['value' => $emailEditorValue], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE) ?></script>

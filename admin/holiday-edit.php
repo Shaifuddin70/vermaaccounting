@@ -110,8 +110,7 @@ require __DIR__ . '/includes/layout-start.php';
       <?php
       $emailEditorId = 'holiday-body';
       $emailEditorValue = $body;
-      $emailEditorPlaceholder = 'Write your holiday greeting…';
-      $emailEditorHint = 'Use Visual mode for rich text or HTML mode to edit the source. Tokens: {client_name}, {client_email}, {cin}, {company}';
+      $emailEditorPlaceholder = 'Write your holiday HTML email…';
       include __DIR__ . '/includes/email-editor.php';
       ?>
 
