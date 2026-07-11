@@ -404,6 +404,40 @@ final class FormRepository
         return $this->mapSubmissionCountRow($stmt->fetch() ?: []);
     }
 
+    /**
+     * Rolling submission activity for dashboard KPIs.
+     *
+     * @return array{today: int, week: int, completed_week: int}
+     */
+    public function submissionActivityCounts(?int $partnerUserId = null): array
+    {
+        [$partnerJoin, $partnerParams] = $this->partnerFilterClause($partnerUserId);
+        $startToday = gmdate('Y-m-d 00:00:00');
+        $startWeek = gmdate('Y-m-d 00:00:00', strtotime('-6 days'));
+
+        $stmt = $this->db->prepare('
+            SELECT
+                SUM(CASE WHEN s.created_at >= ? THEN 1 ELSE 0 END) AS today_count,
+                SUM(CASE WHEN s.created_at >= ? THEN 1 ELSE 0 END) AS week_count,
+                SUM(CASE WHEN s.status = \'complete\' AND COALESCE(s.updated_at, s.created_at) >= ? THEN 1 ELSE 0 END) AS completed_week
+            FROM submissions s
+            INNER JOIN forms f ON f.id = s.form_id' . $partnerJoin . '
+            WHERE f.slug != ?
+        ');
+        $stmt->execute(array_merge(
+            [$startToday, $startWeek, $startWeek],
+            $partnerParams,
+            [file_manager_form_slug()]
+        ));
+        $row = $stmt->fetch() ?: [];
+
+        return [
+            'today' => (int) ($row['today_count'] ?? 0),
+            'week' => (int) ($row['week_count'] ?? 0),
+            'completed_week' => (int) ($row['completed_week'] ?? 0),
+        ];
+    }
+
     /** @return array<int, array{all: int, pending: int, complete: int}> */
     public function submissionCountsByFormId(?int $partnerUserId = null): array
     {

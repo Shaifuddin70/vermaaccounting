@@ -1,8 +1,26 @@
 <?php
 if (!function_exists('asset')) {
-    require_once __DIR__ . '/../lib/helpers.php';
+  require_once __DIR__ . '/../lib/helpers.php';
 }
+require_once __DIR__ . '/../lib/seo.php';
+
 $siteCta = site_cta_resolve();
+
+$canonicalPath = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+if ($canonicalPath === '' || $canonicalPath === false) {
+  $canonicalPath = '/';
+}
+$canonicalPath = rtrim($canonicalPath, '/') ?: '/';
+
+$seoTitleOverride = $seoTitle ?? ($pageTitle ?? null);
+$seoDescriptionOverride = $seoDescription ?? null;
+$seoMeta = seo_resolve($canonicalPath, $seoTitleOverride, $seoDescriptionOverride);
+
+if ($canonicalPath !== '/') {
+  $canonicalUrl = 'https://vermaaccounting.ca' . $canonicalPath;
+} else {
+  $canonicalUrl = 'https://vermaaccounting.ca/';
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -16,29 +34,10 @@ $siteCta = site_cta_resolve();
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="theme-color" content="#1e3a8a" />
-  <title>
-    Professional Accounting & Tax Services in Canada | Verma Accounting
-  </title>
-  <meta
-    name="description"
-    content="Leading accounting firm in Canada specializing in personal tax preparation, corporate tax filing, bookkeeping, payroll management, and business registration. Certified accountants help maximize tax savings with CRA compliance. Serving Ontario clients for 10+ years." />
-  <meta
-    name="keywords"
-    content="accounting services Canada, tax preparation Canada, personal tax filing, corporate tax services, bookkeeping services Ontario, payroll management Canada, business registration, CRA compliance, tax optimization, accounting firm London Ontario, certified accountants Canada" />
+  <title><?= e($seoMeta['title']) ?></title>
+  <meta name="description" content="<?= e($seoMeta['description']) ?>" />
   <meta name="robots" content="index, follow" />
-  <?php
-  // Build canonical URL per page (without query string)
-  $canonicalPath = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
-  if ($canonicalPath === '' || $canonicalPath === false) {
-    $canonicalPath = '/';
-  }
-  if ($canonicalPath !== '/') {
-    $canonicalUrl = 'https://vermaaccounting.ca' . rtrim($canonicalPath, '/');
-  } else {
-    $canonicalUrl = 'https://vermaaccounting.ca/';
-  }
-  ?>
-  <link rel="canonical" href="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES); ?>" />
+  <link rel="canonical" href="<?= e($canonicalUrl) ?>" />
 
   <!-- Calendly link widget begin -->
   <link href="https://assets.calendly.com/assets/external/widget.css" rel="stylesheet">
@@ -56,22 +55,22 @@ $siteCta = site_cta_resolve();
   <!-- Additional SEO Meta Tags -->
   <meta name="author" content="Verma Accounting & Financial Services" />
   <meta name="geo.region" content="CA-ON" />
-  <meta name="geo.placename" content="Canada" />
+  <meta name="geo.placename" content="Ontario" />
   <meta name="geo.position" content="42.9849;-81.2453" />
   <meta name="ICBM" content="42.9849, -81.2453" />
 
   <!-- Open Graph Meta Tags -->
-  <meta property="og:title" content="Professional Accounting & Tax Services in Canada | Verma Accounting" />
-  <meta property="og:description" content="Leading accounting firm in Canada specializing in personal tax preparation, corporate tax filing, bookkeeping, payroll management, and business registration." />
+  <meta property="og:title" content="<?= e($seoMeta['title']) ?>" />
+  <meta property="og:description" content="<?= e($seoMeta['description']) ?>" />
   <meta property="og:type" content="website" />
-  <meta property="og:url" content="<?php echo htmlspecialchars($canonicalUrl, ENT_QUOTES); ?>" />
+  <meta property="og:url" content="<?= e($canonicalUrl) ?>" />
   <meta property="og:site_name" content="Verma Accounting & Financial Services" />
   <meta property="og:locale" content="en_CA" />
 
   <!-- Twitter Card Meta Tags -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Professional Accounting & Tax Services in Canada | Verma Accounting" />
-  <meta name="twitter:description" content="Leading accounting firm in Canada specializing in personal tax preparation, corporate tax filing, bookkeeping, payroll management, and business registration." />
+  <meta name="twitter:title" content="<?= e($seoMeta['title']) ?>" />
+  <meta name="twitter:description" content="<?= e($seoMeta['description']) ?>" />
 
   <!-- Google Fonts - Roboto -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -90,76 +89,10 @@ $siteCta = site_cta_resolve();
 
 
 
-  <!-- Structured Data for Local Business -->
-  <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "AccountingService",
-      "name": "Verma Accounting & Financial Services",
-      "description": "Professional accounting services, bookkeeping, payroll management, tax preparation, and business registration in Canada",
-      "url": "https://vermaaccounting.ca/",
-      "telephone": "613-318-6478",
-      "email": "info@vermaaccounting.ca",
-      "address": {
-        "@type": "PostalAddress",
-        "addressCountry": "CA",
-        "addressRegion": "ON",
-        "addressLocality": "London"
-      },
-      "serviceArea": {
-        "@type": "Country",
-        "name": "Canada"
-      },
-      "hasOfferCatalog": {
-        "@type": "OfferCatalog",
-        "name": "Accounting Services",
-        "itemListElement": [{
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Accounting Services"
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Bookkeeping Services"
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Payroll Services"
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Personal Tax Preparation"
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Corporate Tax Services"
-            }
-          },
-          {
-            "@type": "Offer",
-            "itemOffered": {
-              "@type": "Service",
-              "name": "Business Registration"
-            }
-          }
-        ]
-      },
-      "openingHours": "Mo-Fr 09:00-17:00,Sa 10:00-16:00"
-    }
-  </script>
+  <?php if ($canonicalPath === '/'): ?>
+  <!-- Structured Data for Local Business (home page only) -->
+  <script type="application/ld+json"><?= json_encode(seo_local_business_schema(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+  <?php endif; ?>
 
   <link rel="stylesheet" href="<?= asset('css/styles.css') ?>" />
 </head>

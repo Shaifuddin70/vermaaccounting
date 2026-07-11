@@ -172,26 +172,28 @@ require __DIR__ . '/includes/layout-start.php';
 </div>
 
 <?php if ($failed > 0): ?>
-  <div class="admin-card" style="margin-top:1rem;">
+  <div class="admin-card">
     <h2 class="admin-card-title">Failed deliveries</h2>
-    <table class="admin-table">
-      <thead>
-        <tr>
-          <th>Client</th>
-          <th>Email</th>
-          <th>Error</th>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($campaignRepo->recipients($campaignId, 50, 0, 'failed') as $row): ?>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
           <tr>
-            <td><?= e((string) $row['client_name']) ?></td>
-            <td><?= e((string) $row['email']) ?></td>
-            <td><?= e((string) ($row['error_message'] ?? '')) ?></td>
+            <th>Client</th>
+            <th>Email</th>
+            <th>Error</th>
           </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          <?php foreach ($campaignRepo->recipients($campaignId, 50, 0, 'failed') as $row): ?>
+            <tr>
+              <td><?= e((string) $row['client_name']) ?></td>
+              <td><?= e((string) $row['email']) ?></td>
+              <td><?= e((string) ($row['error_message'] ?? '')) ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
   </div>
 <?php endif; ?>
 

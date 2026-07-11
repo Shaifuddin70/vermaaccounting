@@ -99,32 +99,34 @@ require __DIR__ . '/includes/layout-start.php';
     </form>
   </div>
 
-  <div class="admin-card">
+  <div class="admin-card clients-import-guide-card">
     <h2 class="admin-card-title">Column guide</h2>
-    <p style="margin:0 0 0.75rem;color:var(--admin-muted);font-size:0.9rem;">
+    <p class="clients-import-guide-intro">
       Export your sheet as <strong>CSV</strong> from Excel or Google Sheets. The first row must be column headers.
     </p>
-    <table class="admin-table clients-import-guide">
-      <thead>
-        <tr>
-          <th>Column</th>
-          <th>Required</th>
-          <th>Examples</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr><td>Name</td><td>Yes</td><td>Name, Full Name, Client Name</td></tr>
-        <tr><td>CIN</td><td>No</td><td>CIN, Client ID, Client Number</td></tr>
-        <tr><td>Email</td><td>No</td><td>Email, Email Address</td></tr>
-        <tr><td>Phone</td><td>No</td><td>Phone, Mobile, Telephone</td></tr>
-        <tr><td>Company</td><td>No</td><td>Company, Business</td></tr>
-        <tr><td>Notes</td><td>No</td><td>Notes, Comments</td></tr>
-      </tbody>
-    </table>
-    <p class="admin-note" style="margin-top:1rem;">
+    <div class="admin-table-wrap">
+      <table class="admin-table clients-import-guide">
+        <thead>
+          <tr>
+            <th>Column</th>
+            <th>Required</th>
+            <th>Examples</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Name</td><td>Yes</td><td>Name, Full Name, Client Name</td></tr>
+          <tr><td>CIN</td><td>No</td><td>CIN, Client ID, Client Number</td></tr>
+          <tr><td>Email</td><td>No</td><td>Email, Email Address</td></tr>
+          <tr><td>Phone</td><td>No</td><td>Phone, Mobile, Telephone</td></tr>
+          <tr><td>Company</td><td>No</td><td>Company, Business</td></tr>
+          <tr><td>Notes</td><td>No</td><td>Notes, Comments</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="admin-note clients-import-guide-note">
       Rows with the same CIN or email are updated instead of duplicated. Each CIN must be unique.
     </p>
-    <a href="/admin/clients-import-template" class="admin-btn admin-btn-secondary admin-btn-sm" style="margin-top:1rem;">Download sample CSV</a>
+    <a href="/admin/clients-import-template" class="admin-btn admin-btn-secondary admin-btn-sm">Download sample CSV</a>
   </div>
 </div>
 
