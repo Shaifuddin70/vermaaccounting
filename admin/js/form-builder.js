@@ -365,7 +365,7 @@
       ${
         ['file', 'image'].includes(field.type)
           ? `<div class="admin-fields-2col">
-             <div class="admin-field"><label>Accept (optional)</label><input type="text" id="fe-accept" value="${escapeAttr(field.accept || (field.type === 'image' ? 'image/*' : ''))}"></div>
+             <div class="admin-field"><label>Accept (optional)</label><input type="text" id="fe-accept" value="${escapeAttr(field.accept || (field.type === 'image' ? 'image/*' : 'image/*,.pdf,.zip,application/pdf,application/zip'))}" placeholder="e.g. image/*,.pdf,.zip"><small class="admin-field-hint">Leave blank for images, PDF, ZIP, and Office docs.</small></div>
              <div class="admin-field"><label>Max files</label><input type="number" id="fe-max-files" min="1" max="10" value="${field.maxFiles || 1}"></div>
            </div>`
           : ''
@@ -648,7 +648,7 @@
         reasonRequired: true,
         conditions: [],
       },
-      file: { type: 'file', label: 'File upload', required: false, accept: '', maxFiles: 5, options: [], conditions: [] },
+      file: { type: 'file', label: 'File upload', required: false, accept: 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,application/pdf,application/zip,application/x-zip-compressed', maxFiles: 5, options: [], conditions: [] },
       image: { type: 'image', label: 'Image upload', required: false, accept: 'image/*', maxFiles: 5, options: [], conditions: [] },
       heading: { type: 'heading', label: 'Section title', required: false, options: [], conditions: [] },
       paragraph: { type: 'paragraph', label: 'Instructions…', required: false, options: [], conditions: [] },

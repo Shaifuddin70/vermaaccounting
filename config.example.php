@@ -38,6 +38,10 @@ return [
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         'text/plain',
         'text/csv',
+        'application/zip',
+        'application/x-zip-compressed',
+        'application/x-zip',
+        'application/x-pdf',
     ],
 
     'site_url' => 'https://vermaaccounting.ca',

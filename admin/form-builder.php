@@ -243,5 +243,5 @@ require __DIR__ . '/includes/layout-start.php';
     activePartners: <?= json_encode((new UserRepository())->activePartners(), JSON_UNESCAPED_UNICODE) ?>
   };
 </script>
-<script src="/admin/js/form-builder.js?v=9"></script>
+<script src="/admin/js/form-builder.js?v=10"></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

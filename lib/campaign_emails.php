@@ -94,6 +94,68 @@ function build_campaign_email(string $subject, string $body, array $client): arr
     return [$subject, $html, $text];
 }
 
+/** Sample recipient used for previews and test sends. @return array{client_name: string, email: string, cin: string, company: string} */
+function campaign_sample_client(?array $user = null): array
+{
+    $user ??= Auth::currentUser() ?? [];
+    $mailCfg = mail_config();
+    $email = trim((string) (($mailCfg['admin_emails'][0] ?? null) ?: ($mailCfg['admin_email'] ?? '')));
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $email = trim((string) ($user['email'] ?? ''));
+    }
+    if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $email = 'client@example.com';
+    }
+
+    return [
+        'client_name' => (string) (($user['name'] ?? '') !== '' ? $user['name'] : 'Sample Client'),
+        'email' => $email,
+        'cin' => 'SAMPLE-CIN',
+        'company' => 'Sample Company',
+    ];
+}
+
+/**
+ * Send a test campaign email to the admin notification address.
+ *
+ * @param array{subject?: string, body_html?: string, body?: string} $draft
+ * @return array{ok: bool, error?: string, to?: string}
+ */
+function campaign_send_test_email(array $draft): array
+{
+    $subject = trim((string) ($draft['subject'] ?? ''));
+    $body = trim((string) ($draft['body_html'] ?? $draft['body'] ?? ''));
+    if ($subject === '' || $body === '') {
+        return ['ok' => false, 'error' => 'Subject and message are required to send a test.'];
+    }
+
+    $mailCfg = mail_config();
+    $testEmail = trim((string) (($mailCfg['admin_emails'][0] ?? null) ?: ($mailCfg['admin_email'] ?? '')));
+    $user = Auth::currentUser() ?? [];
+    if ($testEmail === '' || !filter_var($testEmail, FILTER_VALIDATE_EMAIL)) {
+        $testEmail = trim((string) ($user['email'] ?? ''));
+    }
+    if ($testEmail === '' || !filter_var($testEmail, FILTER_VALIDATE_EMAIL)) {
+        return ['ok' => false, 'error' => 'No email address available for test sends. Add an admin email in Email settings.'];
+    }
+
+    $mailer = Mailer::fromAppConfig();
+    if ($mailer === null) {
+        return ['ok' => false, 'error' => 'Mail is disabled or not configured.'];
+    }
+
+    $client = campaign_sample_client($user);
+    $client['email'] = $testEmail;
+    [$emailSubject, $html, $text] = build_campaign_email($subject, $body, $client);
+    $emailSubject = '[TEST] ' . $emailSubject;
+
+    if (!$mailer->send($testEmail, $emailSubject, $html, $text)) {
+        return ['ok' => false, 'error' => $mailer->getLastError() ?: 'Test send failed.'];
+    }
+
+    return ['ok' => true, 'to' => $testEmail];
+}
+
 /**
  * Send up to $limit pending emails for a campaign.
  *

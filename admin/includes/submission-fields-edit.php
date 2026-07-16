@@ -93,23 +93,31 @@
         </div>
 
       <?php elseif ($type === 'file' || $type === 'image'): ?>
-        <?php if ($fieldFiles): ?>
+        <?php if ($fieldFiles):
+          $editImages = array_values(array_filter($fieldFiles, static fn(array $f): bool => is_image_mime($f['mime'] ?? null)));
+          $editOthers = array_values(array_filter($fieldFiles, static fn(array $f): bool => !is_image_mime($f['mime'] ?? null)));
+          $editFancy = 'submission-edit-' . (int) ($submissionId ?? 0) . '-' . (string) $id;
+        ?>
           <div class="submission-files submission-files--compact">
-            <?php foreach ($fieldFiles as $file):
-              $fileUrl = '/admin/view-file?file_id=' . (int) $file['id'];
-            ?>
-              <?php if (is_image_mime($file['mime'] ?? null)): ?>
-                <a href="<?= e($fileUrl) ?>" class="submission-image-link" data-fancybox="submission-edit-<?= (int) ($submissionId ?? 0) ?>" data-caption="<?= e($file['original_name']) ?>">
-                  <img src="<?= e($fileUrl) ?>" alt="<?= e($file['original_name']) ?>" class="submission-image-preview submission-image-preview--sm">
-                </a>
-              <?php endif; ?>
-              <span><?= e($file['original_name']) ?></span>
+            <?php if ($editImages): ?>
+              <div class="submission-gallery submission-gallery--compact">
+                <?php foreach ($editImages as $file):
+                  $fileUrl = '/admin/view-file?file_id=' . (int) $file['id'];
+                ?>
+                  <a href="<?= e($fileUrl) ?>" class="submission-image-link" data-fancybox="<?= e($editFancy) ?>" data-caption="<?= e($file['original_name']) ?>">
+                    <img src="<?= e($fileUrl) ?>" alt="<?= e($file['original_name']) ?>" class="submission-image-preview submission-image-preview--sm">
+                  </a>
+                <?php endforeach; ?>
+              </div>
+            <?php endif; ?>
+            <?php foreach ($editOthers as $file): ?>
+              <span class="submission-edit-file-name"><?= e($file['original_name']) ?></span>
             <?php endforeach; ?>
           </div>
           <p class="submission-edit-hint">Upload a new file to replace the current one.</p>
         <?php endif; ?>
         <input type="file" id="sub-<?= e($id) ?>" name="<?= e($name) ?>"
-          accept="<?= e($field['accept'] ?? ($type === 'image' ? 'image/*' : '')) ?>">
+          accept="<?= e($field['accept'] ?? ($type === 'image' ? 'image/*' : form_file_accept_default())) ?>">
 
       <?php else: ?>
         <input type="<?= e($type === 'email' ? 'email' : ($type === 'number' ? 'number' : ($type === 'date' ? 'date' : ($type === 'tel' ? 'tel' : 'text')))) ?>"

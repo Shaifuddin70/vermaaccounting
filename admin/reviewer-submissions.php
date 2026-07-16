@@ -5,63 +5,127 @@ declare(strict_types=1);
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
 
-$tab = (string) ($_GET['tab'] ?? 'all');
-if (!in_array($tab, ['all', 'pending'], true)) {
-  $tab = 'all';
-}
-
 $repo = new FormRepository();
-$partnerId = partner_user_id();
-$submissionCounts = $repo->submissionCountsByFormId($partnerId);
-$allForms = $repo->all();
-
+$userRepo = new UserRepository();
 $role = Auth::userRole();
-if ($role === 'admin') {
-  $forms = $allForms;
-} elseif ($role === 'partner') {
-  $forms = array_values(array_filter($allForms, function (array $f) use ($submissionCounts): bool {
-    return ($f['status'] ?? '') === 'published'
-      && (($submissionCounts[(int) $f['id']]['all'] ?? 0) > 0);
-  }));
-} else {
-  $forms = array_values(array_filter($allForms, fn($f) => ($f['status'] ?? '') === 'published'));
+$scopePartnerId = partner_user_id();
+
+$tab = (string) ($_GET['tab'] ?? 'all');
+if (!in_array($tab, ['all', 'pending', 'complete'], true)) {
+    $tab = 'all';
 }
 
-usort($forms, function (array $a, array $b) use ($submissionCounts): int {
-  $aid = (int) $a['id'];
-  $bid = (int) $b['id'];
-  $pendingA = $submissionCounts[$aid]['pending'] ?? 0;
-  $pendingB = $submissionCounts[$bid]['pending'] ?? 0;
-  if ($pendingA !== $pendingB) {
-    return $pendingB <=> $pendingA;
-  }
-  return strcasecmp((string) $a['title'], (string) $b['title']);
-});
+$formId = isset($_GET['form_id']) && $_GET['form_id'] !== '' ? (int) $_GET['form_id'] : 0;
+$partnerFilterId = isset($_GET['partner_id']) && $_GET['partner_id'] !== '' ? (int) $_GET['partner_id'] : 0;
+$dateFrom = trim((string) ($_GET['date_from'] ?? ''));
+$dateTo = trim((string) ($_GET['date_to'] ?? ''));
+$search = trim((string) ($_GET['q'] ?? ''));
 
-$totals = ['all' => 0, 'pending' => 0];
-$formsWithPending = 0;
-foreach ($forms as $form) {
-  $fid = (int) $form['id'];
-  $counts = $submissionCounts[$fid] ?? ['all' => 0, 'pending' => 0, 'complete' => 0];
-  $totals['all'] += $counts['all'];
-  $totals['pending'] += $counts['pending'];
-  if ($counts['pending'] > 0) {
-    $formsWithPending++;
-  }
+if ($dateFrom !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+    $dateFrom = '';
+}
+if ($dateTo !== '' && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+    $dateTo = '';
+}
+if ($dateFrom !== '' && $dateTo !== '' && $dateFrom > $dateTo) {
+    [$dateFrom, $dateTo] = [$dateTo, $dateFrom];
 }
 
-$visibleForms = $tab === 'pending'
-  ? array_values(array_filter($forms, function (array $form) use ($submissionCounts): bool {
-    $fid = (int) $form['id'];
-    return ($submissionCounts[$fid]['pending'] ?? 0) > 0;
-  }))
-  : $forms;
-
-function rs_page_url(string $tab): string
-{
-  return $tab === 'all' ? '/admin/reviewer-submissions' : '/admin/reviewer-submissions?tab=pending';
+// Partners can only see their own referenced submissions; hide partner filter for them.
+$showPartnerFilter = $role !== 'partner';
+if (!$showPartnerFilter) {
+    $partnerFilterId = 0;
 }
 
+$allForms = array_values(array_filter(
+    $repo->all(),
+    static fn(array $f): bool => !is_file_manager_form($f)
+));
+usort($allForms, static fn(array $a, array $b): int => strcasecmp((string) $a['title'], (string) $b['title']));
+
+$partners = $showPartnerFilter ? $userRepo->activePartners() : [];
+
+$filters = [
+    'form_id' => $formId > 0 ? $formId : null,
+    'status' => $tab === 'all' ? null : $tab,
+    'date_from' => $dateFrom !== '' ? $dateFrom : null,
+    'date_to' => $dateTo !== '' ? $dateTo : null,
+    'partner_id' => $partnerFilterId > 0 ? $partnerFilterId : null,
+    'search' => $search !== '' ? $search : null,
+    'scope_partner_id' => $scopePartnerId,
+];
+
+$page = pagination_page_from_request();
+$perPage = pagination_per_page_from_request();
+$total = $repo->countReviewerSubmissions($filters);
+$pagination = pagination_meta($total, $page, $perPage);
+$submissions = $repo->listReviewerSubmissions($filters, $pagination['per_page'], $pagination['offset']);
+
+$partnerNames = $repo->partnerNamesBySubmissionIds(array_map(
+    static fn(array $row): int => (int) $row['id'],
+    $submissions
+));
+
+$statusCounts = [
+    'all' => $repo->countReviewerSubmissions(array_merge($filters, ['status' => null])),
+    'pending' => $repo->countReviewerSubmissions(array_merge($filters, ['status' => 'pending'])),
+    'complete' => $repo->countReviewerSubmissions(array_merge($filters, ['status' => 'complete'])),
+];
+
+$hasActiveFilters = $formId > 0 || $partnerFilterId > 0 || $dateFrom !== '' || $dateTo !== '' || $search !== '';
+
+function rs_list_url(
+    string $tab,
+    int $formId,
+    int $partnerId,
+    string $dateFrom,
+    string $dateTo,
+    string $search,
+    int $page = 1,
+    ?int $perPage = null
+): string {
+    $params = ['tab' => $tab];
+    if ($formId > 0) {
+        $params['form_id'] = $formId;
+    }
+    if ($partnerId > 0) {
+        $params['partner_id'] = $partnerId;
+    }
+    if ($dateFrom !== '') {
+        $params['date_from'] = $dateFrom;
+    }
+    if ($dateTo !== '') {
+        $params['date_to'] = $dateTo;
+    }
+    if ($search !== '') {
+        $params['q'] = $search;
+    }
+    return pagination_url('/admin/reviewer-submissions', $params, $page, $perPage);
+}
+
+$paginationPath = '/admin/reviewer-submissions';
+$paginationQuery = array_filter([
+    'tab' => $tab,
+    'form_id' => $formId > 0 ? $formId : null,
+    'partner_id' => $partnerFilterId > 0 ? $partnerFilterId : null,
+    'date_from' => $dateFrom !== '' ? $dateFrom : null,
+    'date_to' => $dateTo !== '' ? $dateTo : null,
+    'q' => $search !== '' ? $search : null,
+], static fn($v) => $v !== null && $v !== '');
+$paginationLabel = 'submissions';
+$paginationAriaLabel = 'Submission list pages';
+$paginationUrl = fn (int $p) => rs_list_url(
+    $tab,
+    $formId,
+    $partnerFilterId,
+    $dateFrom,
+    $dateTo,
+    $search,
+    $p,
+    $pagination['per_page']
+);
+
+$csrf = Auth::csrfToken();
 $pageTitle = 'Submissions';
 $activeNav = 'submissions';
 require __DIR__ . '/includes/layout-start.php';
@@ -72,91 +136,162 @@ require __DIR__ . '/includes/layout-start.php';
 </div>
 
 <div class="rs-page">
+  <div class="admin-card rs-filters-card">
+    <form method="get" action="/admin/reviewer-submissions" class="rs-filter-form" id="rs-filter-form">
+      <input type="hidden" name="tab" value="<?= e($tab) ?>">
+      <?php if ($pagination['per_page'] !== pagination_default_per_page()): ?>
+        <input type="hidden" name="per_page" value="<?= (int) $pagination['per_page'] ?>">
+      <?php endif; ?>
 
-  <?php if ($forms): ?>
-    <nav class="admin-tabs rs-tabs" aria-label="Filter forms">
-      <a href="<?= e(rs_page_url('all')) ?>" class="admin-tab <?= $tab === 'all' ? 'is-active' : '' ?>">
-        All forms <span class="admin-tab-count"><?= count($forms) ?></span>
-      </a>
-      <a href="<?= e(rs_page_url('pending')) ?>" class="admin-tab <?= $tab === 'pending' ? 'is-active' : '' ?>">
-        Needs review <span class="admin-tab-count"><?= $formsWithPending ?></span>
-      </a>
-    </nav>
-  <?php endif; ?>
+      <div class="admin-field rs-filter-field">
+        <label for="rs-form">Form</label>
+        <select name="form_id" id="rs-form" onchange="this.form.submit()">
+          <option value="">All forms</option>
+          <?php foreach ($allForms as $form): ?>
+            <option value="<?= (int) $form['id'] ?>" <?= $formId === (int) $form['id'] ? 'selected' : '' ?>>
+              <?= e((string) $form['title']) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
+
+      <?php if ($showPartnerFilter): ?>
+        <div class="admin-field rs-filter-field">
+          <label for="rs-partner">Reference</label>
+          <select name="partner_id" id="rs-partner" onchange="this.form.submit()">
+            <option value="">All references</option>
+            <?php foreach ($partners as $partner):
+              $label = trim((string) ($partner['name'] ?? ''));
+              $code = trim((string) ($partner['reference_code'] ?? ''));
+              if ($code !== '') {
+                $label = $label !== '' ? $label . ' (' . $code . ')' : $code;
+              }
+            ?>
+              <option value="<?= (int) $partner['id'] ?>" <?= $partnerFilterId === (int) $partner['id'] ? 'selected' : '' ?>>
+                <?= e($label !== '' ? $label : 'Partner #' . (int) $partner['id']) ?>
+              </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      <?php endif; ?>
+
+      <div class="admin-field rs-filter-field">
+        <label for="rs-date-from">From date</label>
+        <input type="date" name="date_from" id="rs-date-from" value="<?= e($dateFrom) ?>">
+      </div>
+
+      <div class="admin-field rs-filter-field">
+        <label for="rs-date-to">To date</label>
+        <input type="date" name="date_to" id="rs-date-to" value="<?= e($dateTo) ?>">
+      </div>
+
+      <div class="admin-field rs-filter-field rs-filter-field--search">
+        <label for="rs-search">Search</label>
+        <input type="search" name="q" id="rs-search" value="<?= e($search) ?>"
+          placeholder="Name, email, CIN, form, or #ID…">
+      </div>
+
+      <div class="rs-filter-actions">
+        <button type="submit" class="admin-btn admin-btn-secondary">Apply</button>
+        <?php if ($hasActiveFilters): ?>
+          <a href="<?= e(rs_list_url($tab, 0, 0, '', '', '', 1, $pagination['per_page'])) ?>" class="admin-btn admin-btn-secondary">Clear</a>
+        <?php endif; ?>
+      </div>
+    </form>
+  </div>
+
+  <nav class="admin-tabs rs-tabs" aria-label="Filter by status">
+    <a href="<?= e(rs_list_url('all', $formId, $partnerFilterId, $dateFrom, $dateTo, $search, 1, $pagination['per_page'])) ?>"
+      class="admin-tab <?= $tab === 'all' ? 'is-active' : '' ?>">
+      All <span class="admin-tab-count"><?= number_format($statusCounts['all']) ?></span>
+    </a>
+    <a href="<?= e(rs_list_url('pending', $formId, $partnerFilterId, $dateFrom, $dateTo, $search, 1, $pagination['per_page'])) ?>"
+      class="admin-tab <?= $tab === 'pending' ? 'is-active' : '' ?>">
+      Pending <span class="admin-tab-count"><?= number_format($statusCounts['pending']) ?></span>
+    </a>
+    <a href="<?= e(rs_list_url('complete', $formId, $partnerFilterId, $dateFrom, $dateTo, $search, 1, $pagination['per_page'])) ?>"
+      class="admin-tab <?= $tab === 'complete' ? 'is-active' : '' ?>">
+      Complete <span class="admin-tab-count"><?= number_format($statusCounts['complete']) ?></span>
+    </a>
+  </nav>
 
   <div class="admin-card rs-card">
-    <?php if (!$forms): ?>
+    <?php if (!$submissions): ?>
       <div class="admin-empty-state">
         <span class="admin-empty-state-icon" aria-hidden="true">
           <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
         </span>
-        <h2 class="admin-empty-state-title">No forms yet</h2>
-        <?php if (Auth::userRole() === 'admin'): ?>
-          <p class="admin-empty-state-text">Create a form and publish it to start collecting responses.</p>
-          <a href="/admin/form-builder" class="admin-btn">Create a form</a>
-        <?php else: ?>
-          <p class="admin-empty-state-text">No published forms are available<?= Auth::userRole() === 'partner' ? ' where you are listed as a reference' : ' for review' ?> yet.</p>
+        <h2 class="admin-empty-state-title">No submissions found</h2>
+        <p class="admin-empty-state-text">
+          <?php if ($hasActiveFilters || $tab !== 'all'): ?>
+            Try clearing filters or switching to the All tab.
+          <?php else: ?>
+            Responses will appear here when clients submit forms.
+          <?php endif; ?>
+        </p>
+        <?php if ($hasActiveFilters || $tab !== 'all'): ?>
+          <a href="/admin/reviewer-submissions" class="admin-btn admin-btn-secondary">Clear filters</a>
         <?php endif; ?>
       </div>
-    <?php elseif (!$visibleForms): ?>
-      <div class="admin-empty-state">
-        <span class="admin-empty-state-icon" aria-hidden="true">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-        </span>
-        <h2 class="admin-empty-state-title">All caught up</h2>
-        <p class="admin-empty-state-text">Nothing pending right now.</p>
-        <a href="<?= e(rs_page_url('all')) ?>" class="admin-btn admin-btn-secondary">View all forms</a>
-      </div>
     <?php else: ?>
-      <table class="admin-table rs-table">
-        <thead>
-          <tr>
-            <th>Form</th>
-            <?php if (Auth::userRole() === 'admin'): ?><th>Status</th><?php endif; ?>
-            <th class="rs-th-num">Pending</th>
-            <th class="rs-th-num">Total</th>
-            <th class="rs-th-go" aria-hidden="true"><span class="visually-hidden">Open</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach ($visibleForms as $form):
-            $fid = (int) $form['id'];
-            $counts = $submissionCounts[$fid] ?? ['all' => 0, 'pending' => 0, 'complete' => 0];
-            $status = $form['status'] ?? 'draft';
-            $hasPending = $counts['pending'] > 0;
-            $openUrl = '/admin/submissions?form_id=' . $fid . ($hasPending ? '&tab=pending' : '');
-          ?>
-            <tr class="rs-row">
-              <td class="rs-td-form">
-                <a href="<?= e($openUrl) ?>" class="rs-form-link"><?= e($form['title']) ?></a>
-                <?php if ($status === 'published'): ?>
-                  <span class="rs-form-slug">/form/<?= e($form['slug']) ?></span>
-                <?php endif; ?>
-              </td>
-              <?php if (Auth::userRole() === 'admin'): ?>
-                <td>
-                  <span class="badge badge-<?= e($status) ?>"><?= e($status) ?></span>
-                </td>
-              <?php endif; ?>
-              <td class="rs-td-num">
-                <?php if ($hasPending): ?>
-                  <span class="rs-pending-count"><?= $counts['pending'] ?></span>
-                <?php else: ?>
-                  <span class="rs-muted">—</span>
-                <?php endif; ?>
-              </td>
-              <td class="rs-td-num"><?= number_format($counts['all']) ?></td>
-              <td class="rs-td-go">
-                <a href="<?= e($openUrl) ?>" class="rs-go-link" aria-label="Open <?= e($form['title']) ?>">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="9 18 15 12 9 6" />
-                  </svg>
-                </a>
-              </td>
+      <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
+      <div class="admin-table-wrap">
+        <table class="admin-table rs-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Form</th>
+              <th>Client</th>
+              <th>Reference</th>
+              <th>Status</th>
+              <th>Actions</th>
             </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php foreach ($submissions as $sub):
+              $sid = (int) $sub['id'];
+              $fid = (int) $sub['form_id'];
+              $status = (string) ($sub['status'] ?? 'pending');
+              $schemaRaw = json_decode((string) ($sub['schema_json'] ?? '{}'), true) ?: [];
+              $schema = normalize_form_schema(is_array($schemaRaw) ? $schemaRaw : []);
+              $client = extract_client_from_submission($sub, $schema);
+              $clientLabel = $client['name'] !== '' ? $client['name'] : '—';
+              if ($client['cin'] !== '') {
+                $clientLabel .= ($client['name'] !== '' ? ' · ' : '') . $client['cin'];
+              }
+              $refLabel = $partnerNames[$sid] ?? '—';
+            ?>
+              <tr class="rs-row">
+                <td class="rs-col-date"><?= e(app_format_datetime((string) ($sub['created_at'] ?? ''), false)) ?></td>
+                <td>
+                  <a href="/admin/submissions?form_id=<?= $fid ?>" class="rs-form-link"><?= e((string) ($sub['form_title'] ?? 'Form')) ?></a>
+                </td>
+                <td><?= e(mb_strimwidth($clientLabel, 0, 60, '…')) ?></td>
+                <td class="rs-col-ref"><?= e(mb_strimwidth($refLabel, 0, 50, '…')) ?></td>
+                <td>
+                  <span class="submission-status-badge submission-status-badge--<?= e($status) ?>">
+                    <?= e(submission_status_label($status)) ?>
+                  </span>
+                </td>
+                <td class="admin-table-actions">
+                  <a href="/admin/submission?id=<?= $sid ?>&form_id=<?= $fid ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
+                  <?php if ($status === 'pending' && $role !== 'partner'): ?>
+                    <form method="post" action="/admin/submission-status" class="inline-form">
+                      <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                      <input type="hidden" name="submission_id" value="<?= $sid ?>">
+                      <input type="hidden" name="form_id" value="<?= $fid ?>">
+                      <input type="hidden" name="status" value="complete">
+                      <input type="hidden" name="redirect" value="<?= e(rs_list_url($tab, $formId, $partnerFilterId, $dateFrom, $dateTo, $search, $pagination['page'], $pagination['per_page'])) ?>">
+                      <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm">Mark complete</button>
+                    </form>
+                  <?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+      <?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
     <?php endif; ?>
   </div>
 </div>

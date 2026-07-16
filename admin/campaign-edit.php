@@ -119,10 +119,8 @@ require __DIR__ . '/includes/layout-start.php';
         <button type="submit" class="admin-btn admin-btn-primary">
           <?= $campaignStatus === 'scheduled' ? 'Save changes' : 'Save campaign' ?>
         </button>
-        <?php if ($campaign): ?>
-          <button type="submit" formaction="/admin/campaign-action" name="action" value="send_test" class="admin-btn admin-btn-secondary"
-            formnovalidate>Send test to me</button>
-        <?php endif; ?>
+        <button type="submit" formaction="/admin/campaign-action" name="action" value="send_test" class="admin-btn admin-btn-secondary"
+          formnovalidate title="Sends a preview to the first admin email in Email settings">Send test email</button>
       </div>
     </form>
   </div>
@@ -142,7 +140,7 @@ require __DIR__ . '/includes/layout-start.php';
     <h2 class="admin-card-title" style="margin-top:1.5rem;">Tips</h2>
     <ul class="admin-field-hint" style="margin:0;padding-left:1.25rem;">
       <li>Use {client_name} to personalize the greeting.</li>
-      <li>Send a test email to yourself before scheduling.</li>
+      <li>Send a test email (goes to the admin address in Email settings) before scheduling.</li>
       <li>Large lists are sent in batches of <?= campaign_batch_size() ?> per run.</li>
       <li>Schedule times use <?= e(app_timezone_label()) ?> — change in <a href="/admin/email-settings">Email settings</a>.</li>
     </ul>

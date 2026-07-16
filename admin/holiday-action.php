@@ -41,7 +41,10 @@ if ($action === 'send_test') {
         header('Location: ' . $redirect);
         exit;
     }
-    $_SESSION['flash_success'] = 'Test email sent.';
+    $to = trim((string) ($result['to'] ?? ''));
+    $_SESSION['flash_success'] = $to !== ''
+        ? 'Test email sent to ' . $to . '.'
+        : 'Test email sent.';
     header('Location: ' . $redirect);
     exit;
 }

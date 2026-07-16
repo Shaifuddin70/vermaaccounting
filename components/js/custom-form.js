@@ -115,7 +115,17 @@
 
           try {
             const res = await fetch('/api/stage-upload', { method: 'POST', body: fd });
-            const json = await res.json();
+            const raw = await res.text();
+            let json = null;
+            try {
+              json = JSON.parse(raw);
+            } catch (parseErr) {
+              throw new Error(
+                res.ok
+                  ? 'Upload failed (invalid server response).'
+                  : 'Upload failed. The file may be too large or the server returned an error.'
+              );
+            }
             if (!res.ok) {
               throw new Error(json.error || 'Upload failed');
             }

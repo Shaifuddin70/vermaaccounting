@@ -1368,6 +1368,15 @@ body.admin-body {
   height: auto;
 }
 
+.campaign-email-preview-frame {
+  display: block;
+  width: 100%;
+  min-height: 420px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
 .email-editor-field .email-editor {
   border: 1px solid #cbd5e1;
   border-radius: 10px;
@@ -1442,6 +1451,13 @@ body.admin-body {
   border-radius: 8px;
   font-size: 0.82rem;
   overflow-x: auto;
+}
+
+.admin-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
 }
 
 .campaign-send-options {
@@ -2662,12 +2678,125 @@ body.admin-body {
   gap: 1rem;
 }
 
+.submission-files-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
 .submission-files--compact {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
   margin-bottom: 0.5rem;
+}
+
+.submission-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  max-width: 720px;
+}
+
+.submission-gallery--compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  max-width: none;
+  grid-template-columns: none;
+}
+
+.submission-edit-file-name {
+  font-size: 0.85rem;
+  color: var(--admin-muted);
+}
+
+.submission-gallery-item {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.submission-gallery-thumb {
+  display: block;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: var(--admin-radius);
+  border: 1px solid var(--admin-border);
+  background: #f1f5f9;
+  position: relative;
+}
+
+.submission-gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.2s ease;
+}
+
+.submission-gallery-thumb:hover img {
+  transform: scale(1.04);
+}
+
+.submission-gallery-caption {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.submission-gallery-name {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--admin-text, #0f172a);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.submission-gallery-name:hover {
+  color: var(--admin-primary, #1e3a8a);
+  text-decoration: underline;
+}
+
+.submission-file-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-width: 560px;
+}
+
+.submission-file-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  background: #f8fafc;
+}
+
+.submission-file-ext {
+  flex-shrink: 0;
+  min-width: 2.75rem;
+  padding: 0.35rem 0.4rem;
+  border-radius: 6px;
+  background: #1e3a8a;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 1.2;
 }
 
 .submission-file-item {
@@ -2677,33 +2806,45 @@ body.admin-body {
 }
 
 .submission-image-link {
-  display: inline-block;
-  max-width: 100%;
-}
-
-.submission-image-preview {
   display: block;
-  max-width: min(100%, 480px);
-  max-height: 360px;
-  width: auto;
-  height: auto;
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
   border-radius: var(--admin-radius);
   border: 1px solid var(--admin-border);
   background: #f8fafc;
 }
 
+.submission-image-preview {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .submission-image-preview--sm {
-  max-width: 120px;
-  max-height: 120px;
+  width: 100%;
+  height: 100%;
 }
 
 .submission-file-meta {
   font-size: 0.9rem;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.submission-file-meta a {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .submission-file-size {
   color: var(--admin-muted);
-  margin-left: 0.25rem;
+  font-size: 0.8rem;
 }
 
 .submission-edit-fields {
@@ -3775,6 +3916,44 @@ a.md-form-slug:hover { color: var(--admin-primary); }
   max-width: none;
 }
 
+.rs-filters-card {
+  margin-bottom: 1rem;
+}
+
+.rs-filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.rs-filter-field {
+  margin: 0;
+  min-width: 10rem;
+  flex: 1 1 11rem;
+}
+
+.rs-filter-field--search {
+  flex: 2 1 16rem;
+}
+
+.rs-filter-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.rs-col-date {
+  white-space: nowrap;
+  font-size: 0.9rem;
+}
+
+.rs-col-ref {
+  font-size: 0.9rem;
+  color: var(--admin-muted);
+}
+
 .rs-summary {
   margin: 0 0 1rem;
   font-size: 0.9rem;
@@ -3791,8 +3970,16 @@ a.md-form-slug:hover { color: var(--admin-primary); }
 }
 
 .rs-card {
-  padding: 0;
+  padding: 0.25rem 0 0;
   overflow: hidden;
+}
+
+.rs-card .admin-table-wrap {
+  padding: 0 0.25rem;
+}
+
+.rs-card .admin-empty-state {
+  padding: 2.5rem 1.5rem;
 }
 
 .rs-empty {

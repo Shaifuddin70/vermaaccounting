@@ -84,6 +84,14 @@ require __DIR__ . '/includes/layout-start.php';
     <?php endif; ?>
   </div>
   <div class="submission-meta-actions">
+    <?php if (!$editMode && count($files) > 0): ?>
+      <form method="post" action="/admin/submission-files-zip" class="inline-form">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+        <input type="hidden" name="form_id" value="<?= $formId ?>">
+        <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
+        <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm">Download all files</button>
+      </form>
+    <?php endif; ?>
     <?php if ($status === 'pending'): ?>
       <form method="post" action="/admin/submission-status" class="inline-form">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">

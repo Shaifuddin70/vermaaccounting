@@ -58,6 +58,11 @@ if ($perPage > 0 && in_array($perPage, admin_per_page_options(), true) && $perPa
 }
 if (!empty($_POST['redirect_view'])) {
     $redirect = '/admin/submission?id=' . $submissionId . '&form_id=' . $formId;
+} else {
+    $customRedirect = trim((string) ($_POST['redirect'] ?? ''));
+    if ($customRedirect !== '' && str_starts_with($customRedirect, '/admin/') && !str_contains($customRedirect, '://')) {
+        $redirect = $customRedirect;
+    }
 }
 
 header('Location: ' . $redirect);

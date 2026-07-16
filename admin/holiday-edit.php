@@ -122,7 +122,7 @@ require __DIR__ . '/includes/layout-start.php';
       <div class="admin-form-actions">
         <button type="submit" class="admin-btn admin-btn-primary"><?= $schedule ? 'Save changes' : 'Save holiday' ?></button>
         <?php if ($schedule): ?>
-          <button type="submit" formaction="/admin/holiday-action" name="action" value="send_test" class="admin-btn admin-btn-secondary" formnovalidate>Send test to me</button>
+          <button type="submit" formaction="/admin/holiday-action" name="action" value="send_test" class="admin-btn admin-btn-secondary" formnovalidate title="Sends to the first admin email in Email settings">Send test email</button>
         <?php endif; ?>
       </div>
     </form>
@@ -140,7 +140,7 @@ require __DIR__ . '/includes/layout-start.php';
     <h2 class="admin-card-title" style="margin-top:1.5rem;">Tips</h2>
     <ul class="admin-field-hint" style="margin:0;padding-left:1.25rem;">
       <li>Use {client_name} to personalize the greeting.</li>
-      <li>Send a test email before enabling automatic sends.</li>
+      <li>Send a test email (goes to the admin address in Email settings) before enabling automatic sends.</li>
       <li>Uncheck “Send automatically” to pause a holiday without deleting it.</li>
       <li>Feb 29 holidays send on Feb 28 in non-leap years.</li>
     </ul>

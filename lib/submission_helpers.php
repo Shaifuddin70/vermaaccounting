@@ -139,3 +139,20 @@ function client_upload_original_name(string $originalName, array $schema, array 
     $year = client_upload_tax_year($schema, $post);
     return prefixed_client_upload_name($originalName, $year, $client['cin']);
 }
+
+/**
+ * Build a safe download basename from client name.
+ * Example: Jane_Doe
+ */
+function submission_client_download_basename(array $submission, array $schema, string $fallback = 'submission'): string
+{
+    $client = extract_client_from_submission($submission, $schema);
+    $namePart = sanitize_upload_filename_part((string) ($client['name'] ?? ''));
+
+    if ($namePart === '') {
+        $id = (int) ($submission['id'] ?? 0);
+        return $id > 0 ? $fallback . '-' . $id : $fallback;
+    }
+
+    return mb_strimwidth($namePart, 0, 180, '');
+}

@@ -31,7 +31,7 @@ function extract_client_from_submission(array $submission, array $schema): array
 
         if ($type === 'email' || str_contains($haystack, 'email')) {
             $email = $email !== '' ? $email : $val;
-        } elseif (preg_match('/\bcin\b/', $haystack)) {
+        } elseif (preg_match('/\b(cin|sin|ssn)\b/', $haystack)) {
             $cin = $cin !== '' ? $cin : $val;
         } elseif ($type === 'tel' || preg_match('/\b(phone|tel|mobile|cell|fax|contact\s*number)\b/', $haystack)
             || (preg_match('/\bnumber\b/', $haystack) && !preg_match('/\b(cin|sin|ssn|tax|account|invoice|order|id)\b/', $haystack))) {

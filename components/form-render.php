@@ -166,7 +166,11 @@ $dataMatchCfg = $schema['settings']['dataMatch'] ?? [];
 
         <?php elseif ($type === 'file' || $type === 'image'):
           $maxFiles = max(1, min(10, (int) ($field['maxFiles'] ?? 5)));
-          $accept = $field['accept'] ?? ($type === 'image' ? 'image/*' : '');
+          $accept = trim((string) ($field['accept'] ?? ''));
+          // File fields should accept documents even if accept was left as image/*
+          if ($accept === '' || ($type === 'file' && preg_match('/^image\/(\*|jpeg|png|gif|webp)(,image\/(jpeg|png|gif|webp))*$/i', $accept))) {
+            $accept = $type === 'image' ? 'image/*' : form_file_accept_default();
+          }
         ?>
           <div class="custom-form-file-field"
             data-file-field="1"
@@ -183,8 +187,13 @@ $dataMatchCfg = $schema['settings']['dataMatch'] ?? [];
               <?= $maxFiles > 1 ? 'multiple' : '' ?>>
             <div class="custom-form-file-queue" id="cf-queue-<?= $id ?>" aria-live="polite"></div>
             <div class="custom-form-file-tokens" id="cf-tokens-<?= $id ?>"></div>
-            <?php if ($maxFiles > 1): ?>
-              <small class="custom-form-help">You can upload up to <?= (int) $maxFiles ?> files. Upload starts as soon as you select each file.</small>
+            <?php if ($type === 'file'): ?>
+              <small class="custom-form-help">
+                <?= $maxFiles > 1 ? 'You can upload up to ' . (int) $maxFiles . ' files. ' : '' ?>
+                Images, PDF, ZIP, and documents accepted. Upload starts as soon as you select each file.
+              </small>
+            <?php elseif ($maxFiles > 1): ?>
+              <small class="custom-form-help">You can upload up to <?= (int) $maxFiles ?> images. Upload starts as soon as you select each file.</small>
             <?php else: ?>
               <small class="custom-form-help">Upload starts as soon as you select a file.</small>
             <?php endif; ?>

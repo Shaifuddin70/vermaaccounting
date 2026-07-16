@@ -78,21 +78,12 @@ foreach ($schema['fields'] as $field) {
             $errors[] = 'Upload failed for ' . $field['label'];
             continue;
         }
-        if ($upload['size'] > $maxBytes) {
-            $errors[] = $field['label'] . ' exceeds max file size.';
+        $check = validate_form_upload_file($upload, $field, $maxBytes, $allowedMimes);
+        if (!$check['ok']) {
+            $errors[] = (string) ($check['error'] ?? ($field['label'] . ' upload failed.'));
             continue;
         }
-
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($upload['tmp_name']) ?: $upload['type'];
-        if ($type === 'image' && !str_starts_with($mime, 'image/')) {
-            $errors[] = $field['label'] . ' must be an image.';
-            continue;
-        }
-        if ($allowedMimes && !in_array($mime, $allowedMimes, true)) {
-            $errors[] = $field['label'] . ' file type is not allowed.';
-            continue;
-        }
+        $mime = (string) $check['mime'];
 
         $ext = pathinfo($upload['name'], PATHINFO_EXTENSION);
         $stored = bin2hex(random_bytes(16)) . ($ext ? '.' . preg_replace('/[^a-zA-Z0-9]/', '', $ext) : '');

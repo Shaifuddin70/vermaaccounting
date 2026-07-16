@@ -477,6 +477,156 @@ final class FormRepository
         return $stmt->fetchAll();
     }
 
+    /**
+     * Cross-form submission listing for the reviewer inbox.
+     *
+     * @param array{
+     *   form_id?: int|null,
+     *   status?: string|null,
+     *   date_from?: string|null,
+     *   date_to?: string|null,
+     *   partner_id?: int|null,
+     *   search?: string|null,
+     *   scope_partner_id?: int|null
+     * } $filters
+     * @return array{0: string, 1: list<mixed>}
+     */
+    private function reviewerSubmissionFilterSql(array $filters): array
+    {
+        $scopePartnerId = isset($filters['scope_partner_id']) ? (int) $filters['scope_partner_id'] : null;
+        [$scopeJoin, $scopeParams] = $this->partnerFilterClause($scopePartnerId > 0 ? $scopePartnerId : null);
+
+        $sql = '
+            FROM submissions s
+            INNER JOIN forms f ON f.id = s.form_id' . $scopeJoin . '
+            WHERE f.slug != ?
+        ';
+        $params = array_merge($scopeParams, [file_manager_form_slug()]);
+
+        $formId = isset($filters['form_id']) ? (int) $filters['form_id'] : 0;
+        if ($formId > 0) {
+            $sql .= ' AND s.form_id = ?';
+            $params[] = $formId;
+        }
+
+        $status = (string) ($filters['status'] ?? '');
+        if ($status === 'pending' || $status === 'complete') {
+            $sql .= ' AND s.status = ?';
+            $params[] = $status;
+        }
+
+        $dateFrom = trim((string) ($filters['date_from'] ?? ''));
+        if ($dateFrom !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFrom)) {
+            $sql .= ' AND s.created_at >= ?';
+            $params[] = $dateFrom . ' 00:00:00';
+        }
+
+        $dateTo = trim((string) ($filters['date_to'] ?? ''));
+        if ($dateTo !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateTo)) {
+            $sql .= ' AND s.created_at <= ?';
+            $params[] = $dateTo . ' 23:59:59';
+        }
+
+        $partnerId = isset($filters['partner_id']) ? (int) $filters['partner_id'] : 0;
+        if ($partnerId > 0) {
+            $sql .= ' AND EXISTS (
+                SELECT 1 FROM submission_partners spf
+                WHERE spf.submission_id = s.id AND spf.user_id = ?
+            )';
+            $params[] = $partnerId;
+        }
+
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $like = '%' . $search . '%';
+            $sql .= ' AND (s.data_json LIKE ? OR f.title LIKE ? OR f.slug LIKE ?';
+            $params[] = $like;
+            $params[] = $like;
+            $params[] = $like;
+            if (ctype_digit($search)) {
+                $sql .= ' OR s.id = ?';
+                $params[] = (int) $search;
+            }
+            $sql .= ')';
+        }
+
+        return [$sql, $params];
+    }
+
+    /** @param array<string, mixed> $filters */
+    public function countReviewerSubmissions(array $filters): int
+    {
+        [$fromWhere, $params] = $this->reviewerSubmissionFilterSql($filters);
+        $stmt = $this->db->prepare('SELECT COUNT(*) ' . $fromWhere);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * @param array<string, mixed> $filters
+     * @return list<array<string, mixed>>
+     */
+    public function listReviewerSubmissions(array $filters, int $limit = 50, int $offset = 0): array
+    {
+        $limit = max(1, min(200, $limit));
+        $offset = max(0, $offset);
+        [$fromWhere, $params] = $this->reviewerSubmissionFilterSql($filters);
+        $sql = '
+            SELECT s.id, s.form_id, s.status, s.tax_year, s.data_json, s.created_at, s.updated_at,
+                   f.title AS form_title, f.slug AS form_slug, f.schema_json
+            ' . $fromWhere . '
+            ORDER BY s.created_at DESC
+            LIMIT ' . $limit . ' OFFSET ' . $offset;
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * @param list<int> $submissionIds
+     * @return array<int, string> submission_id => "Partner A, Partner B"
+     */
+    public function partnerNamesBySubmissionIds(array $submissionIds): array
+    {
+        $submissionIds = array_values(array_unique(array_filter(
+            array_map('intval', $submissionIds),
+            static fn (int $id): bool => $id > 0
+        )));
+        if ($submissionIds === []) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($submissionIds), '?'));
+        $stmt = $this->db->prepare('
+            SELECT sp.submission_id, u.name, u.reference_code
+            FROM submission_partners sp
+            INNER JOIN users u ON u.id = sp.user_id
+            WHERE sp.submission_id IN (' . $placeholders . ')
+            ORDER BY u.name ASC
+        ');
+        $stmt->execute($submissionIds);
+
+        $map = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $sid = (int) $row['submission_id'];
+            $label = trim((string) ($row['name'] ?? ''));
+            $code = trim((string) ($row['reference_code'] ?? ''));
+            if ($code !== '') {
+                $label = $label !== '' ? $label . ' (' . $code . ')' : $code;
+            }
+            if ($label === '') {
+                continue;
+            }
+            $map[$sid][] = $label;
+        }
+
+        $out = [];
+        foreach ($map as $sid => $names) {
+            $out[$sid] = implode(', ', $names);
+        }
+        return $out;
+    }
+
     /** @return array{all: int, pending: int, complete: int} */
     private function mapSubmissionCountRow(array $row): array
     {

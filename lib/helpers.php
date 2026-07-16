@@ -288,11 +288,17 @@ function default_field(string $type = 'text'): array
     }
 
     if (in_array($type, ['file', 'image'], true)) {
-        $base['accept'] = $type === 'image' ? 'image/*' : '';
+        $base['accept'] = $type === 'image' ? 'image/*' : form_file_accept_default();
         $base['maxFiles'] = 5;
     }
 
     return $base;
+}
+
+/** Default accept attribute for general file upload fields (images, PDF, Office, ZIP). */
+function form_file_accept_default(): string
+{
+    return 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,application/pdf,application/zip,application/x-zip-compressed';
 }
 
 function normalize_form_schema(array $schema): array

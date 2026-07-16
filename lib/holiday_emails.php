@@ -194,7 +194,7 @@ function holiday_launch_campaign(array $schedule, int $year): array
     return ['ok' => true, 'campaign_id' => $campaignId];
 }
 
-/** @param array<string, mixed> $schedule @return array{ok: bool, error?: string} */
+/** @param array<string, mixed> $schedule @return array{ok: bool, error?: string, to?: string} */
 function holiday_send_test_email(array $schedule): array
 {
     $subject = trim((string) ($schedule['subject'] ?? ''));
@@ -203,14 +203,14 @@ function holiday_send_test_email(array $schedule): array
         return ['ok' => false, 'error' => 'Subject and message are required to send a test.'];
     }
 
+    $mailCfg = mail_config();
+    $testEmail = trim((string) (($mailCfg['admin_emails'][0] ?? null) ?: ($mailCfg['admin_email'] ?? '')));
     $user = Auth::currentUser();
-    $testEmail = trim((string) ($user['email'] ?? ''));
     if ($testEmail === '' || !filter_var($testEmail, FILTER_VALIDATE_EMAIL)) {
-        $mailCfg = mail_config();
-        $testEmail = $mailCfg['admin_emails'][0] ?? trim((string) ($mailCfg['admin_email'] ?? ''));
+        $testEmail = trim((string) ($user['email'] ?? ''));
     }
     if ($testEmail === '' || !filter_var($testEmail, FILTER_VALIDATE_EMAIL)) {
-        return ['ok' => false, 'error' => 'No email address available for test sends.'];
+        return ['ok' => false, 'error' => 'No email address available for test sends. Add an admin email in Email settings.'];
     }
 
     $mailer = Mailer::fromAppConfig();
@@ -231,7 +231,7 @@ function holiday_send_test_email(array $schedule): array
         return ['ok' => false, 'error' => $mailer->getLastError() ?: 'Test send failed.'];
     }
 
-    return ['ok' => true];
+    return ['ok' => true, 'to' => $testEmail];
 }
 
 /** @return array<int, list<array<string, mixed>>> */

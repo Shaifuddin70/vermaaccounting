@@ -119,6 +119,15 @@ require __DIR__ . '/includes/layout-start.php';
     <?php endif; ?>
 
     <div class="admin-form-actions" style="margin-top:1.25rem;">
+      <?php if (in_array($status, ['draft', 'scheduled', 'failed'], true)): ?>
+        <form method="post" action="/admin/campaign-action" class="inline-form">
+          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+          <input type="hidden" name="campaign_id" value="<?= $campaignId ?>">
+          <input type="hidden" name="action" value="send_test">
+          <button type="submit" class="admin-btn admin-btn-secondary" <?= $mailReady ? '' : 'disabled' ?>
+            title="Sends a preview to the first admin email in Email settings">Send test email</button>
+        </form>
+      <?php endif; ?>
       <?php if (in_array($status, ['draft', 'failed'], true) && $clientEmailCount > 0): ?>
         <form method="post" action="/admin/campaign-action" class="inline-form"
           onsubmit="return confirm('Start sending this campaign to all clients with email addresses?');">
@@ -162,18 +171,25 @@ require __DIR__ . '/includes/layout-start.php';
 
   <div class="admin-card">
     <h2 class="admin-card-title">Email preview</h2>
-    <p><strong>Subject:</strong> <?= e((string) $campaign['subject']) ?></p>
     <?php
-    $previewBody = (string) $campaign['body_html'];
-    $previewIsHtml = str_contains($previewBody, '<');
+    $sampleClient = campaign_sample_client();
+    [$previewSubject, $previewHtml] = build_campaign_email(
+        (string) ($campaign['subject'] ?? ''),
+        (string) ($campaign['body_html'] ?? ''),
+        $sampleClient
+    );
     ?>
-    <div class="campaign-body-preview<?= $previewIsHtml ? '' : ' campaign-body-preview--text' ?>">
-      <?php if ($previewIsHtml): ?>
-        <?= $previewBody ?>
-      <?php else: ?>
-        <?= nl2br(e($previewBody)) ?>
-      <?php endif; ?>
-    </div>
+    <p class="admin-field-hint" style="margin-top:0;">
+      Shown with sample tokens filled in (as clients will receive it).
+      Use <strong>Send test email</strong> to receive a copy at your admin address.
+    </p>
+    <p><strong>Subject:</strong> <?= e($previewSubject) ?></p>
+    <iframe
+      class="campaign-email-preview-frame"
+      title="Campaign email preview"
+      sandbox=""
+      srcdoc="<?= e($previewHtml) ?>"
+    ></iframe>
     <p class="admin-field-hint" style="margin-top:1rem;">
       Created by <?= e((string) ($campaign['created_by_name'] ?? 'Admin')) ?>
       on <?= e(campaign_format_datetime((string) $campaign['created_at'])) ?>
