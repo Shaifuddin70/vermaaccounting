@@ -77,6 +77,10 @@ $adminToastMessages = array_merge(
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg></span>
           <span class="admin-nav-label">Holiday emails</span>
         </a>
+        <a href="/admin/birthday-emails" class="admin-nav-item <?= $activeNav === 'birthdays' ? 'active' : '' ?>">
+          <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 6c1.11 0 2-.9 2-2 0-.38-.1-.73-.29-1.03L12 0l-1.71 2.97c-.19.3-.29.65-.29 1.03 0 1.1.9 2 2 2zm4.6 9.99l-1.07-1.07-1.08 1.07c-1.3 1.3-3.58 1.31-4.89 0l-1.07-1.07-1.09 1.07C6.29 17.21 5.55 18 4.62 18H1v2c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2v-2h-3.62c-.93 0-1.67-.79-2.78-1.01zM18 9h-5V7h-2v2H6c-1.66 0-3 1.34-3 3v2h2.12c.53 0 1.04.21 1.41.59l1.07 1.07 1.07-1.07c1.31-1.31 3.59-1.31 4.9 0l1.07 1.07 1.07-1.07c.37-.37.88-.59 1.41-.59H21v-2c0-1.66-1.34-3-3-3z"/></svg></span>
+          <span class="admin-nav-label">Birthday emails</span>
+        </a>
         <a href="/admin/email-settings" class="admin-nav-item <?= $activeNav === 'email' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg></span>
           <span class="admin-nav-label">Email settings</span>

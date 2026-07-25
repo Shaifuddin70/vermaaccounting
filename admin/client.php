@@ -77,6 +77,10 @@ require __DIR__ . '/includes/layout-start.php';
       <strong><?= ($client['phone'] ?? '') !== '' ? e($client['phone']) : '—' ?></strong>
     </div>
     <div>
+      <span class="submission-meta-label">Birthday</span>
+      <strong><?= !empty($client['date_of_birth']) ? e((string) $client['date_of_birth']) : '—' ?></strong>
+    </div>
+    <div>
       <span class="submission-meta-label">Company</span>
       <strong><?= ($client['company'] ?? '') !== '' ? e($client['company']) : '—' ?></strong>
     </div>

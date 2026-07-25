@@ -43,6 +43,139 @@ final class ClientRepository
             ORDER BY c.name ASC, c.id ASC
         ")->fetchAll();
 
+        return $this->dedupeRecipients($rows);
+    }
+
+    /**
+     * Clients with email whose birthday matches today (Feb 29 → Feb 28 in non-leap years).
+     *
+     * @return list<array{client_id: int, client_name: string, email: string, sin: string, company: string}>
+     */
+    public function recipientsWithBirthdayOn(DateTimeImmutable $day): array
+    {
+        $year = (int) $day->format('Y');
+        $month = (int) $day->format('n');
+        $dom = (int) $day->format('j');
+        $includeFeb29 = ($month === 2 && $dom === 28 && !checkdate(2, 29, $year));
+
+        $sql = "
+            SELECT c.id, c.name, c.email, c.sin, c.company, c.date_of_birth
+            FROM clients c
+            WHERE c.email IS NOT NULL AND TRIM(c.email) != ''
+              AND c.date_of_birth IS NOT NULL AND TRIM(c.date_of_birth) != ''
+              AND (c.birthday_last_sent_year IS NULL OR c.birthday_last_sent_year != ?)
+        ";
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute([$year]);
+        $rows = $stmt->fetchAll();
+
+        $matched = [];
+        foreach ($rows as $row) {
+            $dob = birthday_normalize_dob($row['date_of_birth'] ?? '');
+            if ($dob === null) {
+                continue;
+            }
+            $dobMonth = (int) substr($dob, 5, 2);
+            $dobDay = (int) substr($dob, 8, 2);
+            $isToday = ($dobMonth === $month && $dobDay === $dom);
+            $isFeb29Fallback = $includeFeb29 && $dobMonth === 2 && $dobDay === 29;
+            if (!$isToday && !$isFeb29Fallback) {
+                continue;
+            }
+            $matched[] = $row;
+        }
+
+        return $this->dedupeRecipients($matched);
+    }
+
+    public function markBirthdaySent(int $clientId, int $year): void
+    {
+        $stmt = $this->db->prepare('
+            UPDATE clients
+            SET birthday_last_sent_year = ?, updated_at = ?
+            WHERE id = ?
+        ');
+        $stmt->execute([$year, now_iso(), $clientId]);
+    }
+
+    public function countWithBirthday(): int
+    {
+        $stmt = $this->db->query("
+            SELECT COUNT(*)
+            FROM clients
+            WHERE date_of_birth IS NOT NULL AND TRIM(date_of_birth) != ''
+              AND email IS NOT NULL AND TRIM(email) != ''
+        ");
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Upcoming birthdays in the next N days (including today).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function upcomingBirthdays(int $withinDays = 30, int $limit = 20): array
+    {
+        $withinDays = max(1, min(366, $withinDays));
+        $limit = max(1, min(100, $limit));
+        $tz = app_timezone();
+        $today = new DateTimeImmutable('today', $tz);
+
+        $stmt = $this->db->query("
+            SELECT c.id, c.name, c.email, c.date_of_birth
+            FROM clients c
+            WHERE c.date_of_birth IS NOT NULL AND TRIM(c.date_of_birth) != ''
+              AND c.email IS NOT NULL AND TRIM(c.email) != ''
+        ");
+        $rows = $stmt->fetchAll();
+        $upcoming = [];
+
+        foreach ($rows as $row) {
+            $dob = birthday_normalize_dob($row['date_of_birth'] ?? '');
+            if ($dob === null) {
+                continue;
+            }
+            $month = (int) substr($dob, 5, 2);
+            $day = (int) substr($dob, 8, 2);
+            $nextYear = (int) $today->format('Y');
+            if ($month === 2 && $day === 29 && !checkdate(2, 29, $nextYear)) {
+                $candidate = DateTimeImmutable::createFromFormat('Y-n-j', sprintf('%d-2-28', $nextYear), $tz);
+            } else {
+                $candidate = DateTimeImmutable::createFromFormat('Y-n-j', sprintf('%d-%d-%d', $nextYear, $month, $day), $tz);
+            }
+            if ($candidate === false) {
+                continue;
+            }
+            if ($candidate < $today) {
+                $nextYear++;
+                if ($month === 2 && $day === 29 && !checkdate(2, 29, $nextYear)) {
+                    $candidate = DateTimeImmutable::createFromFormat('Y-n-j', sprintf('%d-2-28', $nextYear), $tz);
+                } else {
+                    $candidate = DateTimeImmutable::createFromFormat('Y-n-j', sprintf('%d-%d-%d', $nextYear, $month, $day), $tz);
+                }
+            }
+            if ($candidate === false) {
+                continue;
+            }
+            $diff = (int) $today->diff($candidate)->days;
+            if ($diff > $withinDays) {
+                continue;
+            }
+            $row['next_birthday'] = $candidate->format('Y-m-d');
+            $row['days_until'] = $diff;
+            $upcoming[] = $row;
+        }
+
+        usort($upcoming, static fn (array $a, array $b): int => ($a['days_until'] <=> $b['days_until']) ?: strcmp((string) $a['name'], (string) $b['name']));
+        return array_slice($upcoming, 0, $limit);
+    }
+
+    /**
+     * @param list<array<string, mixed>> $rows
+     * @return list<array{client_id: int, client_name: string, email: string, sin: string, company: string}>
+     */
+    private function dedupeRecipients(array $rows): array
+    {
         $seen = [];
         $out = [];
         foreach ($rows as $row) {
@@ -196,8 +329,8 @@ final class ClientRepository
     {
         $now = now_iso();
         $stmt = $this->db->prepare('
-            INSERT INTO clients (name, sin, email, phone, company, notes, source, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clients (name, sin, email, phone, company, date_of_birth, notes, source, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         $stmt->execute([
             trim((string) ($data['name'] ?? '')),
@@ -205,6 +338,7 @@ final class ClientRepository
             $this->normalizeEmail($data['email'] ?? ''),
             trim((string) ($data['phone'] ?? '')),
             trim((string) ($data['company'] ?? '')),
+            $this->normalizeDob($data['date_of_birth'] ?? null),
             trim((string) ($data['notes'] ?? '')),
             $source,
             $now,
@@ -221,15 +355,19 @@ final class ClientRepository
         }
         $stmt = $this->db->prepare('
             UPDATE clients
-            SET name = ?, sin = ?, email = ?, phone = ?, company = ?, notes = ?, updated_at = ?
+            SET name = ?, sin = ?, email = ?, phone = ?, company = ?, date_of_birth = ?, notes = ?, updated_at = ?
             WHERE id = ?
         ');
+        $dob = array_key_exists('date_of_birth', $data)
+            ? $this->normalizeDob($data['date_of_birth'])
+            : $this->normalizeDob($existing['date_of_birth'] ?? null);
         return $stmt->execute([
             trim((string) ($data['name'] ?? $existing['name'])),
             $this->normalizeSin($data['sin'] ?? $existing['sin'] ?? ''),
             $this->normalizeEmail($data['email'] ?? $existing['email']),
             trim((string) ($data['phone'] ?? $existing['phone'] ?? '')),
             trim((string) ($data['company'] ?? $existing['company'] ?? '')),
+            $dob,
             trim((string) ($data['notes'] ?? $existing['notes'] ?? '')),
             now_iso(),
             $id,
@@ -344,6 +482,7 @@ final class ClientRepository
                 'email' => $email,
                 'phone' => trim((string) ($row['phone'] ?? '')),
                 'company' => trim((string) ($row['company'] ?? '')),
+                'date_of_birth' => $row['date_of_birth'] ?? null,
                 'notes' => trim((string) ($row['notes'] ?? '')),
             ];
 
@@ -400,6 +539,7 @@ final class ClientRepository
                 c.email,
                 c.phone,
                 c.company,
+                c.date_of_birth,
                 c.notes,
                 c.source,
                 COUNT(DISTINCT cs.submission_id) AS submission_count,
@@ -451,6 +591,7 @@ final class ClientRepository
             'email' => $email,
             'phone' => $extracted['phone'] ?? '',
             'company' => $extracted['company'] ?? '',
+            'date_of_birth' => $extracted['date_of_birth'] ?? null,
             'notes' => '',
         ], $source);
 
@@ -472,6 +613,9 @@ final class ClientRepository
         }
         if (($client['company'] ?? '') === '' && ($extracted['company'] ?? '') !== '') {
             $updates['company'] = $extracted['company'];
+        }
+        if (($client['date_of_birth'] ?? '') === '' && ($extracted['date_of_birth'] ?? '') !== '') {
+            $updates['date_of_birth'] = $extracted['date_of_birth'];
         }
         if (count($updates) > 0) {
             $this->update($clientId, array_merge($client, $updates));
@@ -509,6 +653,11 @@ final class ClientRepository
     {
         $sin = trim((string) $sin);
         return $sin !== '' ? $sin : null;
+    }
+
+    private function normalizeDob(mixed $dob): ?string
+    {
+        return birthday_normalize_dob($dob);
     }
 
     private function isDuplicateSinError(PDOException $e): bool

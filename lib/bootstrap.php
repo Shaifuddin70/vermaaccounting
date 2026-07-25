@@ -66,6 +66,7 @@ require_once __DIR__ . '/campaign_emails.php';
 require_once __DIR__ . '/HolidayScheduleRepository.php';
 require_once __DIR__ . '/holiday_emails.php';
 require_once __DIR__ . '/canada_holidays.php';
+require_once __DIR__ . '/birthday_emails.php';
 require_once __DIR__ . '/FileFolderRepository.php';
 require_once __DIR__ . '/profile_helpers.php';
 require_once __DIR__ . '/partner_helpers.php';

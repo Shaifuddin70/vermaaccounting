@@ -18,7 +18,7 @@ if ($out === false) {
 }
 
 fwrite($out, "\xEF\xBB\xBF");
-fputcsv($out, ['Name', 'SIN', 'Email', 'Phone', 'Company', 'Notes', 'Source', 'Submissions', 'Added']);
+fputcsv($out, ['Name', 'SIN', 'Email', 'Phone', 'Company', 'Date of Birth', 'Notes', 'Source', 'Submissions', 'Added']);
 
 foreach ($rows as $row) {
     fputcsv($out, [
@@ -27,6 +27,7 @@ foreach ($rows as $row) {
         $row['email'] ?? '',
         $row['phone'] ?? '',
         $row['company'] ?? '',
+        $row['date_of_birth'] ?? '',
         $row['notes'] ?? '',
         ($row['source'] ?? '') === 'import' ? 'Imported' : 'Form',
         (int) ($row['submission_count'] ?? 0),

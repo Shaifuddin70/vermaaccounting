@@ -318,7 +318,7 @@ function campaign_queue_diagnostics(): array
  *
  * @return array{ok: bool, error?: string, batch?: array{processed: int, sent: int, failed: int, done: bool}}
  */
-function launch_campaign_send(int $campaignId, bool $rebuildRecipients = false): array
+function launch_campaign_send(int $campaignId, bool $rebuildRecipients = false, ?array $recipients = null): array
 {
     $repo = new EmailCampaignRepository();
     $clientRepo = new ClientRepository();
@@ -334,11 +334,11 @@ function launch_campaign_send(int $campaignId, bool $rebuildRecipients = false):
 
     if ($rebuildRecipients || $repo->countRecipients($campaignId) === 0) {
         $repo->clearRecipients($campaignId);
-        $recipients = $clientRepo->recipientsForCampaign();
-        if ($recipients === []) {
+        $list = $recipients ?? $clientRepo->recipientsForCampaign();
+        if ($list === []) {
             return ['ok' => false, 'error' => 'No clients with email addresses.'];
         }
-        $added = $repo->addRecipients($campaignId, $recipients);
+        $added = $repo->addRecipients($campaignId, $list);
         $repo->update($campaignId, ['recipient_count' => $added]);
         $repo->refreshCounts($campaignId);
     }

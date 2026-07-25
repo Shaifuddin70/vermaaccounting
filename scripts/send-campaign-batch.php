@@ -14,6 +14,7 @@ if (
 require_once $projectRoot . '/lib/bootstrap.php';
 
 $holidayResult = process_due_holiday_sends();
+$birthdayResult = process_due_birthday_sends();
 $result = process_due_campaign_batches();
 $env = app_environment();
 
@@ -32,6 +33,12 @@ if (PHP_SAPI === 'cli') {
     }
     if ($holidayResult['errors'] !== []) {
         $line .= ' | holiday errors: ' . implode('; ', $holidayResult['errors']);
+    }
+    if ($birthdayResult['triggered'] > 0) {
+        $line .= sprintf(' | birthdays: %d recipient(s)', $birthdayResult['recipients']);
+    }
+    if ($birthdayResult['errors'] !== []) {
+        $line .= ' | birthday errors: ' . implode('; ', $birthdayResult['errors']);
     }
     if ($result['campaigns'] === 0) {
         $diag = campaign_queue_diagnostics();
@@ -59,4 +66,8 @@ if (PHP_SAPI === 'cli') {
 }
 
 header('Content-Type: application/json');
-echo json_encode(['ok' => true, 'holidays' => $holidayResult] + $result, JSON_UNESCAPED_UNICODE);
+echo json_encode([
+    'ok' => true,
+    'holidays' => $holidayResult,
+    'birthdays' => $birthdayResult,
+] + $result, JSON_UNESCAPED_UNICODE);

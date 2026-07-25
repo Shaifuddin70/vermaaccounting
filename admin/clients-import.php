@@ -119,6 +119,7 @@ require __DIR__ . '/includes/layout-start.php';
           <tr><td>Email</td><td>No</td><td>Email, Email Address</td></tr>
           <tr><td>Phone</td><td>No</td><td>Phone, Mobile, Telephone</td></tr>
           <tr><td>Company</td><td>No</td><td>Company, Business</td></tr>
+          <tr><td>Date of Birth</td><td>No</td><td>Date of Birth, DOB, Birthday (YYYY-MM-DD)</td></tr>
           <tr><td>Notes</td><td>No</td><td>Notes, Comments</td></tr>
         </tbody>
       </table>

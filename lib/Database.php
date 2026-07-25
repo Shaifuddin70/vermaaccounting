@@ -164,6 +164,7 @@ final class Database
         $this->ensureFormsSiteCtaColumns();
         $this->ensureClientsTables();
         $this->ensureClientsSinColumn();
+        $this->ensureClientsBirthdayColumns();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
@@ -241,6 +242,7 @@ final class Database
         $this->ensureFormsSiteCtaColumns();
         $this->ensureClientsTables();
         $this->ensureClientsSinColumn();
+        $this->ensureClientsBirthdayColumns();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
@@ -414,6 +416,30 @@ final class Database
             $this->pdo->exec('ALTER TABLE clients ADD COLUMN sin TEXT');
         }
         $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS uk_clients_sin ON clients(sin)');
+    }
+
+    private function ensureClientsBirthdayColumns(): void
+    {
+        if ($this->driver === 'mysql') {
+            if (!$this->columnExists('clients', 'date_of_birth')) {
+                $this->pdo->exec('ALTER TABLE clients ADD COLUMN date_of_birth DATE DEFAULT NULL AFTER company');
+            }
+            if (!$this->columnExists('clients', 'birthday_last_sent_year')) {
+                $this->pdo->exec('ALTER TABLE clients ADD COLUMN birthday_last_sent_year SMALLINT UNSIGNED DEFAULT NULL AFTER date_of_birth');
+            }
+            if (!$this->indexExists('clients', 'idx_clients_dob')) {
+                $this->pdo->exec('ALTER TABLE clients ADD KEY idx_clients_dob (date_of_birth)');
+            }
+            return;
+        }
+
+        if (!$this->sqliteColumnExists('clients', 'date_of_birth')) {
+            $this->pdo->exec('ALTER TABLE clients ADD COLUMN date_of_birth TEXT');
+        }
+        if (!$this->sqliteColumnExists('clients', 'birthday_last_sent_year')) {
+            $this->pdo->exec('ALTER TABLE clients ADD COLUMN birthday_last_sent_year INTEGER');
+        }
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_clients_dob ON clients(date_of_birth)');
     }
 
     private function ensureFormsSiteCtaColumns(): void
