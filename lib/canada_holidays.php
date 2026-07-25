@@ -34,6 +34,10 @@ function canada_holiday_email_html(array $opts): string
 </tr>';
     }
 
+    $siteUrl = app_base_url() ?: 'https://vermaaccounting.ca';
+    $logoHtml = brand_logo_email_html();
+    $companyName = 'Verma Accounting &amp; Financial Services';
+
     return '<!DOCTYPE html>
 <html>
 <head>
@@ -47,7 +51,17 @@ function canada_holiday_email_html(array $opts): string
     <td align="center">
       <table width="650" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:12px; overflow:hidden;">
         <tr>
-          <td style="padding:0 40px; color:#1e293b;">
+          <td align="center" style="padding:28px 40px 18px 40px; background:#ffffff; border-bottom:1px solid #e2e8f0;">
+            <a href="' . htmlspecialchars($siteUrl, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '" style="text-decoration:none; display:inline-block;">
+              ' . $logoHtml . '
+            </a>
+            <p style="margin:12px 0 0 0; font-size:15px; font-weight:700; color:#1e3a8a; letter-spacing:0.01em;">
+              ' . $companyName . '
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:24px 40px 0 40px; color:#1e293b;">
             <p style="font-size:16px;">Dear <strong>{client_name}</strong>,</p>
           </td>
         </tr>
@@ -75,13 +89,13 @@ function canada_holiday_email_html(array $opts): string
           <td style="padding:0 40px 30px 40px;">
             <p style="margin:0;">' . htmlspecialchars($signoff, ENT_QUOTES | ENT_HTML5, 'UTF-8') . '</p>
             <p style="margin:5px 0 0 0; font-weight:bold; font-size:16px; color:#1e3a8a;">
-              Verma Accounting &amp; Financial Services.
+              ' . $companyName . '
             </p>
           </td>
         </tr>
         <tr>
           <td style="background:#0f172a; color:#ffffff; padding:25px; text-align:center;">
-            <p style="margin:5px 0; font-size:13px;">© {year} Verma Accounting &amp; Financial Services.</p>
+            <p style="margin:5px 0; font-size:13px;">© {year} ' . $companyName . '</p>
             <p style="margin:5px 0; font-size:12px; color:#94a3b8;">
               All rights reserved.
             </p>
