@@ -28,7 +28,7 @@ if ($editId && !$existing) {
 
 $name = trim((string) ($_POST['name'] ?? ''));
 $subject = trim((string) ($_POST['subject'] ?? ''));
-$body = trim((string) ($_POST['body'] ?? ''));
+$body = campaign_email_normalize_year_token(trim((string) ($_POST['body'] ?? '')));
 $month = (int) ($_POST['holiday_month'] ?? 0);
 $day = (int) ($_POST['holiday_day'] ?? 0);
 $sendTime = holiday_normalize_send_time((string) ($_POST['send_time'] ?? ''));
@@ -70,6 +70,10 @@ $data = [
 ];
 
 if ($editId) {
+    // Preserve floating-date rules from seeded Canada holidays when editing content.
+    if (!empty($existing['date_rule'])) {
+        $data['date_rule'] = (string) $existing['date_rule'];
+    }
     $repo->update($editId, $data);
     ActivityLog::record('holiday.updated', 'holiday_schedule', $editId, ['name' => $name]);
     $_SESSION['flash_success'] = 'Holiday email updated.';
@@ -77,6 +81,7 @@ if ($editId) {
     exit;
 }
 
+$data['date_rule'] = '';
 $data['created_by_user_id'] = $user['id'] ?? null;
 $data['created_by_name'] = (string) ($user['name'] ?? 'Admin');
 $scheduleId = $repo->create($data);

@@ -7,7 +7,7 @@ $emailEditorValue = $emailEditorValue ?? '';
 $emailEditorLabel = $emailEditorLabel ?? 'Email message';
 $emailEditorRequired = $emailEditorRequired ?? true;
 $emailEditorPlaceholder = $emailEditorPlaceholder ?? 'Write your HTML email…';
-$emailEditorHint = $emailEditorHint ?? 'Edit the email as HTML. Use Image to upload and insert an img tag. Tokens: {client_name}, {client_email}, {sin}, {company}';
+$emailEditorHint = $emailEditorHint ?? 'Edit the email as HTML. Use Image to upload and insert an img tag. Tokens: {client_name}, {client_email}, {sin}, {company}, {year}';
 $emailEditorUploadUrl = $emailEditorUploadUrl ?? '/admin/email-editor-api';
 $emailEditorCsrf = $emailEditorCsrf ?? Auth::csrfToken();
 ?>

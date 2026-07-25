@@ -56,16 +56,33 @@ function campaign_is_editable(?array $campaign): bool
 }
 
 /** @param array<string, mixed> $client */
+function campaign_email_current_year(): string
+{
+    return (new DateTimeImmutable('now', app_timezone()))->format('Y');
+}
+
+/** Keep a dynamic year token in stored HTML so footers stay current automatically. */
+function campaign_email_normalize_year_token(string $html): string
+{
+    return preg_replace('/©\s*(?:\{year\}|20\d{2})/u', '© {year}', $html) ?? $html;
+}
+
+/** @param array<string, mixed> $client */
 function campaign_email_replace_tokens(string $text, array $client): string
 {
+    $year = campaign_email_current_year();
     $replacements = [
         '{client_name}' => (string) ($client['client_name'] ?? $client['name'] ?? ''),
         '{client_email}' => (string) ($client['email'] ?? ''),
         '{sin}' => (string) ($client['sin'] ?? ''),
         '{cin}' => (string) ($client['sin'] ?? ''),
         '{company}' => (string) ($client['company'] ?? ''),
+        '{year}' => $year,
     ];
-    return str_replace(array_keys($replacements), array_values($replacements), $text);
+    $text = str_replace(array_keys($replacements), array_values($replacements), $text);
+    // Always use the system year in copyright footers when sending.
+    $text = preg_replace('/©\s*(?:\{year\}|20\d{2})/u', '© ' . $year, $text) ?? $text;
+    return $text;
 }
 
 function campaign_email_body_html(string $body, array $client): string
@@ -77,16 +94,25 @@ function campaign_email_body_html(string $body, array $client): string
     return '<p style="margin:0 0 16px;color:#334155;white-space:pre-wrap;">' . nl2br(e($body)) . '</p>';
 }
 
+function campaign_email_is_full_document(string $html): bool
+{
+    return (bool) preg_match('/^\s*<(!DOCTYPE\s+html|html)\b/i', $html);
+}
+
 /** @param array<string, mixed> $client @return array{0: string, 1: string, 2: string} */
 function build_campaign_email(string $subject, string $body, array $client): array
 {
     $subject = campaign_email_replace_tokens($subject, $client);
     $bodyHtml = campaign_email_body_html($body, $client);
-    $html = submission_email_layout(
-        $subject,
-        $bodyHtml,
-        'You received this message from Verma Accounting. Reply to this email if you have questions.'
-    );
+    if (campaign_email_is_full_document($bodyHtml)) {
+        $html = $bodyHtml;
+    } else {
+        $html = submission_email_layout(
+            $subject,
+            $bodyHtml,
+            'You received this message from Verma Accounting. Reply to this email if you have questions.'
+        );
+    }
 
     $plainBody = campaign_email_replace_tokens($body, $client);
     $plainBody = html_entity_decode(strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $plainBody)), ENT_QUOTES | ENT_HTML5, 'UTF-8');

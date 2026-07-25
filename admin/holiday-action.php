@@ -19,6 +19,20 @@ if (!Auth::verifyCsrf($_POST['csrf_token'] ?? '')) {
 $action = (string) ($_POST['action'] ?? '');
 $scheduleId = (int) ($_POST['id'] ?? 0);
 $repo = new HolidayScheduleRepository();
+
+if ($action === 'seed_canada') {
+    $user = Auth::currentUser();
+    $result = seed_canada_holiday_emails((string) ($user['name'] ?? 'Admin'));
+    ActivityLog::record('holiday.seed_canada', 'holiday_schedule', null, $result);
+    $_SESSION['flash_success'] = sprintf(
+        'Canada holiday templates ready: %d created, %d updated.',
+        $result['created'],
+        $result['updated']
+    );
+    header('Location: /admin/holiday-calendar');
+    exit;
+}
+
 $schedule = $scheduleId > 0 ? $repo->find($scheduleId) : null;
 
 if (!$schedule) {

@@ -11,6 +11,154 @@ function holiday_effective_date(int $month, int $day, int $year): array
     return ['month' => $month, 'day' => $day];
 }
 
+/**
+ * Compute Easter Sunday (Gregorian) for a year.
+ *
+ * @return array{month: int, day: int}
+ */
+function holiday_easter_sunday(int $year): array
+{
+    // Anonymous Gregorian algorithm
+    $a = $year % 19;
+    $b = intdiv($year, 100);
+    $c = $year % 100;
+    $d = intdiv($b, 4);
+    $e = $b % 4;
+    $f = intdiv($b + 8, 25);
+    $g = intdiv($b - $f + 1, 3);
+    $h = (19 * $a + $b - $d - $g + 15) % 30;
+    $i = intdiv($c, 4);
+    $k = $c % 4;
+    $l = (32 + 2 * $e + 2 * $i - $h - $k) % 7;
+    $m = intdiv($a + 11 * $h + 22 * $l, 451);
+    $month = intdiv($h + $l - 7 * $m + 114, 31);
+    $day = (($h + $l - 7 * $m + 114) % 31) + 1;
+    return ['month' => $month, 'day' => $day];
+}
+
+/**
+ * Nth weekday of a month. Weekday: 1=Mon .. 7=Sun. nth: 1-5 or -1 (last).
+ *
+ * @return array{month: int, day: int}
+ */
+function holiday_nth_weekday(int $year, int $month, int $weekday, int $nth): array
+{
+    $month = max(1, min(12, $month));
+    $weekday = max(1, min(7, $weekday));
+    $tz = new DateTimeZone('UTC');
+
+    if ($nth === -1) {
+        $dt = DateTimeImmutable::createFromFormat('Y-n-j', sprintf('%d-%d-1', $year, $month), $tz)
+            ?->modify('last day of this month');
+        if ($dt === null) {
+            return ['month' => $month, 'day' => 1];
+        }
+        $current = (int) $dt->format('N');
+        $diff = ($current - $weekday + 7) % 7;
+        if ($diff > 0) {
+            $dt = $dt->modify('-' . $diff . ' days');
+        }
+        return ['month' => (int) $dt->format('n'), 'day' => (int) $dt->format('j')];
+    }
+
+    $nth = max(1, min(5, $nth));
+    $first = DateTimeImmutable::createFromFormat('Y-n-j', sprintf('%d-%d-1', $year, $month), $tz);
+    if ($first === false) {
+        return ['month' => $month, 'day' => 1];
+    }
+    $firstDow = (int) $first->format('N');
+    $offset = ($weekday - $firstDow + 7) % 7;
+    $day = 1 + $offset + (($nth - 1) * 7);
+    $daysInMonth = (int) $first->format('t');
+    if ($day > $daysInMonth) {
+        $day -= 7;
+    }
+    return ['month' => $month, 'day' => $day];
+}
+
+/** Victoria Day: Monday on or before May 24. @return array{month: int, day: int} */
+function holiday_victoria_day(int $year): array
+{
+    $may24 = DateTimeImmutable::createFromFormat('Y-n-j', sprintf('%d-5-24', $year), new DateTimeZone('UTC'));
+    if ($may24 === false) {
+        return ['month' => 5, 'day' => 24];
+    }
+    $dow = (int) $may24->format('N');
+    if ($dow !== 1) {
+        $may24 = $may24->modify('-' . ($dow - 1) . ' days');
+    }
+    return ['month' => 5, 'day' => (int) $may24->format('j')];
+}
+
+/**
+ * Resolve the calendar date a holiday schedule falls on for a given year.
+ *
+ * @param array<string, mixed> $schedule
+ * @return array{month: int, day: int}
+ */
+function holiday_resolve_date(array $schedule, int $year): array
+{
+    $rule = trim((string) ($schedule['date_rule'] ?? ''));
+    $month = (int) ($schedule['holiday_month'] ?? 1);
+    $day = (int) ($schedule['holiday_day'] ?? 1);
+
+    if ($rule === '' || str_starts_with($rule, 'fixed')) {
+        return holiday_effective_date($month, $day, $year);
+    }
+
+    if ($rule === 'victoria_day') {
+        return holiday_victoria_day($year);
+    }
+
+    if (preg_match('/^easter:(-?\d+)$/', $rule, $m)) {
+        $easter = holiday_easter_sunday($year);
+        $base = DateTimeImmutable::createFromFormat(
+            'Y-n-j',
+            sprintf('%d-%d-%d', $year, $easter['month'], $easter['day']),
+            new DateTimeZone('UTC')
+        );
+        if ($base === false) {
+            return $easter;
+        }
+        $offset = (int) $m[1];
+        if ($offset !== 0) {
+            $base = $base->modify(($offset >= 0 ? '+' : '') . $offset . ' days');
+        }
+        return ['month' => (int) $base->format('n'), 'day' => (int) $base->format('j')];
+    }
+
+    if (preg_match('/^nth_weekday:([1-7]):([1-9]|1[0-2]):(-1|[1-5])$/', $rule, $m)) {
+        return holiday_nth_weekday($year, (int) $m[2], (int) $m[1], (int) $m[3]);
+    }
+
+    return holiday_effective_date($month, $day, $year);
+}
+
+function holiday_rule_label(array $schedule): string
+{
+    $rule = trim((string) ($schedule['date_rule'] ?? ''));
+    if ($rule === '' || str_starts_with($rule, 'fixed')) {
+        return holiday_date_label((int) ($schedule['holiday_month'] ?? 1), (int) ($schedule['holiday_day'] ?? 1));
+    }
+    if ($rule === 'victoria_day') {
+        return 'Monday on or before May 24';
+    }
+    if (preg_match('/^easter:(-?\d+)$/', $rule, $m)) {
+        $offset = (int) $m[1];
+        if ($offset === -2) {
+            return 'Good Friday (Easter − 2 days)';
+        }
+        return 'Easter ' . ($offset >= 0 ? '+' : '') . $offset . ' days';
+    }
+    if (preg_match('/^nth_weekday:([1-7]):([1-9]|1[0-2]):(-1|[1-5])$/', $rule, $m)) {
+        $names = [1 => 'Monday', 2 => 'Tuesday', 3 => 'Wednesday', 4 => 'Thursday', 5 => 'Friday', 6 => 'Saturday', 7 => 'Sunday'];
+        $nth = (int) $m[3];
+        $nthLabel = $nth === -1 ? 'Last' : (['', '1st', '2nd', '3rd', '4th', '5th'][$nth] ?? $nth . 'th');
+        return $nthLabel . ' ' . ($names[(int) $m[1]] ?? 'weekday') . ' of ' . holiday_month_name((int) $m[2]);
+    }
+    return holiday_date_label((int) ($schedule['holiday_month'] ?? 1), (int) ($schedule['holiday_day'] ?? 1));
+}
+
 function holiday_is_valid_date(int $month, int $day): bool
 {
     if ($month < 1 || $month > 12 || $day < 1 || $day > 31) {
@@ -64,18 +212,16 @@ function holiday_next_send_at(array $schedule, ?DateTimeImmutable $from = null):
 {
     $tz = app_timezone();
     $from = $from ?? new DateTimeImmutable('now', $tz);
-    $month = (int) ($schedule['holiday_month'] ?? 0);
-    $day = (int) ($schedule['holiday_day'] ?? 0);
     $sendTime = holiday_normalize_send_time((string) ($schedule['send_time'] ?? '09:00:00')) ?? '09:00:00';
-
-    if (!holiday_is_valid_date($month, $day)) {
-        return null;
-    }
-
     $year = (int) $from->format('Y');
+
     for ($offset = 0; $offset <= 2; $offset++) {
         $candidateYear = $year + $offset;
-        $effective = holiday_effective_date($month, $day, $candidateYear);
+        $effective = holiday_resolve_date($schedule, $candidateYear);
+        if (!holiday_is_valid_date($effective['month'], $effective['day'])
+            && !($effective['month'] === 2 && $effective['day'] === 29)) {
+            // Still allow resolved dates from rules
+        }
         $at = DateTimeImmutable::createFromFormat(
             'Y-n-j H:i:s',
             sprintf('%d-%d-%d %s', $candidateYear, $effective['month'], $effective['day'], $sendTime),
@@ -112,9 +258,7 @@ function holiday_is_due_now(array $schedule, ?DateTimeImmutable $now = null): bo
     $month = (int) $now->format('n');
     $day = (int) $now->format('j');
 
-    $scheduleMonth = (int) ($schedule['holiday_month'] ?? 0);
-    $scheduleDay = (int) ($schedule['holiday_day'] ?? 0);
-    $effective = holiday_effective_date($scheduleMonth, $scheduleDay, $year);
+    $effective = holiday_resolve_date($schedule, $year);
 
     if ($effective['month'] !== $month || $effective['day'] !== $day) {
         return false;
@@ -234,17 +378,30 @@ function holiday_send_test_email(array $schedule): array
     return ['ok' => true, 'to' => $testEmail];
 }
 
-/** @return array<int, list<array<string, mixed>>> */
-function holiday_schedules_by_day(int $month, array $schedules): array
+/**
+ * Group schedules by resolved day for a calendar month/year.
+ *
+ * @param list<array<string, mixed>> $schedules
+ * @return array<int, list<array<string, mixed>>>
+ */
+function holiday_schedules_by_day_for_year(int $year, int $month, array $schedules): array
 {
     $byDay = [];
     foreach ($schedules as $schedule) {
-        $day = (int) ($schedule['holiday_day'] ?? 0);
-        if ($day < 1) {
+        $resolved = holiday_resolve_date($schedule, $year);
+        if ($resolved['month'] !== $month) {
             continue;
         }
+        $day = $resolved['day'];
         $byDay[$day][] = $schedule;
     }
     ksort($byDay);
     return $byDay;
+}
+
+/** @deprecated Use holiday_schedules_by_day_for_year() @return array<int, list<array<string, mixed>>> */
+function holiday_schedules_by_day(int $month, array $schedules): array
+{
+    $year = (int) (new DateTimeImmutable('now', app_timezone()))->format('Y');
+    return holiday_schedules_by_day_for_year($year, $month, $schedules);
 }

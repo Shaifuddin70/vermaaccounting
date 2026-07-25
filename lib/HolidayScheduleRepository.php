@@ -41,23 +41,31 @@ final class HolidayScheduleRepository
         return $stmt->fetch() ?: null;
     }
 
+    public function findByName(string $name): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM holiday_email_schedules WHERE LOWER(name) = LOWER(?) LIMIT 1');
+        $stmt->execute([trim($name)]);
+        return $stmt->fetch() ?: null;
+    }
+
     /** @param array<string, mixed> $data */
     public function create(array $data): int
     {
         $now = now_iso();
         $stmt = $this->db->prepare('
             INSERT INTO holiday_email_schedules (
-                name, holiday_month, holiday_day, send_time,
+                name, holiday_month, holiday_day, date_rule, send_time,
                 subject, body_html, enabled,
                 last_sent_year, last_campaign_id,
                 created_by_user_id, created_by_name,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         $stmt->execute([
             (string) ($data['name'] ?? ''),
             (int) ($data['holiday_month'] ?? 1),
             (int) ($data['holiday_day'] ?? 1),
+            (string) ($data['date_rule'] ?? ''),
             (string) ($data['send_time'] ?? '09:00:00'),
             (string) ($data['subject'] ?? ''),
             (string) ($data['body_html'] ?? ''),
@@ -78,7 +86,7 @@ final class HolidayScheduleRepository
         $fields = [];
         $params = [];
         $allowed = [
-            'name', 'holiday_month', 'holiday_day', 'send_time',
+            'name', 'holiday_month', 'holiday_day', 'date_rule', 'send_time',
             'subject', 'body_html', 'enabled',
             'last_sent_year', 'last_campaign_id',
         ];

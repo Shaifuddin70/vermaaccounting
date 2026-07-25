@@ -36,6 +36,20 @@
     var imageButton = root.querySelector('[data-action="image"]');
     var linkButton = root.querySelector('[data-action="link"]');
     var imageInput = root.querySelector('.email-editor-image-input');
+    var form = textarea.form;
+
+    function currentYear() {
+      return String(new Date().getFullYear());
+    }
+
+    // Show the live system year in the editor; keep {year} token when saving.
+    textarea.value = String(textarea.value || '').replace(/\{year\}/g, currentYear());
+
+    if (form) {
+      form.addEventListener('submit', function () {
+        textarea.value = String(textarea.value || '').replace(/©\s*20\d{2}/g, '© {year}');
+      });
+    }
 
     function uploadImage(file) {
       var formData = new FormData();

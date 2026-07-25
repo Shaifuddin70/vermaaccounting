@@ -563,6 +563,7 @@ final class Database
                     name VARCHAR(255) NOT NULL,
                     holiday_month TINYINT UNSIGNED NOT NULL,
                     holiday_day TINYINT UNSIGNED NOT NULL,
+                    date_rule VARCHAR(64) NOT NULL DEFAULT "",
                     send_time TIME NOT NULL DEFAULT "09:00:00",
                     subject VARCHAR(500) NOT NULL,
                     body_html LONGTEXT NOT NULL,
@@ -577,6 +578,9 @@ final class Database
                     KEY idx_holiday_enabled (enabled)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ');
+            if (!$this->columnExists('holiday_email_schedules', 'date_rule')) {
+                $this->pdo->exec('ALTER TABLE holiday_email_schedules ADD COLUMN date_rule VARCHAR(64) NOT NULL DEFAULT "" AFTER holiday_day');
+            }
             return;
         }
 
@@ -586,6 +590,7 @@ final class Database
                 name TEXT NOT NULL,
                 holiday_month INTEGER NOT NULL,
                 holiday_day INTEGER NOT NULL,
+                date_rule TEXT NOT NULL DEFAULT "",
                 send_time TEXT NOT NULL DEFAULT "09:00:00",
                 subject TEXT NOT NULL,
                 body_html TEXT NOT NULL,
@@ -598,6 +603,9 @@ final class Database
                 updated_at TEXT NOT NULL
             )
         ');
+        if (!$this->sqliteColumnExists('holiday_email_schedules', 'date_rule')) {
+            $this->pdo->exec('ALTER TABLE holiday_email_schedules ADD COLUMN date_rule TEXT NOT NULL DEFAULT ""');
+        }
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_holiday_date ON holiday_email_schedules(holiday_month, holiday_day)');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_holiday_enabled ON holiday_email_schedules(enabled)');
     }

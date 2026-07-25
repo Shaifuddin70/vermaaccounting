@@ -15,7 +15,7 @@
   <script src="/admin/js/admin-nav.js?v=1" defer></script>
   <script src="/admin/js/admin-ui.js?v=3" defer></script>
   <?php if (!empty($loadEmailEditor)): ?>
-  <script src="/admin/js/email-editor.js?v=2" defer></script>
+  <script src="/admin/js/email-editor.js?v=3" defer></script>
   <?php endif; ?>
 </body>
 </html>

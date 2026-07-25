@@ -29,9 +29,8 @@ if ($monthStart === false) {
 
 $daysInMonth = (int) $monthStart->format('t');
 $startWeekday = (int) $monthStart->format('w'); // 0 = Sunday
-$schedules = $repo->forMonth($month);
-$byDay = holiday_schedules_by_day($month, $schedules);
 $allSchedules = $repo->all();
+$byDay = holiday_schedules_by_day_for_year($year, $month, $allSchedules);
 $recipientCount = $clientRepo->countWithEmail();
 
 $upcoming = $allSchedules;
@@ -61,6 +60,13 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Holiday emails</h1>
   <div class="admin-header-actions">
+    <form method="post" action="/admin/holiday-action" style="display:inline;">
+      <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+      <button type="submit" name="action" value="seed_canada" class="admin-btn admin-btn-secondary"
+        onclick="return confirm('Load / refresh Canada holiday email templates? Existing holidays with the same name keep their on/off setting and get updated content.');">
+        Load Canada holidays
+      </button>
+    </form>
     <a href="/admin/holiday-edit" class="admin-btn admin-btn-primary">Add holiday</a>
   </div>
 </div>
@@ -120,7 +126,8 @@ require __DIR__ . '/includes/layout-start.php';
       </p>
       <ul class="admin-field-hint" style="margin:0;padding-left:1.25rem;">
         <li>Send times use <?= e(app_timezone_label()) ?>.</li>
-        <li>Emails repeat annually — set them once.</li>
+        <li>Emails repeat annually — floating holidays (Family Day, Thanksgiving, etc.) resolve to the correct date each year.</li>
+        <li>Use <strong>Load Canada holidays</strong> to install the standard Ontario / federal greeting set.</li>
         <li>Each send creates a campaign you can review under Campaigns.</li>
         <li>The server cron must run every few minutes for delivery.</li>
       </ul>
@@ -139,7 +146,7 @@ require __DIR__ . '/includes/layout-start.php';
             <li class="holiday-upcoming-item<?= $enabled ? '' : ' is-disabled' ?>">
               <a href="/admin/holiday-edit?id=<?= $scheduleId ?>" class="holiday-upcoming-link">
                 <strong><?= e((string) $schedule['name']) ?></strong>
-                <span><?= e(holiday_date_label((int) $schedule['holiday_month'], (int) $schedule['holiday_day'])) ?></span>
+                <span><?= e(holiday_rule_label($schedule)) ?></span>
                 <span><?= e(holiday_format_next_send($schedule)) ?></span>
               </a>
             </li>
@@ -167,7 +174,7 @@ require __DIR__ . '/includes/layout-start.php';
                 <tr>
                   <td>
                     <a href="/admin/holiday-edit?id=<?= $scheduleId ?>"><?= e((string) $schedule['name']) ?></a>
-                    <span class="admin-table-sub"><?= e(holiday_date_label((int) $schedule['holiday_month'], (int) $schedule['holiday_day'])) ?> at <?= e(holiday_send_time_input_value((string) ($schedule['send_time'] ?? ''))) ?></span>
+                    <span class="admin-table-sub"><?= e(holiday_rule_label($schedule)) ?> · next <?= e(holiday_format_next_send($schedule)) ?></span>
                   </td>
                   <td>
                     <span class="admin-badge <?= $enabled ? 'admin-badge-info' : 'admin-badge-muted' ?>"><?= $enabled ? 'Active' : 'Paused' ?></span>

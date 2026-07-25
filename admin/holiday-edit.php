@@ -42,6 +42,7 @@ require __DIR__ . '/includes/layout-start.php';
 <?php if ($schedule): ?>
   <div class="admin-alert admin-alert-info">
     Next send: <strong><?= e(holiday_format_next_send($schedule)) ?></strong>
+    · Schedule: <strong><?= e(holiday_rule_label($schedule)) ?></strong>
     <?php if (!empty($schedule['last_sent_year'])): ?>
       · Last sent in <?= (int) $schedule['last_sent_year'] ?>
       <?php if (!empty($schedule['last_campaign_id'])): ?>
@@ -49,6 +50,12 @@ require __DIR__ . '/includes/layout-start.php';
       <?php endif; ?>
     <?php endif; ?>
   </div>
+  <?php if (!empty($schedule['date_rule'])): ?>
+    <div class="admin-alert admin-alert-info">
+      This holiday uses a floating Canadian date rule and sends on the correct day each year automatically.
+      The month/day fields below are reference only and do not override the rule.
+    </div>
+  <?php endif; ?>
 <?php endif; ?>
 
 <?php if ($errors): ?>
@@ -104,7 +111,7 @@ require __DIR__ . '/includes/layout-start.php';
         <label for="holiday-subject">Email subject <span class="required">*</span></label>
         <input type="text" id="holiday-subject" name="subject" required value="<?= e($subject) ?>"
           placeholder="e.g. Happy holidays from Verma Accounting">
-        <small class="admin-field-hint">Tokens: {client_name}, {client_email}, {sin}, {company}</small>
+        <small class="admin-field-hint">Tokens: {client_name}, {client_email}, {sin}, {company}, {year}. The year is filled automatically from the system when the email is sent — no yearly update needed.</small>
       </div>
 
       <?php

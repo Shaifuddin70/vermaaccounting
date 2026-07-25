@@ -19,7 +19,7 @@ if (!Auth::verifyCsrf($_POST['csrf_token'] ?? '')) {
 $editId = isset($_POST['id']) && $_POST['id'] !== '' ? (int) $_POST['id'] : null;
 $name = trim((string) ($_POST['name'] ?? ''));
 $subject = trim((string) ($_POST['subject'] ?? ''));
-$body = trim((string) ($_POST['body'] ?? ''));
+$body = campaign_email_normalize_year_token(trim((string) ($_POST['body'] ?? '')));
 $sendAction = (string) ($_POST['send_action'] ?? 'draft');
 $scheduledRaw = trim((string) ($_POST['scheduled_at'] ?? ''));
 
