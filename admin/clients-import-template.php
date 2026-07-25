@@ -15,7 +15,7 @@ if ($out === false) {
 }
 
 fwrite($out, "\xEF\xBB\xBF");
-fputcsv($out, ['Name', 'CIN', 'Email', 'Phone', 'Company', 'Notes']);
+fputcsv($out, ['Name', 'SIN', 'Email', 'Phone', 'Company', 'Notes']);
 fputcsv($out, ['Jane Verma', '100001', 'jane@example.com', '613-555-0100', 'Verma Consulting', 'Existing client from 2024']);
 fputcsv($out, ['John Smith', '100002', 'john@example.com', '', '', '']);
 fclose($out);

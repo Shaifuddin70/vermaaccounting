@@ -7,6 +7,7 @@
   const fieldEditor = el('field-editor');
   const noFieldSelected = el('no-field-selected');
   let selectedFieldId = state.schema.fields[0]?.id || null;
+  let activePageIndex = 0;
 
   function ensureSchemaSettings() {
     if (!state.schema) {
@@ -50,6 +51,193 @@
     box.textContent = msg;
   }
 
+  /** @returns {{title: string, fields: array, breakField?: object|null}[]} */
+  function getPages() {
+    ensureSchemaSettings();
+    const pages = [];
+    let current = {
+      title: String(state.schema.settings.firstPageTitle || '').trim() || 'Page 1',
+      fields: [],
+      breakField: null,
+    };
+    state.schema.fields.forEach((field) => {
+      if (field.type === 'page_break') {
+        pages.push(current);
+        current = {
+          title: String(field.label || '').trim() || 'Page ' + (pages.length + 1),
+          fields: [],
+          breakField: field,
+        };
+        return;
+      }
+      current.fields.push(field);
+    });
+    pages.push(current);
+    return pages;
+  }
+
+  function setPages(pages) {
+    ensureSchemaSettings();
+    if (!pages.length) {
+      pages = [{ title: 'Page 1', fields: [], breakField: null }];
+    }
+    state.schema.settings.firstPageTitle = String(pages[0].title || '').trim() || 'Page 1';
+    const flat = [];
+    pages.forEach((page, index) => {
+      if (index > 0) {
+        const br = page.breakField && page.breakField.type === 'page_break'
+          ? { ...page.breakField }
+          : defaultFieldFromType('page_break');
+        br.type = 'page_break';
+        br.label = String(page.title || '').trim() || 'Page ' + (index + 1);
+        br.required = false;
+        br.conditions = [];
+        flat.push(br);
+      }
+      (page.fields || []).forEach((field) => {
+        if (field && field.type !== 'page_break') flat.push(field);
+      });
+    });
+    state.schema.fields = flat;
+  }
+
+  function findPageIndexForField(fieldId) {
+    const pages = getPages();
+    for (let i = 0; i < pages.length; i++) {
+      if (pages[i].fields.some((f) => f.id === fieldId)) return i;
+    }
+    return 0;
+  }
+
+  function syncActivePageSelection() {
+    const pages = getPages();
+    if (activePageIndex >= pages.length) activePageIndex = Math.max(0, pages.length - 1);
+    if (selectedFieldId) {
+      const onPage = pages[activePageIndex]?.fields.some((f) => f.id === selectedFieldId);
+      if (!onPage) {
+        selectedFieldId = pages[activePageIndex]?.fields[0]?.id || null;
+      }
+    } else {
+      selectedFieldId = pages[activePageIndex]?.fields[0]?.id || null;
+    }
+  }
+
+  function renderPageTabs() {
+    const tabs = el('fb-page-tabs');
+    const titleInput = el('fb-page-title');
+    const deleteBtn = el('fb-page-delete');
+    if (!tabs) return;
+
+    const pages = getPages();
+    if (activePageIndex >= pages.length) activePageIndex = Math.max(0, pages.length - 1);
+
+    tabs.innerHTML = pages
+      .map((page, index) => {
+        const label = escapeHtml(page.title || 'Page ' + (index + 1));
+        const count = page.fields.length;
+        return (
+          '<button type="button" class="fb-page-tab' +
+          (index === activePageIndex ? ' is-active' : '') +
+          '" role="tab" aria-selected="' +
+          (index === activePageIndex ? 'true' : 'false') +
+          '" data-page-index="' +
+          index +
+          '">' +
+          '<span class="fb-page-tab-label">' +
+          label +
+          '</span>' +
+          '<span class="fb-page-tab-count">' +
+          count +
+          '</span>' +
+          '</button>'
+        );
+      })
+      .join('');
+
+    tabs.querySelectorAll('[data-page-index]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        activePageIndex = Number(btn.getAttribute('data-page-index')) || 0;
+        syncActivePageSelection();
+        renderPageTabs();
+        renderFieldList();
+        renderFieldEditor();
+      });
+    });
+
+    if (titleInput && document.activeElement !== titleInput) {
+      titleInput.value = pages[activePageIndex]?.title || '';
+    }
+    if (deleteBtn) {
+      deleteBtn.hidden = pages.length < 2;
+    }
+  }
+
+  function addPage() {
+    const pages = getPages();
+    pages.push({
+      title: 'Page ' + (pages.length + 1),
+      fields: [],
+      breakField: defaultFieldFromType('page_break'),
+    });
+    setPages(pages);
+    activePageIndex = pages.length - 1;
+    selectedFieldId = null;
+    renderPageTabs();
+    renderFieldList();
+    renderFieldEditor();
+    el('fb-page-title')?.focus();
+  }
+
+  function deleteActivePage() {
+    const pages = getPages();
+    if (pages.length < 2) return;
+    if (!confirm('Delete this page? Its fields will move to the previous page.')) return;
+    const removing = pages[activePageIndex];
+    const targetIndex = Math.max(0, activePageIndex - 1);
+    pages[targetIndex].fields = pages[targetIndex].fields.concat(removing.fields || []);
+    pages.splice(activePageIndex, 1);
+    setPages(pages);
+    activePageIndex = Math.min(targetIndex, pages.length - 1);
+    syncActivePageSelection();
+    renderPageTabs();
+    renderFieldList();
+    renderFieldEditor();
+  }
+
+  function updateActivePageTitle(title, { finalize = false } = {}) {
+    const pages = getPages();
+    if (!pages[activePageIndex]) return;
+    let next = String(title ?? '');
+    if (finalize) {
+      next = next.trim() || 'Page ' + (activePageIndex + 1);
+    }
+    pages[activePageIndex].title = next;
+    setPages(pages);
+    renderPageTabs();
+  }
+
+  function moveFieldToPage(fieldId, toPageIndex) {
+    const pages = getPages();
+    let field = null;
+    let fromIndex = -1;
+    pages.forEach((page, index) => {
+      const i = page.fields.findIndex((f) => f.id === fieldId);
+      if (i >= 0) {
+        field = page.fields.splice(i, 1)[0];
+        fromIndex = index;
+      }
+    });
+    if (!field) return;
+    const dest = Math.max(0, Math.min(toPageIndex, pages.length - 1));
+    pages[dest].fields.push(field);
+    setPages(pages);
+    activePageIndex = dest;
+    selectedFieldId = fieldId;
+    renderPageTabs();
+    renderFieldList();
+    renderFieldEditor();
+  }
+
   let dragFromIndex = null;
 
   function clearDropIndicators() {
@@ -58,32 +246,44 @@
     });
   }
 
-  function reorderFields(fromIndex, toIndex, insertAfter) {
-    if (fromIndex === null) return;
-    const fields = state.schema.fields;
-    const [moved] = fields.splice(fromIndex, 1);
-    let insertAt = toIndex;
+  function reorderFieldsOnActivePage(fromLocalIndex, toLocalIndex, insertAfter) {
+    if (fromLocalIndex === null) return;
+    const pages = getPages();
+    const page = pages[activePageIndex];
+    if (!page) return;
+    const fields = page.fields;
+    const [moved] = fields.splice(fromLocalIndex, 1);
+    let insertAt = toLocalIndex;
     if (insertAfter) insertAt++;
-    if (fromIndex < insertAt) insertAt--;
+    if (fromLocalIndex < insertAt) insertAt--;
     insertAt = Math.max(0, Math.min(insertAt, fields.length));
     fields.splice(insertAt, 0, moved);
+    setPages(pages);
     renderFieldList();
     renderFieldEditor();
   }
 
   function renderFieldList() {
     const emptyEl = el('field-list-empty');
+    const pages = getPages();
+    const page = pages[activePageIndex] || { fields: [] };
+    const pageFields = page.fields || [];
+
     if (emptyEl) {
-      emptyEl.hidden = state.schema.fields.length > 0;
+      emptyEl.hidden = pageFields.length > 0;
+      emptyEl.textContent =
+        pages.length > 1
+          ? 'No fields on this page yet. Add a field or switch tabs.'
+          : 'Add fields below or use the toolbar to get started.';
     }
 
     fieldList.innerHTML = '';
-    state.schema.fields.forEach((field, index) => {
+    pageFields.forEach((field, localIndex) => {
       const item = document.createElement('div');
       item.className =
         'builder-field-item' + (field.id === selectedFieldId ? ' is-selected' : '');
       item.dataset.id = field.id;
-      item.dataset.index = String(index);
+      item.dataset.localIndex = String(localIndex);
 
       item.innerHTML =
         '<span class="builder-drag-handle" title="Drag to reorder" aria-hidden="true">⠿</span>' +
@@ -102,9 +302,9 @@
 
       handle.draggable = true;
       handle.addEventListener('dragstart', (e) => {
-        dragFromIndex = index;
+        dragFromIndex = localIndex;
         e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', String(index));
+        e.dataTransfer.setData('text/plain', String(localIndex));
         item.classList.add('is-dragging');
       });
 
@@ -133,10 +333,11 @@
 
       item.addEventListener('drop', (e) => {
         e.preventDefault();
+        e.stopPropagation();
         const from = dragFromIndex ?? Number(e.dataTransfer.getData('text/plain'));
         const insertAfter = item.classList.contains('drop-after');
         clearDropIndicators();
-        reorderFields(from, index, insertAfter);
+        reorderFieldsOnActivePage(from, localIndex, insertAfter);
       });
 
       body.addEventListener('click', () => selectField(field.id));
@@ -144,20 +345,8 @@
       fieldList.appendChild(item);
     });
 
-    fieldList.addEventListener(
-      'dragover',
-      (e) => {
-        if (dragFromIndex === null) return;
-        e.preventDefault();
-        if (e.target === fieldList && state.schema.fields.length) {
-          clearDropIndicators();
-          const last = fieldList.lastElementChild;
-          if (last) last.classList.add('drop-after');
-        }
-      },
-      { once: false }
-    );
     renderDataMatchFields();
+    renderPageTabs();
   }
 
   const MATCHABLE_TYPES = ['text', 'email', 'tel', 'number', 'date', 'select', 'radio', 'yes_no'];
@@ -243,12 +432,17 @@
 
   function selectField(id) {
     selectedFieldId = id;
+    if (id) {
+      activePageIndex = findPageIndexForField(id);
+    }
     renderFieldList();
     renderFieldEditor();
   }
 
   function getSelectedField() {
-    return state.schema.fields.find((f) => f.id === selectedFieldId);
+    const field = state.schema.fields.find((f) => f.id === selectedFieldId);
+    if (field && field.type === 'page_break') return null;
+    return field || null;
   }
 
   function renderFieldEditor() {
@@ -262,7 +456,7 @@
     fieldEditor.style.display = 'block';
 
     const otherFields = state.schema.fields.filter(
-      (f) => f.id !== field.id && !['heading', 'paragraph'].includes(f.type)
+      (f) => f.id !== field.id && !['heading', 'paragraph', 'page_break'].includes(f.type)
     );
 
     const optionsHtml =
@@ -299,12 +493,24 @@
                 ? `<div class="admin-field admin-field--full"><label>Help text</label><input type="text" id="fe-help" value="${escapeAttr(field.helpText || '')}"></div>`
                 : '';
 
+    const pages = getPages();
+    const currentPageIndex = findPageIndexForField(field.id);
+    const pageOptions = pages
+      .map(
+        (page, index) =>
+          `<option value="${index}" ${index === currentPageIndex ? 'selected' : ''}>${escapeHtml(
+            page.title || 'Page ' + (index + 1)
+          )}</option>`
+      )
+      .join('');
+
     fieldEditor.innerHTML = `
       <div class="admin-fields-2col">
         <div class="admin-field admin-field--full">
           <label>Field type</label>
           <select id="fe-type">
             ${Object.entries(config.fieldTypes)
+              .filter(([t]) => t !== 'page_break')
               .map(([t, l]) => `<option value="${t}" ${field.type === t ? 'selected' : ''}>${l}</option>`)
               .join('')}
           </select>
@@ -318,12 +524,66 @@
           <input type="text" id="fe-name" value="${escapeAttr(field.name)}">
         </div>
         ${
+          pages.length > 1
+            ? `<div class="admin-field admin-field--full">
+                <label for="fe-page">Page</label>
+                <select id="fe-page">${pageOptions}</select>
+                <small class="admin-field-hint">Move this field to another form page/tab.</small>
+              </div>`
+            : ''
+        }
+        ${
           !['heading', 'paragraph'].includes(field.type)
             ? `<div class="admin-field admin-field--full"><label class="admin-checkbox-label"><input type="checkbox" id="fe-required" ${field.required ? 'checked' : ''}><span>Required</span></label></div>`
             : ''
         }
       </div>
       ${placeholderRow}
+      ${
+        field.type === 'number'
+          ? (() => {
+              const fmt = field.numberFormat || '';
+              const presets = {
+                '': 'None (plain number)',
+                '###-###-###': 'SIN (Social Insurance Number) — ###-###-###',
+                '(###) ###-####': 'Phone — (###) ###-####',
+                '###-###-####': 'Phone — ###-###-####',
+                '#####': 'Postal (digits) — #####',
+              };
+              const presetKeys = Object.keys(presets);
+              const isPreset = presetKeys.includes(fmt);
+              return `
+      <div class="admin-fields-2col">
+        <div class="admin-field">
+          <label for="fe-number-format-preset">Number format</label>
+          <select id="fe-number-format-preset">
+            ${presetKeys
+              .map(
+                (key) =>
+                  `<option value="${escapeAttr(key)}" ${isPreset && fmt === key ? 'selected' : ''}>${presets[key]}</option>`
+              )
+              .join('')}
+            <option value="__custom" ${!isPreset && fmt ? 'selected' : ''}>Custom…</option>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label for="fe-number-format">Format pattern</label>
+          <input type="text" id="fe-number-format" value="${escapeAttr(fmt)}" placeholder="e.g. ###-###-###">
+          <small class="admin-field-hint">Use <code>#</code> for each digit. Example: <code>###-###-###</code> → 123-456-789</small>
+        </div>
+      </div>`;
+            })()
+          : ''
+      }
+      ${
+        field.type === 'date'
+          ? `<div class="admin-field admin-field--full">
+              <label for="fe-min-age">Minimum age (years)</label>
+              <input type="number" id="fe-min-age" min="0" max="120" step="1" value="${Number(field.minAge) > 0 ? Number(field.minAge) : ''}" placeholder="e.g. 18">
+              <small class="admin-field-hint">For date of birth: clients cannot pick a date that makes them younger than this age. Leave blank for no limit.</small>
+            </div>`
+          : ''
+      }
       ${field.type === 'partners' ? renderPartnerFieldEditor(field) : ''}
       ${
         ['select', 'radio', 'checkbox'].includes(field.type)
@@ -370,10 +630,14 @@
            </div>`
           : ''
       }
-      <hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
+      ${
+        field.type !== 'page_break'
+          ? `<hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
       <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Conditional logic</h3>
       <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Show or hide this field based on answers to other fields.</p>
-      ${conditionsHtml}
+      ${conditionsHtml}`
+          : ''
+      }
       <div style="margin-top:1rem;display:flex;gap:0.5rem;">
         <button type="button" class="admin-btn admin-btn-danger" id="fe-delete">Delete field</button>
         <button type="button" class="admin-btn admin-btn-secondary" id="fe-duplicate">Duplicate</button>
@@ -485,7 +749,7 @@
 
   function bindFieldEditorEvents(field) {
     el('fe-type')?.addEventListener('change', (e) => {
-      const newType = e.target.value;
+      const newType = e.target.value === 'page_break' ? 'text' : e.target.value;
       const idx = state.schema.fields.findIndex((f) => f.id === field.id);
       const fresh = defaultFieldFromType(newType);
       fresh.id = field.id;
@@ -496,6 +760,11 @@
       renderFieldEditor();
     });
 
+    el('fe-page')?.addEventListener('change', (e) => {
+      const to = Number(e.target.value);
+      if (!Number.isNaN(to)) moveFieldToPage(field.id, to);
+    });
+
     const sync = () => {
       field.label = el('fe-label').value;
       field.name = el('fe-name').value.replace(/[^a-zA-Z0-9_]/g, '_');
@@ -504,13 +773,42 @@
       if (el('fe-help')) field.helpText = el('fe-help').value;
       if (el('fe-accept')) field.accept = el('fe-accept').value;
       if (el('fe-max-files')) field.maxFiles = Number(el('fe-max-files').value) || 1;
+      if (el('fe-number-format')) {
+        field.numberFormat = String(el('fe-number-format').value || '').trim();
+      }
+      if (el('fe-min-age')) {
+        const raw = String(el('fe-min-age').value || '').trim();
+        const age = raw === '' ? 0 : parseInt(raw, 10);
+        field.minAge = Number.isFinite(age) ? Math.max(0, Math.min(120, age)) : 0;
+      }
       renderFieldList();
     };
 
-    ['fe-label', 'fe-name', 'fe-required', 'fe-placeholder', 'fe-help', 'fe-accept', 'fe-max-files'].forEach((id) => {
+    ['fe-label', 'fe-name', 'fe-required', 'fe-placeholder', 'fe-help', 'fe-accept', 'fe-max-files', 'fe-number-format', 'fe-min-age'].forEach((id) => {
       const node = el(id);
       if (node) node.addEventListener('input', sync);
       if (node && node.type === 'checkbox') node.addEventListener('change', sync);
+    });
+
+    el('fe-number-format-preset')?.addEventListener('change', (e) => {
+      const val = e.target.value;
+      if (val === '__custom') {
+        el('fe-number-format')?.focus();
+        return;
+      }
+      if (el('fe-number-format')) {
+        el('fe-number-format').value = val;
+      }
+      field.numberFormat = val;
+      renderFieldList();
+    });
+
+    el('fe-number-format')?.addEventListener('input', () => {
+      const fmt = String(el('fe-number-format').value || '').trim();
+      const preset = el('fe-number-format-preset');
+      if (!preset) return;
+      const known = ['', '###-###-###', '(###) ###-####', '###-###-####', '#####'];
+      preset.value = known.includes(fmt) ? fmt : '__custom';
     });
 
     const syncYesNoReason = () => {
@@ -593,8 +891,8 @@
       textarea: { type: 'textarea', label: 'Long text', required: true, options: [], conditions: [] },
       email: { type: 'email', label: 'Email', required: true, options: [], conditions: [] },
       tel: { type: 'tel', label: 'Phone', required: true, options: [], conditions: [] },
-      number: { type: 'number', label: 'Number', required: false, options: [], conditions: [] },
-      date: { type: 'date', label: 'Date', required: false, options: [], conditions: [] },
+      number: { type: 'number', label: 'Number', required: false, numberFormat: '', options: [], conditions: [] },
+      date: { type: 'date', label: 'Date', required: false, minAge: 0, options: [], conditions: [] },
       select: {
         type: 'select',
         label: 'Dropdown',
@@ -652,6 +950,7 @@
       image: { type: 'image', label: 'Image upload', required: false, accept: 'image/*', maxFiles: 5, options: [], conditions: [] },
       heading: { type: 'heading', label: 'Section title', required: false, options: [], conditions: [] },
       paragraph: { type: 'paragraph', label: 'Instructions…', required: false, options: [], conditions: [] },
+      page_break: { type: 'page_break', label: 'Next page', required: false, options: [], conditions: [] },
     };
     const base = defaults[type] || defaults.text;
     return { id: uid(), name: uid(), placeholder: '', helpText: '', ...base };
@@ -722,10 +1021,47 @@
   }
 
   el('add-field-btn')?.addEventListener('click', () => {
-    const type = el('add-field-type').value;
+    let type = el('add-field-type').value;
+    if (type === 'page_break') type = 'text';
     const field = defaultFieldFromType(type);
-    state.schema.fields.push(field);
+    const pages = getPages();
+    if (!pages[activePageIndex]) {
+      pages.push({ title: 'Page 1', fields: [], breakField: null });
+      activePageIndex = 0;
+    }
+    pages[activePageIndex].fields.push(field);
+    setPages(pages);
     selectField(field.id);
+  });
+
+  el('fb-page-add')?.addEventListener('click', addPage);
+  el('fb-page-delete')?.addEventListener('click', deleteActivePage);
+  el('fb-page-title')?.addEventListener('input', (e) => {
+    updateActivePageTitle(e.target.value);
+  });
+  el('fb-page-title')?.addEventListener('blur', (e) => {
+    updateActivePageTitle(e.target.value, { finalize: true });
+  });
+
+  fieldList.addEventListener('dragover', (e) => {
+    if (dragFromIndex === null) return;
+    e.preventDefault();
+    if (e.target === fieldList) {
+      clearDropIndicators();
+      const last = fieldList.lastElementChild;
+      if (last) last.classList.add('drop-after');
+    }
+  });
+  fieldList.addEventListener('drop', (e) => {
+    if (e.target !== fieldList) return;
+    if (dragFromIndex === null) return;
+    e.preventDefault();
+    const pages = getPages();
+    const page = pages[activePageIndex];
+    if (!page || !page.fields.length) return;
+    const toIndex = Math.max(0, page.fields.length - 1);
+    clearDropIndicators();
+    reorderFieldsOnActivePage(dragFromIndex, toIndex, true);
   });
 
   el('form-title')?.addEventListener('input', (e) => {
@@ -868,6 +1204,10 @@
     }
   });
 
+  if (selectedFieldId) {
+    activePageIndex = findPageIndexForField(selectedFieldId);
+  }
+  renderPageTabs();
   renderFieldList();
   renderFieldEditor();
 })();

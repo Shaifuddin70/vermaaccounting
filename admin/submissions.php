@@ -50,7 +50,7 @@ $submissions = $repo->submissionsForForm(
     $pagination['offset'],
     $partnerId
 );
-$inputFields = array_filter($schema['fields'], fn ($f) => !in_array($f['type'], ['heading', 'paragraph'], true));
+$inputFields = array_filter($schema['fields'], fn ($f) => !in_array($f['type'], ['heading', 'paragraph', 'page_break'], true));
 $csrf = Auth::csrfToken();
 
 $paginationPath = '/admin/submissions';

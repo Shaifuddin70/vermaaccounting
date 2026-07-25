@@ -20,12 +20,217 @@
   let pendingUploads = 0;
 
   const uploadSessionInput = document.getElementById('upload-session');
-  const uploadSession = (() => {
+  let uploadSession = (() => {
     const bytes = new Uint8Array(16);
     crypto.getRandomValues(bytes);
     return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   })();
   if (uploadSessionInput) uploadSessionInput.value = uploadSession;
+
+  function applyNumberFormatMask(raw, format) {
+    const digits = String(raw || '').replace(/\D+/g, '');
+    const slots = (format.match(/#/g) || []).length;
+    const limited = slots > 0 ? digits.slice(0, slots) : digits;
+    let out = '';
+    let di = 0;
+    for (let i = 0; i < format.length; i++) {
+      const ch = format[i];
+      if (ch === '#') {
+        if (di >= limited.length) break;
+        out += limited[di++];
+      } else if (di < limited.length) {
+        out += ch;
+      } else {
+        break;
+      }
+    }
+    return out;
+  }
+
+  function initNumberFormatFields() {
+    form.querySelectorAll('input[data-number-format]').forEach((input) => {
+      const format = input.getAttribute('data-number-format') || '';
+      if (!format) return;
+
+      const reformat = () => {
+        const next = applyNumberFormatMask(input.value, format);
+        if (input.value !== next) {
+          const end = next.length;
+          input.value = next;
+          try {
+            input.setSelectionRange(end, end);
+          } catch (err) {
+            /* ignore unsupported selection */
+          }
+        }
+      };
+
+      input.addEventListener('input', reformat);
+      input.addEventListener('blur', reformat);
+      if (input.value) reformat();
+    });
+  }
+
+  initNumberFormatFields();
+
+  function initMinAgeDateFields() {
+    form.querySelectorAll('input[type="date"][data-min-age]').forEach((input) => {
+      const minAge = parseInt(input.getAttribute('data-min-age') || '0', 10);
+      const max = input.getAttribute('max') || '';
+      if (!minAge || !max) return;
+
+      const validate = () => {
+        if (!input.value) {
+          input.setCustomValidity('');
+          return true;
+        }
+        if (input.value > max) {
+          input.setCustomValidity('Must be at least ' + minAge + ' years old.');
+          return false;
+        }
+        input.setCustomValidity('');
+        return true;
+      };
+
+      input.addEventListener('change', validate);
+      input.addEventListener('input', validate);
+      validate();
+    });
+  }
+
+  initMinAgeDateFields();
+
+  function fieldHasValue(wrap) {
+    if (!wrap || wrap.style.display === 'none') return true;
+    const fileField = wrap.querySelector('[data-file-field][data-required="1"]');
+    if (fileField) {
+      const tokenBox = fileField.querySelector('.custom-form-file-tokens');
+      return !!(tokenBox && tokenBox.querySelector('input[data-staged-token]'));
+    }
+    const radios = wrap.querySelectorAll('input[type="radio"]');
+    if (radios.length) {
+      return Array.from(radios).some((r) => r.checked);
+    }
+    const checks = wrap.querySelectorAll('input[type="checkbox"]');
+    if (checks.length) {
+      const required = wrap.querySelector('label .required');
+      if (!required) return true;
+      return Array.from(checks).some((c) => c.checked);
+    }
+    const control = wrap.querySelector(
+      'input[data-dob-value], input:not([type="hidden"]):not([type="file"]):not([type="radio"]):not([type="checkbox"]), select, textarea'
+    );
+    if (!control) return true;
+    if (!control.required && !wrap.querySelector('label .required')) return true;
+    return String(control.value || '').trim() !== '';
+  }
+
+  function validatePage(pageEl) {
+    if (!pageEl) return true;
+    const wraps = pageEl.querySelectorAll('.custom-form-field');
+    for (const wrap of wraps) {
+      if (wrap.style.display === 'none') continue;
+      const required =
+        !!wrap.querySelector('label .required') ||
+        !!wrap.querySelector('[required], [data-required="1"]');
+      if (!required) continue;
+      if (!fieldHasValue(wrap)) {
+        const label = wrap.querySelector('label')?.textContent?.replace(/\*/g, '').trim() || 'This field';
+        statusEl.textContent = 'Please complete: ' + label;
+        statusEl.className = 'custom-form-status is-error';
+        const focusEl = wrap.querySelector('input:not([type="hidden"]), select, textarea');
+        focusEl?.focus();
+        focusEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      }
+      wrap.querySelectorAll('input[type="date"][data-min-age]').forEach((input) => {
+        const max = input.getAttribute('max') || '';
+        if (input.value && max && input.value > max) {
+          input.setCustomValidity(
+            'Must be at least ' + (input.getAttribute('data-min-age') || '') + ' years old.'
+          );
+        } else {
+          input.setCustomValidity('');
+        }
+      });
+      const invalidDate = wrap.querySelector('input[type="date"][data-min-age]:invalid');
+      if (invalidDate) {
+        statusEl.textContent = 'Please check the date of birth / age requirements.';
+        statusEl.className = 'custom-form-status is-error';
+        invalidDate.reportValidity();
+        return false;
+      }
+    }
+    return true;
+  }
+
+  function scrollFormToTop() {
+    const target =
+      document.querySelector('.vf-card') ||
+      document.getElementById('custom-form-app') ||
+      form;
+    if (!target) return;
+    const offset = 12;
+    const top = Math.max(0, target.getBoundingClientRect().top + window.scrollY - offset);
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
+
+  /** @type {((index: number, opts?: { scroll?: boolean }) => void) | null} */
+  let goToFormPage = null;
+
+  function initFormPages() {
+    const pagesRoot = document.getElementById('form-pages');
+    if (!pagesRoot || pagesRoot.getAttribute('data-multipage') !== '1') return;
+
+    const pages = Array.from(pagesRoot.querySelectorAll('.custom-form-page'));
+    if (pages.length < 2) return;
+
+    const prevBtn = document.getElementById('form-page-prev');
+    const nextBtn = document.getElementById('form-page-next');
+    const submitBtn = document.getElementById('custom-form-submit');
+    const stepLabel = document.getElementById('form-page-step-label');
+    const titleLabel = document.getElementById('form-page-title-label');
+    const progressFill = document.getElementById('form-page-progress-fill');
+    let current = 0;
+
+    function showPage(index, opts) {
+      const shouldScroll = !opts || opts.scroll !== false;
+      current = Math.max(0, Math.min(pages.length - 1, index));
+      pages.forEach((page, i) => {
+        page.hidden = i !== current;
+      });
+      if (prevBtn) prevBtn.hidden = current === 0;
+      if (nextBtn) nextBtn.hidden = current === pages.length - 1;
+      if (submitBtn) submitBtn.hidden = current !== pages.length - 1;
+      if (stepLabel) stepLabel.textContent = 'Step ' + (current + 1) + ' of ' + pages.length;
+      if (titleLabel) titleLabel.textContent = pages[current].getAttribute('data-page-title') || '';
+      if (progressFill) {
+        progressFill.style.width = ((current + 1) / pages.length) * 100 + '%';
+      }
+      if (statusEl) {
+        statusEl.textContent = '';
+        statusEl.className = 'custom-form-status';
+      }
+      applyConditions();
+      if (shouldScroll) {
+        requestAnimationFrame(() => scrollFormToTop());
+      }
+    }
+
+    prevBtn?.addEventListener('click', () => {
+      showPage(current - 1);
+    });
+
+    nextBtn?.addEventListener('click', () => {
+      if (!validatePage(pages[current])) return;
+      showPage(current + 1);
+    });
+
+    showPage(0, { scroll: false });
+    goToFormPage = showPage;
+  }
+
+  initFormPages();
 
   function formatFileSize(bytes) {
     if (bytes < 1024) return bytes + ' B';
@@ -180,6 +385,23 @@
     if (first) first.focus();
   }
 
+  function clearFormData() {
+    form.reset();
+    clearFileUploads();
+    if (uploadSessionInput) {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      uploadSession = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+      uploadSessionInput.value = uploadSession;
+    }
+    form.querySelectorAll('input, select, textarea').forEach((el) => {
+      if (typeof el.setCustomValidity === 'function') el.setCustomValidity('');
+      el.classList.remove('is-invalid');
+    });
+    goToFormPage?.(0, { scroll: false });
+    applyConditions();
+  }
+
   function hideSuccessConfirmation() {
     if (successPanel) successPanel.hidden = true;
   }
@@ -190,13 +412,16 @@
     document.body.style.overflow = '';
     if (taxYearStep) taxYearStep.hidden = true;
     if (taxYearBar) taxYearBar.hidden = true;
+    clearFormData();
+    if (taxYearInput) taxYearInput.value = '';
+    if (taxYearSelect) taxYearSelect.value = '';
     form.hidden = true;
     if (successMessageEl) {
       successMessageEl.textContent = message || 'Thank you! Your response has been received.';
     }
     if (successPanel) {
       successPanel.hidden = false;
-      successPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      requestAnimationFrame(() => scrollFormToTop());
     }
     if (statusEl) {
       statusEl.textContent = '';
@@ -219,19 +444,17 @@
     hideSuccessConfirmation();
     prefillDismissed = false;
     lastLookupKey = '';
-    const previousYear = taxYearInput?.value || '';
-    if (taxYearInput) taxYearInput.value = '';
-    if (taxYearSelect) taxYearSelect.value = previousYear;
+    const previousYear = taxYearInput?.value || taxYearSelect?.value || '';
     if (taxYearBar) taxYearBar.hidden = true;
     if (taxYearStep) taxYearStep.hidden = false;
     form.hidden = true;
-    form.reset();
-    clearFileUploads();
+    clearFormData();
+    if (taxYearInput) taxYearInput.value = '';
+    if (taxYearSelect) taxYearSelect.value = previousYear;
     if (statusEl) {
       statusEl.textContent = '';
       statusEl.className = 'custom-form-status';
     }
-    applyConditions();
     taxYearStep?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 
@@ -244,16 +467,14 @@
       return;
     }
     form.hidden = false;
-    form.reset();
-    clearFileUploads();
-    applyConditions();
+    clearFormData();
     if (statusEl) {
       statusEl.textContent = '';
       statusEl.className = 'custom-form-status';
     }
     const first = form.querySelector('input:not([type="hidden"]), select, textarea');
     if (first) first.focus();
-    form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    requestAnimationFrame(() => scrollFormToTop());
   }
 
   successResetBtn?.addEventListener('click', resetFormForAnotherResponse);
@@ -608,6 +829,31 @@
       statusEl.textContent = 'Please wait for file uploads to finish.';
       statusEl.className = 'custom-form-status is-error';
       return;
+    }
+
+    const pagesRoot = document.getElementById('form-pages');
+    if (pagesRoot && pagesRoot.getAttribute('data-multipage') === '1') {
+      const visiblePage = pagesRoot.querySelector('.custom-form-page:not([hidden])');
+      if (!validatePage(visiblePage)) return;
+    }
+
+    const ageInvalid = form.querySelector('input[type="date"][data-min-age]');
+    if (ageInvalid) {
+      let blocked = false;
+      form.querySelectorAll('input[type="date"][data-min-age]').forEach((input) => {
+        const max = input.getAttribute('max') || '';
+        const minAge = input.getAttribute('data-min-age') || '';
+        if (input.value && max && input.value > max) {
+          blocked = true;
+          input.setCustomValidity('Must be at least ' + minAge + ' years old.');
+          input.reportValidity();
+        }
+      });
+      if (blocked) {
+        statusEl.textContent = 'Please check the date of birth / age requirements.';
+        statusEl.className = 'custom-form-status is-error';
+        return;
+      }
     }
 
     for (const wrap of form.querySelectorAll('[data-file-field][data-required="1"]')) {

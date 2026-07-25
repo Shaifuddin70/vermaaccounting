@@ -85,7 +85,7 @@ require __DIR__ . '/includes/layout-start.php';
         <label for="campaign-subject">Email subject <span class="required">*</span></label>
         <input type="text" id="campaign-subject" name="subject" required value="<?= e($subject) ?>"
           placeholder="e.g. Special offer for Verma Accounting clients">
-        <small class="admin-field-hint">Tokens: {client_name}, {client_email}, {cin}, {company}</small>
+        <small class="admin-field-hint">Tokens: {client_name}, {client_email}, {sin}, {company}</small>
       </div>
 
       <?php

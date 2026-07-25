@@ -32,12 +32,12 @@ final class ClientRepository
     /**
      * Unique client emails for bulk campaigns (first match per email, ordered by name).
      *
-     * @return list<array{client_id: int, client_name: string, email: string, cin: string, company: string}>
+     * @return list<array{client_id: int, client_name: string, email: string, sin: string, company: string}>
      */
     public function recipientsForCampaign(): array
     {
         $rows = $this->db->query("
-            SELECT c.id, c.name, c.email, c.cin, c.company
+            SELECT c.id, c.name, c.email, c.sin, c.company
             FROM clients c
             WHERE c.email IS NOT NULL AND TRIM(c.email) != ''
             ORDER BY c.name ASC, c.id ASC
@@ -55,7 +55,7 @@ final class ClientRepository
                 'client_id' => (int) $row['id'],
                 'client_name' => (string) ($row['name'] ?? ''),
                 'email' => $email,
-                'cin' => (string) ($row['cin'] ?? ''),
+                'sin' => (string) ($row['sin'] ?? ''),
                 'company' => (string) ($row['company'] ?? ''),
             ];
         }
@@ -181,14 +181,14 @@ final class ClientRepository
         return $stmt->fetch() ?: null;
     }
 
-    public function findByCin(string $cin): ?array
+    public function findBySin(string $sin): ?array
     {
-        $cin = $this->normalizeCin($cin);
-        if ($cin === null) {
+        $sin = $this->normalizeSin($sin);
+        if ($sin === null) {
             return null;
         }
-        $stmt = $this->db->prepare('SELECT * FROM clients WHERE cin = ? LIMIT 1');
-        $stmt->execute([$cin]);
+        $stmt = $this->db->prepare('SELECT * FROM clients WHERE sin = ? LIMIT 1');
+        $stmt->execute([$sin]);
         return $stmt->fetch() ?: null;
     }
 
@@ -196,12 +196,12 @@ final class ClientRepository
     {
         $now = now_iso();
         $stmt = $this->db->prepare('
-            INSERT INTO clients (name, cin, email, phone, company, notes, source, created_at, updated_at)
+            INSERT INTO clients (name, sin, email, phone, company, notes, source, created_at, updated_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         $stmt->execute([
             trim((string) ($data['name'] ?? '')),
-            $this->normalizeCin($data['cin'] ?? ''),
+            $this->normalizeSin($data['sin'] ?? ''),
             $this->normalizeEmail($data['email'] ?? ''),
             trim((string) ($data['phone'] ?? '')),
             trim((string) ($data['company'] ?? '')),
@@ -221,12 +221,12 @@ final class ClientRepository
         }
         $stmt = $this->db->prepare('
             UPDATE clients
-            SET name = ?, cin = ?, email = ?, phone = ?, company = ?, notes = ?, updated_at = ?
+            SET name = ?, sin = ?, email = ?, phone = ?, company = ?, notes = ?, updated_at = ?
             WHERE id = ?
         ');
         return $stmt->execute([
             trim((string) ($data['name'] ?? $existing['name'])),
-            $this->normalizeCin($data['cin'] ?? $existing['cin'] ?? ''),
+            $this->normalizeSin($data['sin'] ?? $existing['sin'] ?? ''),
             $this->normalizeEmail($data['email'] ?? $existing['email']),
             trim((string) ($data['phone'] ?? $existing['phone'] ?? '')),
             trim((string) ($data['company'] ?? $existing['company'] ?? '')),
@@ -253,7 +253,7 @@ final class ClientRepository
         }
 
         $extracted = extract_client_from_submission($submission, $schema);
-        if ($extracted['name'] === '' && $extracted['email'] === '' && $extracted['cin'] === '') {
+        if ($extracted['name'] === '' && $extracted['email'] === '' && $extracted['sin'] === '') {
             return;
         }
 
@@ -282,7 +282,7 @@ final class ClientRepository
                 $submissionId = (int) $submission['id'];
                 $extracted = extract_client_from_submission($submission, $schema);
 
-                if ($extracted['name'] === '' && $extracted['email'] === '' && $extracted['cin'] === '') {
+                if ($extracted['name'] === '' && $extracted['email'] === '' && $extracted['sin'] === '') {
                     $skipped++;
                     continue;
                 }
@@ -324,11 +324,11 @@ final class ClientRepository
 
         foreach ($rows as $row) {
             $name = trim((string) ($row['name'] ?? ''));
-            $cin = trim((string) ($row['cin'] ?? ''));
+            $sin = trim((string) ($row['sin'] ?? ''));
             $email = strtolower(trim((string) ($row['email'] ?? '')));
             $line = (int) ($row['_line'] ?? 0);
 
-            if ($name === '' && $email === '' && $cin === '') {
+            if ($name === '' && $email === '' && $sin === '') {
                 $skipped++;
                 continue;
             }
@@ -340,7 +340,7 @@ final class ClientRepository
 
             $payload = [
                 'name' => $name,
-                'cin' => $cin,
+                'sin' => $sin,
                 'email' => $email,
                 'phone' => trim((string) ($row['phone'] ?? '')),
                 'company' => trim((string) ($row['company'] ?? '')),
@@ -348,16 +348,16 @@ final class ClientRepository
             ];
 
             $existing = null;
-            if ($cin !== '') {
-                $existing = $this->findByCin($cin);
+            if ($sin !== '') {
+                $existing = $this->findBySin($sin);
             }
             if (!$existing && $email !== '') {
                 $existing = $this->findByEmail($email);
             }
 
             if ($existing) {
-                if ($cin !== '' && ($existing['cin'] ?? '') !== '' && $existing['cin'] !== $cin) {
-                    $errors[] = 'Line ' . $line . ': CIN conflicts with existing client.';
+                if ($sin !== '' && ($existing['sin'] ?? '') !== '' && $existing['sin'] !== $sin) {
+                    $errors[] = 'Line ' . $line . ': SIN conflicts with existing client.';
                     $skipped++;
                     continue;
                 }
@@ -366,8 +366,8 @@ final class ClientRepository
                 continue;
             }
 
-            if ($cin !== '' && $this->findByCin($cin)) {
-                $errors[] = 'Line ' . $line . ': CIN already in use.';
+            if ($sin !== '' && $this->findBySin($sin)) {
+                $errors[] = 'Line ' . $line . ': SIN already in use.';
                 $skipped++;
                 continue;
             }
@@ -376,8 +376,8 @@ final class ClientRepository
                 $this->create($payload, 'import');
                 $imported++;
             } catch (PDOException $e) {
-                if ($this->isDuplicateCinError($e)) {
-                    $errors[] = 'Line ' . $line . ': CIN already in use.';
+                if ($this->isDuplicateSinError($e)) {
+                    $errors[] = 'Line ' . $line . ': SIN already in use.';
                     $skipped++;
                     continue;
                 }
@@ -396,7 +396,7 @@ final class ClientRepository
         $stmt = $this->db->query('
             SELECT
                 c.name,
-                c.cin,
+                c.sin,
                 c.email,
                 c.phone,
                 c.company,
@@ -416,21 +416,21 @@ final class ClientRepository
     private function upsertFromExtracted(array $extracted, string $source): ?array
     {
         $name = trim((string) ($extracted['name'] ?? ''));
-        $cin = trim((string) ($extracted['cin'] ?? ''));
+        $sin = trim((string) ($extracted['sin'] ?? ''));
         $email = strtolower(trim((string) ($extracted['email'] ?? '')));
 
-        if ($name === '' && $email === '' && $cin === '') {
+        if ($name === '' && $email === '' && $sin === '') {
             return null;
         }
         if ($name === '' && $email !== '') {
             $name = $email;
         }
-        if ($name === '' && $cin !== '') {
-            $name = $cin;
+        if ($name === '' && $sin !== '') {
+            $name = $sin;
         }
 
-        if ($cin !== '') {
-            $existing = $this->findByCin($cin);
+        if ($sin !== '') {
+            $existing = $this->findBySin($sin);
             if ($existing) {
                 $this->fillEmptyFields((int) $existing['id'], $extracted);
                 return ['id' => (int) $existing['id'], 'is_new' => false];
@@ -447,7 +447,7 @@ final class ClientRepository
 
         $id = $this->create([
             'name' => $name,
-            'cin' => $cin,
+            'sin' => $sin,
             'email' => $email,
             'phone' => $extracted['phone'] ?? '',
             'company' => $extracted['company'] ?? '',
@@ -464,8 +464,8 @@ final class ClientRepository
             return;
         }
         $updates = [];
-        if (($client['cin'] ?? '') === '' && ($extracted['cin'] ?? '') !== '') {
-            $updates['cin'] = $extracted['cin'];
+        if (($client['sin'] ?? '') === '' && ($extracted['sin'] ?? '') !== '') {
+            $updates['sin'] = $extracted['sin'];
         }
         if (($client['phone'] ?? '') === '' && ($extracted['phone'] ?? '') !== '') {
             $updates['phone'] = $extracted['phone'];
@@ -494,7 +494,7 @@ final class ClientRepository
         }
         $like = '%' . $search . '%';
         return [
-            'WHERE (c.name LIKE ? OR c.cin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)',
+            'WHERE (c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)',
             [$like, $like, $like, $like, $like],
         ];
     }
@@ -505,16 +505,16 @@ final class ClientRepository
         return $email !== '' ? $email : null;
     }
 
-    private function normalizeCin(mixed $cin): ?string
+    private function normalizeSin(mixed $sin): ?string
     {
-        $cin = trim((string) $cin);
-        return $cin !== '' ? $cin : null;
+        $sin = trim((string) $sin);
+        return $sin !== '' ? $sin : null;
     }
 
-    private function isDuplicateCinError(PDOException $e): bool
+    private function isDuplicateSinError(PDOException $e): bool
     {
         $message = strtolower($e->getMessage());
-        return str_contains($message, 'uk_clients_cin')
+        return str_contains($message, 'uk_clients_sin')
             || str_contains($message, 'unique constraint failed')
             || str_contains($message, 'duplicate');
     }

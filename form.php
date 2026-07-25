@@ -34,7 +34,7 @@ if ($embed) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/custom-form.css?v=8">
+  <link rel="stylesheet" href="/css/custom-form.css?v=12">
 </head>
 <body class="form-embed-body">
   <div class="form-embed-header">
@@ -50,7 +50,7 @@ if ($embed) {
     <?php include __DIR__ . '/components/form-render.php'; ?>
   </div>
   <script>window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;</script>
-  <script src="/components/js/custom-form.js?v=9"></script>
+  <script src="/components/js/custom-form.js?v=14"></script>
 </body>
 </html>
     <?php
@@ -66,18 +66,16 @@ foreach ($schema['fields'] as $f) {
 }
 include __DIR__ . '/components/header.php';
 ?>
-<link rel="stylesheet" href="/css/custom-form.css?v=8">
+<link rel="stylesheet" href="/css/custom-form.css?v=12">
 <main class="main-content vf-page">
   <div class="vf-container">
     <div class="vf-layout">
       <div class="vf-main">
         <div class="vf-card">
           <header class="vf-card-header">
-            <div class="vf-card-header-logo">
-              <a href="<?= e(app_base_url() ?: '/') ?>" aria-label="Verma Accounting home">
-                <?= brand_logo_img_html('vf-card-logo-img', 200, 48) ?>
-              </a>
-            </div>
+            <a href="<?= e(app_base_url() ?: '/') ?>" class="vf-card-header-logo" aria-label="Verma Accounting home">
+              <?= brand_logo_img_html('vf-card-logo-img', 160, 36) ?>
+            </a>
             <div class="vf-card-header-text">
               <h1 class="vf-card-title"><?= e($form['title']) ?></h1>
               <?php if ($form['description']): ?>
@@ -132,5 +130,5 @@ include __DIR__ . '/components/header.php';
 <script>
   window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/components/js/custom-form.js?v=9"></script>
+<script src="/components/js/custom-form.js?v=14"></script>
 <?php include __DIR__ . '/components/footer.php'; ?>

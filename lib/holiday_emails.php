@@ -221,7 +221,7 @@ function holiday_send_test_email(array $schedule): array
     $client = [
         'client_name' => (string) ($user['name'] ?? 'Admin'),
         'email' => $testEmail,
-        'cin' => 'SAMPLE-CIN',
+        'sin' => 'SAMPLE-SIN',
         'company' => 'Sample Company',
     ];
     [$emailSubject, $html, $text] = build_campaign_email($subject, $body, $client);

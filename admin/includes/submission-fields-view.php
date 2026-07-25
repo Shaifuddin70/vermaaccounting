@@ -9,7 +9,7 @@
     $name = $field['name'];
     $id = $field['id'];
 
-    if (in_array($type, ['heading', 'paragraph'], true)): ?>
+    if (in_array($type, ['heading', 'paragraph', 'page_break'], true)): ?>
       <div class="submission-section-break">
         <?php if ($type === 'heading'): ?>
           <h3><?= e($field['label']) ?></h3>

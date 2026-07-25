@@ -163,7 +163,7 @@ final class Database
         $this->ensureSubmissionTaxYearColumn();
         $this->ensureFormsSiteCtaColumns();
         $this->ensureClientsTables();
-        $this->ensureClientsCinColumn();
+        $this->ensureClientsSinColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
@@ -240,7 +240,7 @@ final class Database
         $this->ensureSubmissionTaxYearColumn();
         $this->ensureFormsSiteCtaColumns();
         $this->ensureClientsTables();
-        $this->ensureClientsCinColumn();
+        $this->ensureClientsSinColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
@@ -334,7 +334,7 @@ final class Database
                 CREATE TABLE IF NOT EXISTS clients (
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
-                    cin VARCHAR(64) DEFAULT NULL,
+                    sin VARCHAR(64) DEFAULT NULL,
                     email VARCHAR(191) DEFAULT NULL,
                     phone VARCHAR(64) DEFAULT NULL,
                     company VARCHAR(255) DEFAULT NULL,
@@ -342,7 +342,7 @@ final class Database
                     source ENUM("import", "submission") NOT NULL DEFAULT "submission",
                     created_at DATETIME NOT NULL,
                     updated_at DATETIME NOT NULL,
-                    UNIQUE KEY uk_clients_cin (cin),
+                    UNIQUE KEY uk_clients_sin (sin),
                     KEY idx_clients_email (email),
                     KEY idx_clients_name (name)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -365,7 +365,7 @@ final class Database
             CREATE TABLE IF NOT EXISTS clients (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                cin TEXT,
+                sin TEXT,
                 email TEXT,
                 phone TEXT,
                 company TEXT,
@@ -385,22 +385,35 @@ final class Database
         ');
     }
 
-    private function ensureClientsCinColumn(): void
+    private function ensureClientsSinColumn(): void
     {
         if ($this->driver === 'mysql') {
-            if (!$this->columnExists('clients', 'cin')) {
-                $this->pdo->exec('ALTER TABLE clients ADD COLUMN cin VARCHAR(64) DEFAULT NULL AFTER name');
+            if ($this->columnExists('clients', 'cin') && !$this->columnExists('clients', 'sin')) {
+                if ($this->indexExists('clients', 'uk_clients_cin')) {
+                    $this->pdo->exec('ALTER TABLE clients DROP INDEX uk_clients_cin');
+                }
+                $this->pdo->exec('ALTER TABLE clients CHANGE COLUMN cin sin VARCHAR(64) DEFAULT NULL');
             }
-            if (!$this->indexExists('clients', 'uk_clients_cin')) {
-                $this->pdo->exec('ALTER TABLE clients ADD UNIQUE KEY uk_clients_cin (cin)');
+            if (!$this->columnExists('clients', 'sin')) {
+                $this->pdo->exec('ALTER TABLE clients ADD COLUMN sin VARCHAR(64) DEFAULT NULL AFTER name');
+            }
+            if ($this->indexExists('clients', 'uk_clients_cin') && $this->columnExists('clients', 'sin')) {
+                $this->pdo->exec('ALTER TABLE clients DROP INDEX uk_clients_cin');
+            }
+            if (!$this->indexExists('clients', 'uk_clients_sin')) {
+                $this->pdo->exec('ALTER TABLE clients ADD UNIQUE KEY uk_clients_sin (sin)');
             }
             return;
         }
 
-        if (!$this->sqliteColumnExists('clients', 'cin')) {
-            $this->pdo->exec('ALTER TABLE clients ADD COLUMN cin TEXT');
+        if ($this->sqliteColumnExists('clients', 'cin') && !$this->sqliteColumnExists('clients', 'sin')) {
+            $this->pdo->exec('ALTER TABLE clients ADD COLUMN sin TEXT');
+            $this->pdo->exec('UPDATE clients SET sin = cin WHERE sin IS NULL OR sin = ""');
         }
-        $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS uk_clients_cin ON clients(cin)');
+        if (!$this->sqliteColumnExists('clients', 'sin')) {
+            $this->pdo->exec('ALTER TABLE clients ADD COLUMN sin TEXT');
+        }
+        $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS uk_clients_sin ON clients(sin)');
     }
 
     private function ensureFormsSiteCtaColumns(): void

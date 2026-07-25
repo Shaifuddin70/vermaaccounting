@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-/** @return array{name: string, cin: string, email: string, phone: string, company: string} */
+/** @return array{name: string, sin: string, email: string, phone: string, company: string} */
 function extract_client_from_submission(array $submission, array $schema): array
 {
     $data = json_decode((string) ($submission['data_json'] ?? '{}'), true) ?: [];
     $name = '';
-    $cin = '';
+    $sin = '';
     $email = '';
     $phone = '';
     $company = '';
@@ -31,8 +31,11 @@ function extract_client_from_submission(array $submission, array $schema): array
 
         if ($type === 'email' || str_contains($haystack, 'email')) {
             $email = $email !== '' ? $email : $val;
-        } elseif (preg_match('/\b(cin|sin|ssn)\b/', $haystack)) {
-            $cin = $cin !== '' ? $cin : $val;
+        } elseif (
+            preg_match('/\b(cin|sin|ssn|social\s*insurance)\b/', $haystack)
+            || (string) ($field['numberFormat'] ?? '') === '###-###-###'
+        ) {
+            $sin = $sin !== '' ? $sin : $val;
         } elseif ($type === 'tel' || preg_match('/\b(phone|tel|mobile|cell|fax|contact\s*number)\b/', $haystack)
             || (preg_match('/\bnumber\b/', $haystack) && !preg_match('/\b(cin|sin|ssn|tax|account|invoice|order|id)\b/', $haystack))) {
             $phone = $phone !== '' ? $phone : $val;
@@ -59,7 +62,7 @@ function extract_client_from_submission(array $submission, array $schema): array
 
     return [
         'name' => $name,
-        'cin' => $cin,
+        'sin' => $sin,
         'email' => strtolower($email),
         'phone' => $phone,
         'company' => $company,
@@ -73,12 +76,12 @@ function normalize_client_csv_header(string $header): string
     return $h;
 }
 
-/** @return 'name'|'cin'|'email'|'phone'|'company'|'notes'|null */
+/** @return 'name'|'sin'|'email'|'phone'|'company'|'notes'|null */
 function map_client_csv_column(string $normalizedHeader): ?string
 {
     return match (true) {
         in_array($normalizedHeader, ['name', 'fullname', 'clientname', 'contactname', 'customername', 'client'], true) => 'name',
-        in_array($normalizedHeader, ['cin', 'clientid', 'clientnumber', 'clientno', 'idnumber'], true) => 'cin',
+        in_array($normalizedHeader, ['sin', 'cin', 'socialinsurancenumber', 'socialinsurance', 'clientid', 'clientnumber', 'clientno', 'idnumber'], true) => 'sin',
         in_array($normalizedHeader, ['email', 'emailaddress', 'mail'], true) => 'email',
         in_array($normalizedHeader, ['phone', 'phonenumber', 'telephone', 'tel', 'mobile', 'cell', 'cellphone', 'contactnumber'], true) => 'phone',
         in_array($normalizedHeader, ['company', 'business', 'organization', 'organisation', 'firm', 'businessname'], true) => 'company',
@@ -140,14 +143,14 @@ function parse_client_csv_file(string $path): array
         }
         $row = [
             'name' => trim((string) ($data[$columnMap['name']] ?? '')),
-            'cin' => isset($columnMap['cin']) ? trim((string) ($data[$columnMap['cin']] ?? '')) : '',
+            'sin' => isset($columnMap['sin']) ? trim((string) ($data[$columnMap['sin']] ?? '')) : '',
             'email' => isset($columnMap['email']) ? strtolower(trim((string) ($data[$columnMap['email']] ?? ''))) : '',
             'phone' => isset($columnMap['phone']) ? trim((string) ($data[$columnMap['phone']] ?? '')) : '',
             'company' => isset($columnMap['company']) ? trim((string) ($data[$columnMap['company']] ?? '')) : '',
             'notes' => isset($columnMap['notes']) ? trim((string) ($data[$columnMap['notes']] ?? '')) : '',
             '_line' => $line,
         ];
-        if ($row['name'] === '' && $row['email'] === '' && $row['phone'] === '' && $row['cin'] === '') {
+        if ($row['name'] === '' && $row['email'] === '' && $row['phone'] === '' && $row['sin'] === '') {
             continue;
         }
         $rows[] = $row;

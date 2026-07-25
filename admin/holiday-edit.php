@@ -104,7 +104,7 @@ require __DIR__ . '/includes/layout-start.php';
         <label for="holiday-subject">Email subject <span class="required">*</span></label>
         <input type="text" id="holiday-subject" name="subject" required value="<?= e($subject) ?>"
           placeholder="e.g. Happy holidays from Verma Accounting">
-        <small class="admin-field-hint">Tokens: {client_name}, {client_email}, {cin}, {company}</small>
+        <small class="admin-field-hint">Tokens: {client_name}, {client_email}, {sin}, {company}</small>
       </div>
 
       <?php

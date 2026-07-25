@@ -37,6 +37,10 @@ foreach ($schema['fields'] as $field) {
         continue;
     }
 
+    if ($type === 'page_break') {
+        continue;
+    }
+
     if ($type === 'checkbox') {
         $raw = $_POST[$name] ?? [];
         $data[$name] = is_array($raw) ? array_map('strval', $raw) : [];
@@ -95,6 +99,25 @@ foreach ($schema['fields'] as $field) {
     }
     if ($type === 'email' && $value !== '' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
         $errors[] = $field['label'] . ' must be a valid email.';
+    }
+    if ($type === 'number' && $value !== '') {
+        $format = normalize_number_format((string) ($field['numberFormat'] ?? ''));
+        if ($format !== '') {
+            $value = apply_number_format($value, $format);
+            $formatError = validate_number_format_value((string) $field['label'], $value, $format, false);
+            if ($formatError !== null) {
+                $errors[] = $formatError;
+            }
+        } elseif (!preg_match('/^-?\d+(\.\d+)?$/', $value)) {
+            $errors[] = $field['label'] . ' must be a valid number.';
+        }
+    }
+    if ($type === 'date' && $value !== '') {
+        $minAge = normalize_min_age($field['minAge'] ?? 0);
+        $ageError = validate_date_min_age((string) $field['label'], $value, $minAge);
+        if ($ageError !== null) {
+            $errors[] = $ageError;
+        }
     }
     $data[$name] = $value;
 }

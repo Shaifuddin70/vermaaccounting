@@ -115,7 +115,7 @@ require __DIR__ . '/includes/layout-start.php';
         </thead>
         <tbody>
           <tr><td>Name</td><td>Yes</td><td>Name, Full Name, Client Name</td></tr>
-          <tr><td>CIN</td><td>No</td><td>CIN, Client ID, Client Number</td></tr>
+          <tr><td>SIN</td><td>No</td><td>SIN, Social Insurance Number</td></tr>
           <tr><td>Email</td><td>No</td><td>Email, Email Address</td></tr>
           <tr><td>Phone</td><td>No</td><td>Phone, Mobile, Telephone</td></tr>
           <tr><td>Company</td><td>No</td><td>Company, Business</td></tr>
@@ -124,7 +124,7 @@ require __DIR__ . '/includes/layout-start.php';
       </table>
     </div>
     <p class="admin-note clients-import-guide-note">
-      Rows with the same CIN or email are updated instead of duplicated. Each CIN must be unique.
+      Rows with the same SIN or email are updated instead of duplicated. Each SIN must be unique.
     </p>
     <a href="/admin/clients-import-template" class="admin-btn admin-btn-secondary admin-btn-sm">Download sample CSV</a>
   </div>

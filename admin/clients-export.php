@@ -18,12 +18,12 @@ if ($out === false) {
 }
 
 fwrite($out, "\xEF\xBB\xBF");
-fputcsv($out, ['Name', 'CIN', 'Email', 'Phone', 'Company', 'Notes', 'Source', 'Submissions', 'Added']);
+fputcsv($out, ['Name', 'SIN', 'Email', 'Phone', 'Company', 'Notes', 'Source', 'Submissions', 'Added']);
 
 foreach ($rows as $row) {
     fputcsv($out, [
         $row['name'] ?? '',
-        $row['cin'] ?? '',
+        $row['sin'] ?? '',
         $row['email'] ?? '',
         $row['phone'] ?? '',
         $row['company'] ?? '',

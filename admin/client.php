@@ -65,8 +65,8 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-card client-profile-card">
   <div class="client-profile-grid">
     <div>
-      <span class="submission-meta-label">CIN</span>
-      <strong><?= ($client['cin'] ?? '') !== '' ? e($client['cin']) : '—' ?></strong>
+      <span class="submission-meta-label">SIN</span>
+      <strong><?= ($client['sin'] ?? '') !== '' ? e($client['sin']) : '—' ?></strong>
     </div>
     <div>
       <span class="submission-meta-label">Email</span>

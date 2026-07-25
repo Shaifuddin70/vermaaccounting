@@ -12,7 +12,7 @@
     $value = $data[$name] ?? '';
     $fieldFiles = $filesByField[$id] ?? [];
 
-    if (in_array($type, ['heading', 'paragraph'], true)): ?>
+    if (in_array($type, ['heading', 'paragraph', 'page_break'], true)): ?>
       <div class="submission-section-break">
         <?php if ($type === 'heading'): ?>
           <h3><?= e($field['label']) ?></h3>
@@ -120,15 +120,73 @@
           accept="<?= e($field['accept'] ?? ($type === 'image' ? 'image/*' : form_file_accept_default())) ?>">
 
       <?php else: ?>
-        <input type="<?= e($type === 'email' ? 'email' : ($type === 'number' ? 'number' : ($type === 'date' ? 'date' : ($type === 'tel' ? 'tel' : 'text')))) ?>"
+        <?php
+          $numberFormat = $type === 'number'
+              ? normalize_number_format((string) ($field['numberFormat'] ?? ''))
+              : '';
+          $minAge = $type === 'date' ? normalize_min_age($field['minAge'] ?? 0) : 0;
+          $dateMax = $type === 'date' ? date_max_for_min_age($minAge) : null;
+          $inputType = $type === 'email'
+              ? 'email'
+              : ($type === 'date'
+                  ? 'date'
+                  : ($type === 'tel'
+                      ? 'tel'
+                      : ($type === 'number' && $numberFormat === ''
+                          ? 'number'
+                          : 'text')));
+        ?>
+        <input type="<?= e($inputType) ?>"
           id="sub-<?= e($id) ?>" name="<?= e($name) ?>" value="<?= e((string) $value) ?>"
-          <?= $required ? 'required' : '' ?>>
+          <?= $required ? 'required' : '' ?>
+          <?php if ($dateMax !== null): ?>
+            max="<?= e($dateMax) ?>"
+            data-min-age="<?= (int) $minAge ?>"
+          <?php endif; ?>
+          <?php if ($numberFormat !== ''): ?>
+            inputmode="numeric"
+            data-number-format="<?= e($numberFormat) ?>"
+            maxlength="<?= (int) strlen($numberFormat) ?>"
+          <?php endif; ?>>
+          <?php if ($dateMax !== null): ?>
+            <small class="admin-field-hint">Minimum age: <?= (int) $minAge ?></small>
+          <?php endif; ?>
       <?php endif; ?>
     </div>
   <?php endforeach; ?>
 </div>
 <script>
 (function () {
+  function applyNumberFormatMask(raw, format) {
+    var digits = String(raw || '').replace(/\D+/g, '');
+    var slots = (format.match(/#/g) || []).length;
+    var limited = slots > 0 ? digits.slice(0, slots) : digits;
+    var out = '';
+    var di = 0;
+    for (var i = 0; i < format.length; i++) {
+      var ch = format[i];
+      if (ch === '#') {
+        if (di >= limited.length) break;
+        out += limited[di++];
+      } else if (di < limited.length) {
+        out += ch;
+      } else {
+        break;
+      }
+    }
+    return out;
+  }
+
+  document.querySelectorAll('input[data-number-format]').forEach(function (input) {
+    var format = input.getAttribute('data-number-format') || '';
+    if (!format) return;
+    var reformat = function () {
+      input.value = applyNumberFormatMask(input.value, format);
+    };
+    input.addEventListener('input', reformat);
+    input.addEventListener('blur', reformat);
+  });
+
   document.querySelectorAll('.submission-edit-reason[data-reason-when]').forEach(function (wrap) {
     var when = wrap.getAttribute('data-reason-when');
     var fieldName = wrap.getAttribute('data-field-name');

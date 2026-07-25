@@ -61,7 +61,8 @@ function campaign_email_replace_tokens(string $text, array $client): string
     $replacements = [
         '{client_name}' => (string) ($client['client_name'] ?? $client['name'] ?? ''),
         '{client_email}' => (string) ($client['email'] ?? ''),
-        '{cin}' => (string) ($client['cin'] ?? ''),
+        '{sin}' => (string) ($client['sin'] ?? ''),
+        '{cin}' => (string) ($client['sin'] ?? ''),
         '{company}' => (string) ($client['company'] ?? ''),
     ];
     return str_replace(array_keys($replacements), array_values($replacements), $text);
@@ -94,7 +95,7 @@ function build_campaign_email(string $subject, string $body, array $client): arr
     return [$subject, $html, $text];
 }
 
-/** Sample recipient used for previews and test sends. @return array{client_name: string, email: string, cin: string, company: string} */
+/** Sample recipient used for previews and test sends. @return array{client_name: string, email: string, sin: string, company: string} */
 function campaign_sample_client(?array $user = null): array
 {
     $user ??= Auth::currentUser() ?? [];
@@ -110,7 +111,7 @@ function campaign_sample_client(?array $user = null): array
     return [
         'client_name' => (string) (($user['name'] ?? '') !== '' ? $user['name'] : 'Sample Client'),
         'email' => $email,
-        'cin' => 'SAMPLE-CIN',
+        'sin' => 'SAMPLE-SIN',
         'company' => 'Sample Company',
     ];
 }
@@ -209,13 +210,13 @@ function process_campaign_batch(int $campaignId, int $limit = 0): array
       $client = [
         'client_name' => (string) ($recipient['client_name'] ?? ''),
         'email' => (string) ($recipient['email'] ?? ''),
-        'cin' => '',
+        'sin' => '',
         'company' => '',
       ];
       if (!empty($recipient['client_id'])) {
         $clientRow = (new ClientRepository())->find((int) $recipient['client_id']);
         if ($clientRow) {
-          $client['cin'] = (string) ($clientRow['cin'] ?? '');
+          $client['sin'] = (string) ($clientRow['sin'] ?? '');
           $client['company'] = (string) ($clientRow['company'] ?? '');
           if ($client['client_name'] === '') {
             $client['client_name'] = (string) ($clientRow['name'] ?? '');

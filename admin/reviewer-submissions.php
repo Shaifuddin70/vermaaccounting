@@ -188,7 +188,7 @@ require __DIR__ . '/includes/layout-start.php';
       <div class="admin-field rs-filter-field rs-filter-field--search">
         <label for="rs-search">Search</label>
         <input type="search" name="q" id="rs-search" value="<?= e($search) ?>"
-          placeholder="Name, email, CIN, form, or #ID…">
+          placeholder="Name, email, SIN, form, or #ID…">
       </div>
 
       <div class="rs-filter-actions">
@@ -256,8 +256,8 @@ require __DIR__ . '/includes/layout-start.php';
               $schema = normalize_form_schema(is_array($schemaRaw) ? $schemaRaw : []);
               $client = extract_client_from_submission($sub, $schema);
               $clientLabel = $client['name'] !== '' ? $client['name'] : '—';
-              if ($client['cin'] !== '') {
-                $clientLabel .= ($client['name'] !== '' ? ' · ' : '') . $client['cin'];
+              if ($client['sin'] !== '') {
+                $clientLabel .= ($client['name'] !== '' ? ' · ' : '') . $client['sin'];
               }
               $refLabel = $partnerNames[$sid] ?? '—';
             ?>

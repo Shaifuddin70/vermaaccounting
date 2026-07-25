@@ -56,14 +56,14 @@ $insert = $pdo->prepare('
 ');
 
 $created = 0;
-$baseCin = 800000000;
+$baseSin = 800000000;
 
 for ($i = 0; $i < $count; $i++) {
     $first = $firstNames[$i % count($firstNames)];
     $last = $lastNames[$i % count($lastNames)];
     $fullName = $first . ' ' . $last . ' (Demo)';
     $slug = strtolower($first . '.' . $last);
-    $cin = (string) ($baseCin + $i + 1);
+    $sin = (string) ($baseSin + $i + 1);
     $email = 'demo.' . ($i + 1) . '.' . $slug . '@example.test';
     $phone = '416555' . str_pad((string) (1000 + $i), 4, '0', STR_PAD_LEFT);
     $dobYear = 1970 + ($i % 30);
@@ -72,7 +72,7 @@ for ($i = 0; $i < $count; $i++) {
     $yesNo = ($i % 3 === 0) ? 'no' : 'yes';
 
     $data = [
-        'f_164d2a28' => $cin,
+        'f_164d2a28' => $sin,
         'f_414b9b5a' => "{$dobYear}-{$dobMonth}-{$dobDay}",
         'f_fb45fde1' => $fullName,
         'f_03bbb81b' => $phone,

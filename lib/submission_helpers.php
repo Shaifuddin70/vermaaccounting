@@ -106,7 +106,7 @@ function client_upload_tax_year(array $schema, array $post): int
     return (int) date('Y');
 }
 
-function prefixed_client_upload_name(string $originalName, int $year, string $cin): string
+function prefixed_client_upload_name(string $originalName, int $year, string $sin): string
 {
     $originalName = basename(str_replace('\\', '/', $originalName));
     if ($originalName === '') {
@@ -119,8 +119,8 @@ function prefixed_client_upload_name(string $originalName, int $year, string $ci
     $safeExt = $ext !== '' ? '.' . preg_replace('/[^a-zA-Z0-9]/', '', $ext) : '';
 
     $yearPart = (string) max(1900, min(9999, $year));
-    $cinPart = sanitize_upload_filename_part($cin);
-    $prefix = $cinPart !== '' ? $yearPart . '_' . $cinPart . '_' : $yearPart . '_';
+    $sinPart = sanitize_upload_filename_part($sin);
+    $prefix = $sinPart !== '' ? $yearPart . '_' . $sinPart . '_' : $yearPart . '_';
 
     if (str_starts_with($safeBase . $safeExt, $prefix) || str_starts_with($originalName, $prefix)) {
         return mb_strimwidth($originalName, 0, 512, '');
@@ -137,7 +137,7 @@ function client_upload_original_name(string $originalName, array $schema, array 
         $schema
     );
     $year = client_upload_tax_year($schema, $post);
-    return prefixed_client_upload_name($originalName, $year, $client['cin']);
+    return prefixed_client_upload_name($originalName, $year, $client['sin']);
 }
 
 /**

@@ -108,8 +108,8 @@ function build_submission_admin_email(
     if ($clientInfo['name'] !== '') {
         $metaRows[] = ['Client name', $clientInfo['name']];
     }
-    if ($clientInfo['cin'] !== '') {
-        $metaRows[] = ['CIN', $clientInfo['cin']];
+    if ($clientInfo['sin'] !== '') {
+        $metaRows[] = ['SIN', $clientInfo['sin']];
     }
     if ($clientInfo['email'] !== '') {
         $metaRows[] = ['Client email', $clientInfo['email']];
@@ -177,8 +177,8 @@ function build_submission_client_email(
     if ($taxYear !== null && $taxYear > 0) {
         $summaryItems[] = ['Tax year', (string) $taxYear];
     }
-    if ($clientInfo['cin'] !== '') {
-        $summaryItems[] = ['CIN', $clientInfo['cin']];
+    if ($clientInfo['sin'] !== '') {
+        $summaryItems[] = ['SIN', $clientInfo['sin']];
     }
     $summaryItems[] = ['Reference', '#' . $submissionId];
 

@@ -47,6 +47,58 @@ function form_field_uses_half_column(string $type, array $field = []): bool
     return false;
 }
 
+/**
+ * Split schema fields into pages using page_break markers.
+ * The page_break label becomes the title of the following page.
+ *
+ * @return list<array{title: string, fields: list<array<string, mixed>>}>
+ */
+function form_schema_pages(array $schema): array
+{
+    $pages = [];
+    $fields = [];
+    $firstTitle = trim((string) ($schema['settings']['firstPageTitle'] ?? ''));
+    $nextTitle = $firstTitle !== '' ? $firstTitle : 'Page 1';
+
+    foreach ($schema['fields'] ?? [] as $field) {
+        if (!is_array($field)) {
+            continue;
+        }
+        if (($field['type'] ?? '') === 'page_break') {
+            $pages[] = [
+                'title' => $nextTitle,
+                'fields' => $fields,
+            ];
+            $fields = [];
+            $label = trim((string) ($field['label'] ?? ''));
+            $nextTitle = $label !== '' ? $label : ('Page ' . (count($pages) + 1));
+            continue;
+        }
+        $fields[] = $field;
+    }
+
+    $pages[] = [
+        'title' => $nextTitle,
+        'fields' => $fields,
+    ];
+
+    while (count($pages) > 1 && $pages[count($pages) - 1]['fields'] === []) {
+        array_pop($pages);
+    }
+
+    if ($pages === []) {
+        $pages[] = ['title' => 'Page 1', 'fields' => []];
+    }
+
+    return $pages;
+}
+
+/** True when the form should show multi-step pagination. */
+function form_has_multiple_pages(array $schema): bool
+{
+    return count(form_schema_pages($schema)) > 1;
+}
+
 function json_response(array $data, int $code = 200): void
 {
     http_response_code($code);
@@ -126,7 +178,7 @@ function mail_config(): array
         ],
         'client_confirmation' => [
             'enabled' => true,
-            'subject' => 'We received your submission â€” {form_title}',
+            'subject' => 'We received your submission  {form_title}',
         ],
     ];
 
@@ -239,6 +291,7 @@ function field_types(): array
         'image' => 'Image upload',
         'heading' => 'Section heading',
         'paragraph' => 'Paragraph text',
+        'page_break' => 'Page break',
     ];
 }
 
@@ -250,7 +303,7 @@ function default_field(string $type = 'text'): array
         'type' => $type,
         'label' => field_types()[$type] ?? 'Field',
         'name' => $id,
-        'required' => !in_array($type, ['heading', 'paragraph', 'checkbox', 'partners'], true),
+        'required' => !in_array($type, ['heading', 'paragraph', 'page_break', 'checkbox', 'partners'], true),
         'placeholder' => '',
         'helpText' => '',
         'options' => [],
@@ -284,12 +337,26 @@ function default_field(string $type = 'text'): array
 
     if (in_array($type, ['heading', 'paragraph'], true)) {
         $base['required'] = false;
-        $base['label'] = $type === 'heading' ? 'Section title' : 'Instructions for the userâ€¦';
+        $base['label'] = $type === 'heading' ? 'Section title' : 'Instructions for the user';
+    }
+
+    if ($type === 'page_break') {
+        $base['required'] = false;
+        $base['label'] = 'Next page';
+        $base['conditions'] = [];
     }
 
     if (in_array($type, ['file', 'image'], true)) {
         $base['accept'] = $type === 'image' ? 'image/*' : form_file_accept_default();
         $base['maxFiles'] = 5;
+    }
+
+    if ($type === 'number') {
+        $base['numberFormat'] = '';
+    }
+
+    if ($type === 'date') {
+        $base['minAge'] = 0;
     }
 
     return $base;
@@ -299,6 +366,146 @@ function default_field(string $type = 'text'): array
 function form_file_accept_default(): string
 {
     return 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,application/pdf,application/zip,application/x-zip-compressed';
+}
+
+/**
+ * Normalize a number display format. Use # for each digit (e.g. ###-###-### for SIN).
+ */
+function normalize_number_format(string $format): string
+{
+    $format = trim($format);
+    if ($format === '' || !str_contains($format, '#')) {
+        return '';
+    }
+    if (!preg_match('/^[#\d\s\-\(\)\.\/\+]+$/u', $format)) {
+        return '';
+    }
+
+    return $format;
+}
+
+/** Apply a # digit mask to raw digits (used while typing / normalizing). */
+function apply_number_format(string $raw, string $format): string
+{
+    $format = normalize_number_format($format);
+    if ($format === '') {
+        return trim($raw);
+    }
+
+    $digits = preg_replace('/\D+/', '', $raw) ?? '';
+    $maxDigits = substr_count($format, '#');
+    if ($maxDigits > 0) {
+        $digits = substr($digits, 0, $maxDigits);
+    }
+
+    $out = '';
+    $di = 0;
+    $len = strlen($digits);
+    $fLen = strlen($format);
+    for ($i = 0; $i < $fLen; $i++) {
+        $ch = $format[$i];
+        if ($ch === '#') {
+            if ($di >= $len) {
+                break;
+            }
+            $out .= $digits[$di];
+            $di++;
+        } elseif ($di < $len) {
+            $out .= $ch;
+        } else {
+            break;
+        }
+    }
+
+    return $out;
+}
+
+/** True when value fully matches the number format (all digit slots filled). */
+function number_format_is_complete(string $value, string $format): bool
+{
+    $format = normalize_number_format($format);
+    if ($format === '') {
+        return true;
+    }
+    $digits = preg_replace('/\D+/', '', $value) ?? '';
+    $expected = substr_count($format, '#');
+
+    return strlen($digits) === $expected && apply_number_format($digits, $format) === $value;
+}
+
+/** Validate a formatted number field value; returns error message or null. */
+function validate_number_format_value(string $label, string $value, string $format, bool $required): ?string
+{
+    $format = normalize_number_format($format);
+    if ($value === '') {
+        return $required ? ($label . ' is required.') : null;
+    }
+    if ($format === '') {
+        if (!preg_match('/^-?\d+(\.\d+)?$/', $value)) {
+            return $label . ' must be a valid number.';
+        }
+
+        return null;
+    }
+    if (!number_format_is_complete($value, $format)) {
+        return $label . ' must match the format ' . $format . '.';
+    }
+
+    return null;
+}
+
+/** Minimum age in whole years (0 = no minimum). Capped at 120. */
+function normalize_min_age(mixed $raw): int
+{
+    if (is_string($raw) && trim($raw) === '') {
+        return 0;
+    }
+    $age = (int) $raw;
+
+    return max(0, min(120, $age));
+}
+
+/**
+ * Latest allowed birth date (Y-m-d) for a minimum age, or null if no minimum.
+ */
+function date_max_for_min_age(int $minAge): ?string
+{
+    $minAge = normalize_min_age($minAge);
+    if ($minAge < 1) {
+        return null;
+    }
+
+    $today = new DateTimeImmutable('today', app_timezone());
+
+    return $today->modify('-' . $minAge . ' years')->format('Y-m-d');
+}
+
+/**
+ * Validate a date value against min age. Returns error message or null.
+ */
+function validate_date_min_age(string $label, string $value, int $minAge): ?string
+{
+    $minAge = normalize_min_age($minAge);
+    if ($value === '' || $minAge < 1) {
+        return null;
+    }
+
+    $dt = DateTimeImmutable::createFromFormat('!Y-m-d', $value, app_timezone());
+    $errors = DateTimeImmutable::getLastErrors();
+    if (
+        $dt === false
+        || (($errors['warning_count'] ?? 0) > 0)
+        || (($errors['error_count'] ?? 0) > 0)
+    ) {
+        return $label . ' must be a valid date.';
+    }
+
+    $max = date_max_for_min_age($minAge);
+    if ($max !== null && $dt->format('Y-m-d') > $max) {
+        return $label . ' requires a minimum age of ' . $minAge . '.';
+    }
+
+    return null;
 }
 
 function normalize_form_schema(array $schema): array
@@ -334,6 +541,12 @@ function normalize_form_schema(array $schema): array
         if (in_array($type, ['file', 'image'], true)) {
             $maxFiles = (int) ($merged['maxFiles'] ?? 1);
             $merged['maxFiles'] = max(1, min(10, $maxFiles));
+        }
+        if ($type === 'number') {
+            $merged['numberFormat'] = normalize_number_format((string) ($merged['numberFormat'] ?? ''));
+        }
+        if ($type === 'date') {
+            $merged['minAge'] = normalize_min_age($merged['minAge'] ?? 0);
         }
         $fields[] = $merged;
     }

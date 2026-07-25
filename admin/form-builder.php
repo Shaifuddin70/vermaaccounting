@@ -104,11 +104,21 @@ require __DIR__ . '/includes/layout-start.php';
         <div class="builder-toolbar fb-toolbar">
           <select id="add-field-type" aria-label="Field type to add">
             <?php foreach (field_types() as $type => $label): ?>
+              <?php if ($type === 'page_break') continue; ?>
               <option value="<?= e($type) ?>"><?= e($label) ?></option>
             <?php endforeach; ?>
           </select>
           <button type="button" id="add-field-btn" class="admin-btn admin-btn-secondary admin-btn-sm">+ Add field</button>
         </div>
+      </div>
+      <div class="fb-page-bar">
+        <div class="fb-page-tabs" id="fb-page-tabs" role="tablist" aria-label="Form pages"></div>
+        <button type="button" class="fb-page-add" id="fb-page-add" title="Add page" aria-label="Add page">+</button>
+      </div>
+      <div class="fb-page-title-row">
+        <label for="fb-page-title">Page title</label>
+        <input type="text" id="fb-page-title" placeholder="e.g. Personal information" autocomplete="off">
+        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" id="fb-page-delete" hidden>Delete page</button>
       </div>
       <p id="field-list-empty" class="fb-fields-empty" hidden>Add fields below or use the toolbar to get started.</p>
       <div id="field-list" class="builder-field-list"></div>
@@ -243,5 +253,5 @@ require __DIR__ . '/includes/layout-start.php';
     activePartners: <?= json_encode((new UserRepository())->activePartners(), JSON_UNESCAPED_UNICODE) ?>
   };
 </script>
-<script src="/admin/js/form-builder.js?v=10"></script>
+<script src="/admin/js/form-builder.js?v=16"></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

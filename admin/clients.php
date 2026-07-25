@@ -69,7 +69,7 @@ require __DIR__ . '/includes/layout-start.php';
     <?php endif; ?>
     <div class="admin-field clients-filter-field clients-filter-field--search">
       <label for="clients-search">Search</label>
-      <input type="search" id="clients-search" name="q" value="<?= e($search) ?>" placeholder="Name, CIN, email, phone, or company…">
+      <input type="search" id="clients-search" name="q" value="<?= e($search) ?>" placeholder="Name, SIN, email, phone, or company…">
     </div>
     <div class="clients-filter-actions">
       <button type="submit" class="admin-btn admin-btn-secondary">Search</button>
@@ -88,7 +88,7 @@ require __DIR__ . '/includes/layout-start.php';
       </span>
       <?php if ($search !== ''): ?>
         <h2 class="admin-empty-state-title">No clients match “<?= e($search) ?>”</h2>
-        <p class="admin-empty-state-text">Try a different name, CIN, email, phone, or company.</p>
+        <p class="admin-empty-state-text">Try a different name, SIN, email, phone, or company.</p>
         <a href="/admin/clients" class="admin-btn admin-btn-secondary">Clear search</a>
       <?php else: ?>
         <h2 class="admin-empty-state-title">No clients yet</h2>
@@ -102,7 +102,7 @@ require __DIR__ . '/includes/layout-start.php';
       <thead>
         <tr>
           <th>Name</th>
-          <th>CIN</th>
+          <th>SIN</th>
           <th>Email</th>
           <th>Phone</th>
           <th>Company</th>
@@ -119,8 +119,8 @@ require __DIR__ . '/includes/layout-start.php';
                 <strong><?= e($client['name']) ?></strong>
               </a>
             </td>
-            <td class="clients-col-cin">
-              <?= ($client['cin'] ?? '') !== '' ? e($client['cin']) : '—' ?>
+            <td class="clients-col-sin">
+              <?= ($client['sin'] ?? '') !== '' ? e($client['sin']) : '—' ?>
             </td>
             <td><?= ($client['email'] ?? '') !== '' ? e($client['email']) : '—' ?></td>
             <td><?= ($client['phone'] ?? '') !== '' ? e($client['phone']) : '—' ?></td>
