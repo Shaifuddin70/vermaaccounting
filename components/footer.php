@@ -40,6 +40,7 @@ if (!function_exists('asset')) {
            <li><a href="/resources"><i class="fas fa-angle-right"></i> Resources</a></li>
            <li><a href="/contact"><i class="fas fa-angle-right"></i> Contact</a></li>
            <li><a href="/about"><i class="fas fa-angle-right"></i> About Us</a></li>
+           <li><a href="/privacy"><i class="fas fa-angle-right"></i> Privacy Policy</a></li>
          </ul>
        </div>
 
@@ -92,7 +93,7 @@ if (!function_exists('asset')) {
    <div class="footer-bottom">
      <div class="footer-bottom-container">
        <div class="copyright">
-         <p>© 2025 Verma Accounting & Financial Services. All rights reserved.</p>
+         <p>© 2026 Verma Accounting & Financial Services. All rights reserved.</p>
        </div>
      </div>
    </div>
@@ -498,7 +499,7 @@ if (!function_exists('asset')) {
    crossorigin="anonymous"></script>
 
  <!-- JavaScript -->
- <script src="<?= asset('components/js/navigation.js') ?>"></script>
+ <script src="<?= asset('components/js/navigation.js') ?>?v=68"></script>
  <script src="https://elfsightcdn.com/platform.js" async></script>
  </body>
 

@@ -56,6 +56,10 @@ function seo_meta_for_path(string $path): array
             'title' => 'About Verma Accounting | Ontario Tax Accountants',
             'description' => 'Learn about Verma Accounting: certified Ontario accountants with 10+ years helping individuals and businesses with tax, bookkeeping, and payroll.',
         ],
+        '/privacy' => [
+            'title' => 'Privacy Policy | Verma Accounting',
+            'description' => 'Learn how Verma Accounting collects, uses, and protects personal information for tax, bookkeeping, payroll, and related services in Ontario.',
+        ],
         '/services' => [
             'title' => 'Our Accounting Services in Ontario | Verma Accounting',
             'description' => 'Explore Verma Accounting services: personal and corporate tax, bookkeeping, payroll, business registration, and loans for Ontario clients.',

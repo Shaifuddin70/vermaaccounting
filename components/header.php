@@ -101,7 +101,7 @@ if ($canonicalPath !== '/') {
   <script type="application/ld+json"><?= json_encode($seoPageSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
   <?php endif; ?>
 
-  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>" />
+  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=69" />
 </head>
 
 <body>
@@ -121,27 +121,44 @@ if ($canonicalPath !== '/') {
               class="verma-logo-img" />
           </a>
         </div>
-        <a href="tel:613-318-6478" class="cta-button orange d-lg-none phone-icon-button">
-          <i class="fas fa-phone"></i>
+        <a href="tel:613-318-6478" class="cta-button orange d-lg-none phone-icon-button" aria-label="Call 613-318-6478">
+          <i class="fas fa-phone" aria-hidden="true"></i>
         </a>
         <!-- Mobile Menu Toggle - Hamburger -->
-        <label class="hamburger" id="hamburgerMenu" for="hamburgerCheckbox">
-          <input type="checkbox" id="hamburgerCheckbox">
-          <svg viewBox="0 0 32 32">
+        <label
+          class="hamburger"
+          id="hamburgerMenu"
+          for="hamburgerCheckbox"
+          aria-label="Open menu"
+          aria-expanded="false"
+          aria-controls="vermaMenu">
+          <input type="checkbox" id="hamburgerCheckbox" aria-hidden="true" tabindex="-1">
+          <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
             <path class="line line-top-bottom" d="M27 10 13 10C10.8 10 9 8.2 9 6 9 3.5 10.8 2 13 2 15.2 2 17 3.8 17 6L17 26C17 28.2 18.8 30 21 30 23.2 30 25 28.2 25 26 25 23.8 23.2 22 21 22L7 22"></path>
             <path class="line" d="M7 16 27 16"></path>
           </svg>
         </label>
+        <div class="nav-overlay" id="navOverlay" aria-hidden="true"></div>
         <!-- Navigation Links -->
-        <div class="verma-menu">
-          <a href="/" class="verma-link active" data-page="home">Home</a>
+        <div class="verma-menu" id="vermaMenu">
+          <div class="verma-menu-header">
+            <span class="verma-menu-title">Menu</span>
+            <button type="button" class="verma-menu-close" id="mobileMenuClose" aria-label="Close menu">
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <a href="/" class="verma-link" data-page="home">Home</a>
           <div class="verma-submenu">
             <a
               href="/services"
               class="verma-link verma-toggle"
-              data-page="services">
+              data-page="services"
+              aria-expanded="false"
+              aria-haspopup="true">
               Our Services
-              <span class="verma-arrow">▼</span>
+              <span class="verma-arrow" aria-hidden="true">▼</span>
             </a>
             <div class="verma-submenu-items">
               <a href="/services" class="verma-submenu-link verma-submenu-all d-lg-none">View All Services</a>
@@ -156,8 +173,22 @@ if ($canonicalPath !== '/') {
             </div>
           </div>
           <a href="/resources" class="verma-link" data-page="resources">Resources</a>
-          <a href="/contact" class="verma-link" data-page="contact">Contact Us</a>
-          <a href="/about" class="verma-link" data-page="about">About Us</a>
+          <div class="verma-submenu">
+            <a
+              href="/about"
+              class="verma-link verma-toggle"
+              data-page="about"
+              aria-expanded="false"
+              aria-haspopup="true">
+              About Us
+              <span class="verma-arrow" aria-hidden="true">▼</span>
+            </a>
+            <div class="verma-submenu-items">
+              <a href="/about" class="verma-submenu-link verma-submenu-all d-lg-none">About Us</a>
+              <a href="/contact" class="verma-submenu-link">Contact Us</a>
+              <a href="/privacy" class="verma-submenu-link">Privacy Policy</a>
+            </div>
+          </div>
           <?php if ($siteCta['nav_label'] !== ''): ?>
             <a href="<?= e($siteCta['url']) ?>" class="verma-link" data-page="form-cta"><?= e($siteCta['nav_label']) ?></a>
           <?php endif; ?>
