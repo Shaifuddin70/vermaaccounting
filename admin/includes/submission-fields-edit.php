@@ -72,10 +72,20 @@
             </label>
           <?php endforeach; ?>
         </div>
-        <?php if ($reasonWhen !== ''): ?>
+        <?php if ($reasonWhen !== ''):
+          $reasonType = normalize_yes_no_reason_type($field['reasonType'] ?? 'textarea');
+          $reasonInputType = in_array($reasonType, ['email', 'tel', 'number', 'date'], true) ? $reasonType : 'text';
+        ?>
           <div class="submission-edit-reason" <?= $showReason ? '' : 'hidden' ?> data-reason-when="<?= e($reasonWhen) ?>" data-field-name="<?= e($name) ?>">
             <label for="sub-<?= e($id) ?>-reason"><?= e($field['reasonLabel'] ?? 'Please explain') ?></label>
-            <textarea id="sub-<?= e($id) ?>-reason" name="<?= e($reasonName) ?>" rows="3"><?= e((string) $reasonVal) ?></textarea>
+            <?php if ($reasonType === 'textarea'): ?>
+              <textarea id="sub-<?= e($id) ?>-reason" name="<?= e($reasonName) ?>" rows="3"><?= e((string) $reasonVal) ?></textarea>
+            <?php else: ?>
+              <input type="<?= e($reasonInputType) ?>"
+                id="sub-<?= e($id) ?>-reason"
+                name="<?= e($reasonName) ?>"
+                value="<?= e((string) $reasonVal) ?>">
+            <?php endif; ?>
           </div>
         <?php endif; ?>
 

@@ -76,17 +76,29 @@ if ($condJson) {
               </div>
             <?php endforeach; ?>
           </div>
-          <?php if ($reasonWhen !== ''): ?>
+          <?php if ($reasonWhen !== ''):
+            $reasonType = normalize_yes_no_reason_type($field['reasonType'] ?? 'textarea');
+            $reasonInputType = in_array($reasonType, ['email', 'tel', 'number', 'date'], true) ? $reasonType : 'text';
+          ?>
             <div class="yes-no-reason-wrap"
               data-yes-no-reason-for="<?= $id ?>"
               data-reason-when="<?= e($reasonWhen) ?>"
               data-reason-required="<?= $reasonRequired ? '1' : '0' ?>"
+              data-reason-type="<?= e($reasonType) ?>"
               hidden>
               <label for="cf-<?= $id ?>-reason"><?= e($field['reasonLabel'] ?? 'Please explain your answer') ?></label>
-              <textarea id="cf-<?= $id ?>-reason"
-                name="<?= e($reasonName) ?>"
-                rows="3"
-                placeholder="<?= e($field['reasonPlaceholder'] ?? '') ?>"></textarea>
+              <?php if ($reasonType === 'textarea'): ?>
+                <textarea id="cf-<?= $id ?>-reason"
+                  name="<?= e($reasonName) ?>"
+                  rows="3"
+                  placeholder="<?= e($field['reasonPlaceholder'] ?? '') ?>"></textarea>
+              <?php else: ?>
+                <input type="<?= e($reasonInputType) ?>"
+                  id="cf-<?= $id ?>-reason"
+                  name="<?= e($reasonName) ?>"
+                  placeholder="<?= e($field['reasonPlaceholder'] ?? '') ?>"
+                  <?php if ($reasonType === 'number'): ?>inputmode="decimal"<?php endif; ?>>
+              <?php endif; ?>
             </div>
           <?php endif; ?>
 
@@ -160,6 +172,53 @@ if ($condJson) {
             <?php endif; ?>
           </div>
 
+        <?php elseif ($type === 'tel'): ?>
+          <?php
+            $phone = normalize_phone_field_settings($field);
+            $phoneCountries = phone_countries();
+            $phonePlaceholder = ($field['placeholder'] ?? '') !== ''
+                ? (string) $field['placeholder']
+                : $phone['format'];
+          ?>
+          <div class="custom-form-phone" data-phone-field>
+            <?php if ($phone['allowSelect']): ?>
+              <label class="visually-hidden" for="cf-<?= $id ?>-cc">Country code</label>
+              <select id="cf-<?= $id ?>-cc"
+                class="custom-form-phone-cc"
+                data-phone-cc
+                autocomplete="tel-country-code"
+                aria-label="Country code">
+                <?php foreach ($phoneCountries as $code => $meta): ?>
+                  <option value="<?= e($code) ?>"
+                    data-dial="<?= e($meta['dial']) ?>"
+                    data-format="<?= e($meta['format']) ?>"
+                    <?= $code === $phone['country'] ? 'selected' : '' ?>>
+                    <?= e($meta['dial'] . ' ' . $code) ?>
+                  </option>
+                <?php endforeach; ?>
+              </select>
+            <?php else: ?>
+              <span class="custom-form-phone-cc-static" data-phone-dial="<?= e($phone['dial']) ?>"><?= e($phone['dial']) ?></span>
+            <?php endif; ?>
+            <input type="tel"
+              id="cf-<?= $id ?>"
+              class="custom-form-phone-local"
+              data-phone-local
+              inputmode="numeric"
+              autocomplete="tel-national"
+              placeholder="<?= e($phonePlaceholder) ?>"
+              data-number-format="<?= e($phone['format']) ?>"
+              maxlength="<?= (int) strlen($phone['format']) ?>"
+              <?= $required ? 'required' : '' ?>>
+            <input type="hidden"
+              name="<?= $name ?>"
+              data-phone-combined
+              value=""
+              data-phone-default-country="<?= e($phone['country']) ?>"
+              data-phone-default-dial="<?= e($phone['dial']) ?>"
+              data-phone-default-format="<?= e($phone['format']) ?>">
+          </div>
+
         <?php else: ?>
           <?php
             $numberFormat = $type === 'number'
@@ -167,15 +226,13 @@ if ($condJson) {
                 : '';
             $minAge = $type === 'date' ? normalize_min_age($field['minAge'] ?? 0) : 0;
             $dateMax = $type === 'date' ? date_max_for_min_age($minAge) : null;
-            $inputType = $type === 'tel'
-                ? 'tel'
-                : ($type === 'email'
-                    ? 'email'
-                    : ($type === 'date'
-                        ? 'date'
-                        : ($type === 'number' && $numberFormat === ''
-                            ? 'number'
-                            : 'text')));
+            $inputType = $type === 'email'
+                ? 'email'
+                : ($type === 'date'
+                    ? 'date'
+                    : ($type === 'number' && $numberFormat === ''
+                        ? 'number'
+                        : 'text'));
           ?>
           <input type="<?= e($inputType) ?>"
             id="cf-<?= $id ?>" name="<?= $name ?>"

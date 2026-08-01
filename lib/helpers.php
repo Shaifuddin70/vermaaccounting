@@ -178,7 +178,7 @@ function mail_config(): array
         ],
         'client_confirmation' => [
             'enabled' => true,
-            'subject' => 'We received your submission  {form_title}',
+            'subject' => 'We received your submission ? {form_title}',
         ],
     ];
 
@@ -295,6 +295,25 @@ function field_types(): array
     ];
 }
 
+/** Allowed input types for a Yes/No follow-up reason field. */
+function yes_no_reason_types(): array
+{
+    return [
+        'textarea' => 'Long text',
+        'text' => 'Short text',
+        'email' => 'Email',
+        'tel' => 'Phone',
+        'number' => 'Number',
+        'date' => 'Date',
+    ];
+}
+
+function normalize_yes_no_reason_type(mixed $type): string
+{
+    $type = strtolower(trim((string) $type));
+    return array_key_exists($type, yes_no_reason_types()) ? $type : 'textarea';
+}
+
 function default_field(string $type = 'text'): array
 {
     $id = 'f_' . bin2hex(random_bytes(4));
@@ -326,6 +345,7 @@ function default_field(string $type = 'text'): array
         $base['reasonLabel'] = 'Please explain your answer';
         $base['reasonPlaceholder'] = '';
         $base['reasonRequired'] = true;
+        $base['reasonType'] = 'textarea';
     }
 
     if ($type === 'partners') {
@@ -337,7 +357,7 @@ function default_field(string $type = 'text'): array
 
     if (in_array($type, ['heading', 'paragraph'], true)) {
         $base['required'] = false;
-        $base['label'] = $type === 'heading' ? 'Section title' : 'Instructions for the user';
+        $base['label'] = $type === 'heading' ? 'Section title' : 'Instructions for the user?';
     }
 
     if ($type === 'page_break') {
@@ -353,6 +373,13 @@ function default_field(string $type = 'text'): array
 
     if ($type === 'number') {
         $base['numberFormat'] = '';
+    }
+
+    if ($type === 'tel') {
+        $base['label'] = 'Phone';
+        $base['phoneCountry'] = 'CA';
+        $base['phoneFormat'] = phone_format_for_country('CA');
+        $base['phoneAllowCountrySelect'] = true;
     }
 
     if ($type === 'date') {
@@ -382,6 +409,152 @@ function normalize_number_format(string $format): string
     }
 
     return $format;
+}
+
+/**
+ * Common phone countries for the form phone field (ISO code => meta).
+ *
+ * @return array<string, array{name: string, dial: string, format: string}>
+ */
+function phone_countries(): array
+{
+    return [
+        'CA' => ['name' => 'Canada', 'dial' => '+1', 'format' => '(###) ###-####'],
+        'US' => ['name' => 'United States', 'dial' => '+1', 'format' => '(###) ###-####'],
+        'GB' => ['name' => 'United Kingdom', 'dial' => '+44', 'format' => '#### ######'],
+        'AU' => ['name' => 'Australia', 'dial' => '+61', 'format' => '### ### ###'],
+        'IN' => ['name' => 'India', 'dial' => '+91', 'format' => '##### #####'],
+        'BD' => ['name' => 'Bangladesh', 'dial' => '+880', 'format' => '####-######'],
+        'PK' => ['name' => 'Pakistan', 'dial' => '+92', 'format' => '### #######'],
+        'AE' => ['name' => 'United Arab Emirates', 'dial' => '+971', 'format' => '## ### ####'],
+        'SA' => ['name' => 'Saudi Arabia', 'dial' => '+966', 'format' => '## ### ####'],
+        'DE' => ['name' => 'Germany', 'dial' => '+49', 'format' => '### #######'],
+        'FR' => ['name' => 'France', 'dial' => '+33', 'format' => '# ## ## ## ##'],
+        'IT' => ['name' => 'Italy', 'dial' => '+39', 'format' => '### ### ####'],
+        'ES' => ['name' => 'Spain', 'dial' => '+34', 'format' => '### ## ## ##'],
+        'NL' => ['name' => 'Netherlands', 'dial' => '+31', 'format' => '# ########'],
+        'IE' => ['name' => 'Ireland', 'dial' => '+353', 'format' => '## ### ####'],
+        'NZ' => ['name' => 'New Zealand', 'dial' => '+64', 'format' => '## ### ####'],
+        'SG' => ['name' => 'Singapore', 'dial' => '+65', 'format' => '#### ####'],
+        'PH' => ['name' => 'Philippines', 'dial' => '+63', 'format' => '### ### ####'],
+        'NG' => ['name' => 'Nigeria', 'dial' => '+234', 'format' => '### ### ####'],
+        'ZA' => ['name' => 'South Africa', 'dial' => '+27', 'format' => '## ### ####'],
+        'BR' => ['name' => 'Brazil', 'dial' => '+55', 'format' => '## #####-####'],
+        'MX' => ['name' => 'Mexico', 'dial' => '+52', 'format' => '## #### ####'],
+        'CN' => ['name' => 'China', 'dial' => '+86', 'format' => '### #### ####'],
+        'JP' => ['name' => 'Japan', 'dial' => '+81', 'format' => '##-####-####'],
+        'KR' => ['name' => 'South Korea', 'dial' => '+82', 'format' => '##-####-####'],
+        'OTHER' => ['name' => 'Other', 'dial' => '+', 'format' => '##############'],
+    ];
+}
+
+function normalize_phone_country(string $code): string
+{
+    $code = strtoupper(trim($code));
+    $countries = phone_countries();
+    return isset($countries[$code]) ? $code : 'CA';
+}
+
+function phone_format_for_country(string $code): string
+{
+    $code = normalize_phone_country($code);
+    $format = (string) (phone_countries()[$code]['format'] ?? '');
+    return normalize_number_format($format);
+}
+
+function phone_dial_for_country(string $code): string
+{
+    $code = normalize_phone_country($code);
+    return (string) (phone_countries()[$code]['dial'] ?? '+1');
+}
+
+/** @return array{country: string, format: string, dial: string, allowSelect: bool} */
+function normalize_phone_field_settings(array $field): array
+{
+    $country = normalize_phone_country((string) ($field['phoneCountry'] ?? 'CA'));
+    $format = normalize_number_format((string) ($field['phoneFormat'] ?? ''));
+    if ($format === '') {
+        $format = phone_format_for_country($country);
+    }
+    $allowSelect = array_key_exists('phoneAllowCountrySelect', $field)
+        ? !empty($field['phoneAllowCountrySelect'])
+        : true;
+
+    return [
+        'country' => $country,
+        'format' => $format,
+        'dial' => phone_dial_for_country($country),
+        'allowSelect' => $allowSelect,
+    ];
+}
+
+function format_phone_display_value(string $dial, string $national): string
+{
+    $dial = trim($dial);
+    $national = trim($national);
+    if ($national === '') {
+        return '';
+    }
+    if ($dial === '' || $dial === '+') {
+        return $national;
+    }
+    return $dial . ' ' . $national;
+}
+
+/** Validate a phone field value; returns error message or null. */
+function validate_phone_field_value(string $label, string $value, array $field, bool $required): ?string
+{
+    $settings = normalize_phone_field_settings($field);
+    $value = trim($value);
+    if ($value === '') {
+        return $required ? ($label . ' is required.') : null;
+    }
+
+    $format = $settings['format'];
+    $dial = $settings['dial'];
+
+    if ($settings['allowSelect']) {
+        $matched = null;
+        $matchedDialLen = -1;
+        foreach (phone_countries() as $code => $meta) {
+            $countryDial = trim((string) ($meta['dial'] ?? ''));
+            if ($countryDial === '' || $countryDial === '+') {
+                continue;
+            }
+            $dialLen = strlen($countryDial);
+            if ($dialLen <= $matchedDialLen) {
+                continue;
+            }
+            if (str_starts_with($value, $countryDial . ' ') || str_starts_with($value, $countryDial)) {
+                $matched = $meta;
+                $matched['code'] = $code;
+                $matchedDialLen = $dialLen;
+            }
+        }
+        if ($matched !== null) {
+            $dial = (string) $matched['dial'];
+            $matchedFormat = normalize_number_format((string) ($matched['format'] ?? ''));
+            if ($matchedFormat !== '') {
+                $format = $matchedFormat;
+            }
+        }
+    }
+
+    if ($format === '') {
+        return null;
+    }
+
+    $digits = preg_replace('/\D+/', '', $value) ?? '';
+    $dialDigits = preg_replace('/\D+/', '', $dial) ?? '';
+    if ($dialDigits !== '' && str_starts_with($digits, $dialDigits)) {
+        $digits = substr($digits, strlen($dialDigits)) ?: '';
+    }
+    $expected = substr_count($format, '#');
+    if ($expected > 0 && strlen($digits) !== $expected) {
+        return $label . ' must match the phone format ' . $format . '.';
+    }
+
+    return null;
 }
 
 /** Apply a # digit mask to raw digits (used while typing / normalizing). */
@@ -528,6 +701,7 @@ function normalize_form_schema(array $schema): array
             $merged['reasonLabel'] = trim((string) ($merged['reasonLabel'] ?? 'Please explain your answer'));
             $merged['reasonPlaceholder'] = (string) ($merged['reasonPlaceholder'] ?? '');
             $merged['reasonRequired'] = !empty($merged['reasonRequired']);
+            $merged['reasonType'] = normalize_yes_no_reason_type($merged['reasonType'] ?? 'textarea');
         }
         if ($type === 'partners') {
             $input = (string) ($merged['partnerInput'] ?? 'select');
@@ -544,6 +718,12 @@ function normalize_form_schema(array $schema): array
         }
         if ($type === 'number') {
             $merged['numberFormat'] = normalize_number_format((string) ($merged['numberFormat'] ?? ''));
+        }
+        if ($type === 'tel') {
+            $phone = normalize_phone_field_settings($merged);
+            $merged['phoneCountry'] = $phone['country'];
+            $merged['phoneFormat'] = $phone['format'];
+            $merged['phoneAllowCountrySelect'] = $phone['allowSelect'];
         }
         if ($type === 'date') {
             $merged['minAge'] = normalize_min_age($merged['minAge'] ?? 0);

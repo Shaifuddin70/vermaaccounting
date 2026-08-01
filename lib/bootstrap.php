@@ -51,6 +51,7 @@ require_once __DIR__ . '/UploadRepository.php';
 require_once __DIR__ . '/UserRepository.php';
 require_once __DIR__ . '/ActivityLog.php';
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/form_validation.php';
 require_once __DIR__ . '/SettingsRepository.php';
 require_once __DIR__ . '/timezone_helpers.php';
 require_once __DIR__ . '/EmailCampaignRepository.php';

@@ -46,12 +46,22 @@ foreach ($schema['fields'] as $field) {
         continue;
     }
 
+    // Admin edit form shows every field (no conditional hide), so always validate.
+    $visible = true;
+
     if ($type === 'checkbox') {
         $raw = $_POST[$name] ?? [];
-        $data[$name] = is_array($raw) ? array_map('strval', $raw) : [];
-        if ($field['required'] && count($data[$name]) === 0) {
-            $errors[] = $field['label'] . ' is required.';
+        $values = is_array($raw) ? array_map('strval', $raw) : [];
+        $choiceError = validate_checkbox_field_values(
+            (string) $field['label'],
+            $values,
+            $field,
+            !empty($field['required'])
+        );
+        if ($choiceError !== null) {
+            $errors[] = $choiceError;
         }
+        $data[$name] = $values;
         continue;
     }
 
@@ -111,55 +121,21 @@ foreach ($schema['fields'] as $field) {
     }
 
     $value = trim((string) ($_POST[$name] ?? ''));
+    $result = validate_scalar_form_field($field, $value, $visible, $_POST);
+    foreach ($result['errors'] as $err) {
+        $errors[] = $err;
+    }
+    $data[$name] = $result['value'];
+    foreach ($result['extra'] as $extraKey => $extraVal) {
+        $data[$extraKey] = $extraVal;
+    }
     if ($type === 'yes_no') {
-        $value = in_array($value, ['yes', 'no'], true) ? $value : '';
-        if ($field['required'] && $value === '') {
-            $errors[] = $field['label'] . ' is required.';
-        }
-        $data[$name] = $value;
-
-        $reasonWhen = $field['reasonWhen'] ?? '';
-        if ($reasonWhen !== '') {
-            $reasonKey = $name . '_reason';
-            $reasonVal = trim((string) ($_POST[$reasonKey] ?? ''));
-            if ($value === $reasonWhen) {
-                if (!empty($field['reasonRequired']) && $reasonVal === '') {
-                    $errors[] = ($field['reasonLabel'] ?? 'Reason') . ' is required.';
-                }
-                $data[$reasonKey] = $reasonVal;
-            } else {
-                unset($data[$reasonKey]);
-            }
-        }
-        continue;
-    }
-
-    if ($field['required'] && $value === '') {
-        $errors[] = $field['label'] . ' is required.';
-    }
-    if ($type === 'email' && $value !== '' && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = $field['label'] . ' must be a valid email.';
-    }
-    if ($type === 'number' && $value !== '') {
-        $format = normalize_number_format((string) ($field['numberFormat'] ?? ''));
-        if ($format !== '') {
-            $value = apply_number_format($value, $format);
-            $formatError = validate_number_format_value((string) $field['label'], $value, $format, false);
-            if ($formatError !== null) {
-                $errors[] = $formatError;
-            }
-        } elseif (!preg_match('/^-?\d+(\.\d+)?$/', $value)) {
-            $errors[] = $field['label'] . ' must be a valid number.';
+        $reasonWhen = (string) ($field['reasonWhen'] ?? '');
+        $reasonKey = $name . '_reason';
+        if ($reasonWhen === '' || $result['value'] !== $reasonWhen) {
+            unset($data[$reasonKey]);
         }
     }
-    if ($type === 'date' && $value !== '') {
-        $minAge = normalize_min_age($field['minAge'] ?? 0);
-        $ageError = validate_date_min_age((string) $field['label'], $value, $minAge);
-        if ($ageError !== null) {
-            $errors[] = $ageError;
-        }
-    }
-    $data[$name] = $value;
 }
 
 if ($errors) {

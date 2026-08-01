@@ -34,7 +34,7 @@ if ($embed) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/custom-form.css?v=12">
+  <link rel="stylesheet" href="/css/custom-form.css?v=14">
 </head>
 <body class="form-embed-body">
   <div class="form-embed-header">
@@ -50,7 +50,7 @@ if ($embed) {
     <?php include __DIR__ . '/components/form-render.php'; ?>
   </div>
   <script>window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;</script>
-  <script src="/components/js/custom-form.js?v=14"></script>
+  <script src="/components/js/custom-form.js?v=17"></script>
 </body>
 </html>
     <?php
@@ -66,7 +66,7 @@ foreach ($schema['fields'] as $f) {
 }
 include __DIR__ . '/components/header.php';
 ?>
-<link rel="stylesheet" href="/css/custom-form.css?v=12">
+<link rel="stylesheet" href="/css/custom-form.css?v=14">
 <main class="main-content vf-page">
   <div class="vf-container">
     <div class="vf-layout">
@@ -130,5 +130,5 @@ include __DIR__ . '/components/header.php';
 <script>
   window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/components/js/custom-form.js?v=14"></script>
+<script src="/components/js/custom-form.js?v=17"></script>
 <?php include __DIR__ . '/components/footer.php'; ?>

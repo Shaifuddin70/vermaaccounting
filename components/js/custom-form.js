@@ -49,6 +49,7 @@
 
   function initNumberFormatFields() {
     form.querySelectorAll('input[data-number-format]').forEach((input) => {
+      if (input.closest('[data-phone-field]')) return;
       const format = input.getAttribute('data-number-format') || '';
       if (!format) return;
 
@@ -72,6 +73,155 @@
   }
 
   initNumberFormatFields();
+
+  function phoneDialFromWrap(wrap) {
+    const select = wrap.querySelector('[data-phone-cc]');
+    if (select) {
+      const opt = select.options[select.selectedIndex];
+      return (opt && opt.getAttribute('data-dial')) || '+1';
+    }
+    const staticDial = wrap.querySelector('[data-phone-dial]');
+    return (staticDial && staticDial.getAttribute('data-phone-dial')) || '+1';
+  }
+
+  function phoneFormatFromWrap(wrap) {
+    const select = wrap.querySelector('[data-phone-cc]');
+    if (select) {
+      const opt = select.options[select.selectedIndex];
+      return (opt && opt.getAttribute('data-format')) || '';
+    }
+    const combined = wrap.querySelector('[data-phone-combined]');
+    return (combined && combined.getAttribute('data-phone-default-format')) || '';
+  }
+
+  function syncPhoneCombined(wrap) {
+    const local = wrap.querySelector('[data-phone-local]');
+    const combined = wrap.querySelector('[data-phone-combined]');
+    if (!local || !combined) return;
+    const national = String(local.value || '').trim();
+    const dial = phoneDialFromWrap(wrap).trim();
+    if (!national) {
+      combined.value = '';
+      return;
+    }
+    if (!dial || dial === '+') {
+      combined.value = national;
+      return;
+    }
+    combined.value = dial + ' ' + national;
+  }
+
+  function applyPhoneFormatToLocal(wrap) {
+    const local = wrap.querySelector('[data-phone-local]');
+    if (!local) return;
+    const format = phoneFormatFromWrap(wrap);
+    local.setAttribute('data-number-format', format);
+    local.maxLength = format ? format.length : 32;
+    if (!local.getAttribute('placeholder') || local.dataset.autoPlaceholder !== '0') {
+      local.placeholder = format || 'Phone number';
+    }
+    const next = applyNumberFormatMask(local.value, format);
+    if (local.value !== next) local.value = next;
+    syncPhoneCombined(wrap);
+  }
+
+  function parsePrefillPhone(raw, wrap) {
+    const str = String(raw || '').trim();
+    if (!str) return { country: '', national: '' };
+    const select = wrap.querySelector('[data-phone-cc]');
+    const combined = wrap.querySelector('[data-phone-combined]');
+    const defaultCountry =
+      (combined && combined.getAttribute('data-phone-default-country')) || 'CA';
+
+    if (!select) {
+      const dial = phoneDialFromWrap(wrap);
+      let national = str;
+      if (dial && dial !== '+' && str.startsWith(dial)) {
+        national = str.slice(dial.length).trim();
+      }
+      return { country: defaultCountry, national };
+    }
+
+    const options = Array.from(select.options).map((opt) => ({
+      code: opt.value,
+      dial: opt.getAttribute('data-dial') || '',
+      format: opt.getAttribute('data-format') || '',
+    }));
+    options.sort((a, b) => b.dial.length - a.dial.length);
+
+    for (const opt of options) {
+      if (opt.dial && opt.dial !== '+' && (str.startsWith(opt.dial + ' ') || str.startsWith(opt.dial))) {
+        return {
+          country: opt.code,
+          national: str.slice(opt.dial.length).trim(),
+        };
+      }
+    }
+
+    return { country: defaultCountry, national: str };
+  }
+
+  function initPhoneFields() {
+    form.querySelectorAll('[data-phone-field]').forEach((wrap) => {
+      const local = wrap.querySelector('[data-phone-local]');
+      const select = wrap.querySelector('[data-phone-cc]');
+      if (!local) return;
+
+      const reformat = () => {
+        const format = phoneFormatFromWrap(wrap);
+        const next = applyNumberFormatMask(local.value, format);
+        if (local.value !== next) {
+          const end = next.length;
+          local.value = next;
+          try {
+            local.setSelectionRange(end, end);
+          } catch (err) {
+            /* ignore */
+          }
+        }
+        syncPhoneCombined(wrap);
+      };
+
+      local.addEventListener('input', reformat);
+      local.addEventListener('blur', () => {
+        reformat();
+        const format = phoneFormatFromWrap(wrap);
+        const slots = (format.match(/#/g) || []).length;
+        const digits = String(local.value || '').replace(/\D+/g, '');
+        if (local.required || digits.length) {
+          if (slots > 0 && digits.length !== slots) {
+            local.setCustomValidity('Enter a complete phone number.');
+          } else {
+            local.setCustomValidity('');
+          }
+        } else {
+          local.setCustomValidity('');
+        }
+      });
+
+      select?.addEventListener('change', () => {
+        applyPhoneFormatToLocal(wrap);
+        local.setCustomValidity('');
+      });
+
+      applyPhoneFormatToLocal(wrap);
+    });
+  }
+
+  initPhoneFields();
+
+  function setPhoneFieldValue(wrap, value) {
+    const local = wrap.querySelector('[data-phone-local]');
+    const select = wrap.querySelector('[data-phone-cc]');
+    if (!local) return;
+    const parsed = parsePrefillPhone(value, wrap);
+    if (select && parsed.country) {
+      select.value = parsed.country;
+    }
+    applyPhoneFormatToLocal(wrap);
+    local.value = applyNumberFormatMask(parsed.national, phoneFormatFromWrap(wrap));
+    syncPhoneCombined(wrap);
+  }
 
   function initMinAgeDateFields() {
     form.querySelectorAll('input[type="date"][data-min-age]').forEach((input) => {
@@ -107,6 +257,15 @@
       const tokenBox = fileField.querySelector('.custom-form-file-tokens');
       return !!(tokenBox && tokenBox.querySelector('input[data-staged-token]'));
     }
+    const phoneLocal = wrap.querySelector('[data-phone-local]');
+    if (phoneLocal) {
+      const required = !!wrap.querySelector('label .required') || phoneLocal.required;
+      if (!required) return true;
+      const format = phoneFormatFromWrap(wrap);
+      const slots = (format.match(/#/g) || []).length;
+      const digits = String(phoneLocal.value || '').replace(/\D+/g, '');
+      return slots > 0 ? digits.length === slots : digits.length > 0;
+    }
     const radios = wrap.querySelectorAll('input[type="radio"]');
     if (radios.length) {
       return Array.from(radios).some((r) => r.checked);
@@ -125,6 +284,122 @@
     return String(control.value || '').trim() !== '';
   }
 
+  function fieldLabel(wrap) {
+    return wrap.querySelector('label')?.textContent?.replace(/\*/g, '').trim() || 'This field';
+  }
+
+  function failField(wrap, message, focusEl) {
+    statusEl.textContent = message || 'Please complete: ' + fieldLabel(wrap);
+    statusEl.className = 'custom-form-status is-error';
+    const el = focusEl || wrap.querySelector('input:not([type="hidden"]), select, textarea');
+    el?.focus();
+    el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    if (el && typeof el.reportValidity === 'function') {
+      try {
+        el.reportValidity();
+      } catch (err) {
+        /* ignore */
+      }
+    }
+    return false;
+  }
+
+  function validateEmailValue(value) {
+    const v = String(value || '').trim();
+    if (!v) return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+  }
+
+  function validatePlainNumberValue(value) {
+    const v = String(value || '').trim();
+    if (!v) return true;
+    return /^-?\d+(\.\d+)?$/.test(v);
+  }
+
+  function validateNumberFormatValue(value, format) {
+    const v = String(value || '').trim();
+    if (!v || !format) return true;
+    const digits = v.replace(/\D+/g, '');
+    const slots = (format.match(/#/g) || []).length;
+    return slots > 0 ? digits.length === slots : true;
+  }
+
+  function validateFieldFormats(wrap) {
+    const reasonWrap = wrap.querySelector('[data-yes-no-reason-for]');
+    if (reasonWrap && !reasonWrap.hidden) {
+      const control = reasonWrap.querySelector('textarea, input');
+      const type = reasonWrap.getAttribute('data-reason-type') || 'textarea';
+      if (control && control.value) {
+        if (type === 'email' && !validateEmailValue(control.value)) {
+          control.setCustomValidity('Enter a valid email.');
+          return failField(wrap, 'Please enter a valid email for: ' + fieldLabel(wrap), control);
+        }
+        if (type === 'number' && !validatePlainNumberValue(control.value)) {
+          control.setCustomValidity('Enter a valid number.');
+          return failField(wrap, 'Please enter a valid number for: ' + fieldLabel(wrap), control);
+        }
+        if (type === 'tel' && !/\d/.test(control.value)) {
+          control.setCustomValidity('Enter a phone number.');
+          return failField(wrap, 'Please enter a phone number for: ' + fieldLabel(wrap), control);
+        }
+        control.setCustomValidity('');
+      }
+    }
+
+    const phoneLocal = wrap.querySelector('[data-phone-local]');
+    if (phoneLocal) {
+      const format = phoneFormatFromWrap(wrap);
+      const slots = (format.match(/#/g) || []).length;
+      const digits = String(phoneLocal.value || '').replace(/\D+/g, '');
+      if ((phoneLocal.required || digits.length) && slots > 0 && digits.length !== slots) {
+        phoneLocal.setCustomValidity('Enter a complete phone number.');
+        return failField(wrap, 'Please enter a complete phone number.', phoneLocal);
+      }
+      phoneLocal.setCustomValidity('');
+    }
+
+    const emailInput = wrap.querySelector('input[type="email"]:not([data-phone-local])');
+    if (emailInput && emailInput.value && !validateEmailValue(emailInput.value)) {
+      emailInput.setCustomValidity('Enter a valid email.');
+      return failField(wrap, 'Please enter a valid email for: ' + fieldLabel(wrap), emailInput);
+    }
+    if (emailInput) emailInput.setCustomValidity('');
+
+    const numberFormatted = wrap.querySelector('input[data-number-format]:not([data-phone-local])');
+    if (numberFormatted && numberFormatted.value) {
+      const format = numberFormatted.getAttribute('data-number-format') || '';
+      if (!validateNumberFormatValue(numberFormatted.value, format)) {
+        numberFormatted.setCustomValidity('Enter a complete value.');
+        return failField(wrap, 'Please complete: ' + fieldLabel(wrap), numberFormatted);
+      }
+      numberFormatted.setCustomValidity('');
+    }
+
+    const plainNumber = wrap.querySelector('input[type="number"]:not([data-number-format])');
+    if (plainNumber && plainNumber.value && !validatePlainNumberValue(plainNumber.value)) {
+      plainNumber.setCustomValidity('Enter a valid number.');
+      return failField(wrap, 'Please enter a valid number for: ' + fieldLabel(wrap), plainNumber);
+    }
+    if (plainNumber) plainNumber.setCustomValidity('');
+
+    wrap.querySelectorAll('input[type="date"][data-min-age]').forEach((input) => {
+      const max = input.getAttribute('max') || '';
+      if (input.value && max && input.value > max) {
+        input.setCustomValidity(
+          'Must be at least ' + (input.getAttribute('data-min-age') || '') + ' years old.'
+        );
+      } else {
+        input.setCustomValidity('');
+      }
+    });
+    const invalidDate = wrap.querySelector('input[type="date"][data-min-age]:invalid');
+    if (invalidDate) {
+      return failField(wrap, 'Please check the date of birth / age requirements.', invalidDate);
+    }
+
+    return true;
+  }
+
   function validatePage(pageEl) {
     if (!pageEl) return true;
     const wraps = pageEl.querySelectorAll('.custom-form-field');
@@ -133,34 +408,102 @@
       const required =
         !!wrap.querySelector('label .required') ||
         !!wrap.querySelector('[required], [data-required="1"]');
-      if (!required) continue;
-      if (!fieldHasValue(wrap)) {
-        const label = wrap.querySelector('label')?.textContent?.replace(/\*/g, '').trim() || 'This field';
-        statusEl.textContent = 'Please complete: ' + label;
-        statusEl.className = 'custom-form-status is-error';
-        const focusEl = wrap.querySelector('input:not([type="hidden"]), select, textarea');
-        focusEl?.focus();
-        focusEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        return false;
+      if (required && !fieldHasValue(wrap)) {
+        return failField(wrap);
       }
-      wrap.querySelectorAll('input[type="date"][data-min-age]').forEach((input) => {
-        const max = input.getAttribute('max') || '';
-        if (input.value && max && input.value > max) {
-          input.setCustomValidity(
-            'Must be at least ' + (input.getAttribute('data-min-age') || '') + ' years old.'
-          );
-        } else {
-          input.setCustomValidity('');
+      if (!validateFieldFormats(wrap)) return false;
+    }
+    return true;
+  }
+
+  function validateVisibleFormFields(opts) {
+    const allPages = !!(opts && opts.allPages);
+    applyConditions();
+    const wraps = form.querySelectorAll('.custom-form-field');
+    for (const wrap of wraps) {
+      if (wrap.style.display === 'none') continue;
+      const page = wrap.closest('.custom-form-page');
+      if (!allPages && page && page.hidden) continue;
+      const required =
+        !!wrap.querySelector('label .required') ||
+        !!wrap.querySelector('[required], [data-required="1"]');
+      if (required && !fieldHasValue(wrap)) {
+        if (allPages && page && page.hidden && typeof goToFormPage === 'function') {
+          const pagesRoot = document.getElementById('form-pages');
+          const pages = pagesRoot
+            ? Array.from(pagesRoot.querySelectorAll('.custom-form-page'))
+            : [];
+          const idx = pages.indexOf(page);
+          if (idx >= 0) goToFormPage(idx);
         }
-      });
-      const invalidDate = wrap.querySelector('input[type="date"][data-min-age]:invalid');
-      if (invalidDate) {
-        statusEl.textContent = 'Please check the date of birth / age requirements.';
-        statusEl.className = 'custom-form-status is-error';
-        invalidDate.reportValidity();
+        return failField(wrap);
+      }
+      if (!validateFieldFormats(wrap)) {
+        if (allPages && page && page.hidden && typeof goToFormPage === 'function') {
+          const pagesRoot = document.getElementById('form-pages');
+          const pages = pagesRoot
+            ? Array.from(pagesRoot.querySelectorAll('.custom-form-page'))
+            : [];
+          const idx = pages.indexOf(page);
+          if (idx >= 0) goToFormPage(idx);
+        }
         return false;
       }
     }
+
+    for (const wrap of form.querySelectorAll('[data-file-field][data-required="1"]')) {
+      const fieldWrap = wrap.closest('[data-field-id]');
+      if (fieldWrap && fieldWrap.style.display === 'none') continue;
+      const page = fieldWrap?.closest('.custom-form-page');
+      if (!allPages && page && page.hidden) continue;
+      const tokenBox = wrap.querySelector('.custom-form-file-tokens');
+      const hasTokens = tokenBox && tokenBox.querySelector('input[data-staged-token]');
+      if (!hasTokens) {
+        if (allPages && page && page.hidden && typeof goToFormPage === 'function') {
+          const pagesRoot = document.getElementById('form-pages');
+          const pages = pagesRoot
+            ? Array.from(pagesRoot.querySelectorAll('.custom-form-page'))
+            : [];
+          const idx = pages.indexOf(page);
+          if (idx >= 0) goToFormPage(idx);
+        }
+        statusEl.textContent = 'Please upload all required files.';
+        statusEl.className = 'custom-form-status is-error';
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return false;
+      }
+    }
+
+    let phoneBlocked = false;
+    form.querySelectorAll('[data-phone-field]').forEach((phoneWrap) => {
+      if (phoneBlocked) return;
+      const fieldWrap = phoneWrap.closest('.custom-form-field');
+      if (fieldWrap && fieldWrap.style.display === 'none') return;
+      const page = fieldWrap?.closest('.custom-form-page');
+      if (!allPages && page && page.hidden) return;
+      syncPhoneCombined(phoneWrap);
+      const local = phoneWrap.querySelector('[data-phone-local]');
+      const format = phoneFormatFromWrap(phoneWrap);
+      const slots = (format.match(/#/g) || []).length;
+      const digits = String(local?.value || '').replace(/\D+/g, '');
+      if (local && (local.required || digits.length) && slots > 0 && digits.length !== slots) {
+        phoneBlocked = true;
+        if (allPages && page && page.hidden && typeof goToFormPage === 'function') {
+          const pagesRoot = document.getElementById('form-pages');
+          const pages = pagesRoot
+            ? Array.from(pagesRoot.querySelectorAll('.custom-form-page'))
+            : [];
+          const idx = pages.indexOf(page);
+          if (idx >= 0) goToFormPage(idx);
+        }
+        local.setCustomValidity('Enter a complete phone number.');
+        failField(fieldWrap || phoneWrap, 'Please enter a complete phone number.', local);
+      } else if (local) {
+        local.setCustomValidity('');
+      }
+    });
+    if (phoneBlocked) return false;
+
     return true;
   }
 
@@ -398,6 +741,9 @@
       if (typeof el.setCustomValidity === 'function') el.setCustomValidity('');
       el.classList.remove('is-invalid');
     });
+    form.querySelectorAll('[data-phone-field]').forEach((wrap) => {
+      applyPhoneFormatToLocal(wrap);
+    });
     goToFormPage?.(0, { scroll: false });
     applyConditions();
   }
@@ -514,6 +860,12 @@
     const checks = wrap.querySelectorAll('input[type="checkbox"]:checked');
     if (checks.length) return Array.from(checks).map((c) => c.value);
 
+    if (wrap.querySelector('[data-phone-field]')) {
+      syncPhoneCombined(wrap);
+      const combined = wrap.querySelector('[data-phone-combined]');
+      return combined ? combined.value : '';
+    }
+
     const select = wrap.querySelector('select');
     if (select) return select.value;
 
@@ -562,14 +914,21 @@
         const conditions = JSON.parse(raw);
         const visible = evaluateConditions(conditions);
         wrap.style.display = visible ? '' : 'none';
+        const phoneWrap = wrap.querySelector('[data-phone-field]');
         wrap.querySelectorAll('input, select, textarea').forEach((el) => {
           if (el.closest('.yes-no-reason-wrap')) return;
           el.disabled = !visible;
           if (!visible) {
             if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
-            else if (el.type !== 'file') el.value = '';
+            else if (el.type !== 'file') {
+              if (phoneWrap && el.matches('[data-phone-cc]')) return;
+              el.value = '';
+            }
           }
         });
+        if (phoneWrap && visible) {
+          applyPhoneFormatToLocal(phoneWrap);
+        }
       } catch (e) {
         wrap.style.display = '';
       }
@@ -583,21 +942,21 @@
       const when = reasonWrap.getAttribute('data-reason-when');
       const required = reasonWrap.getAttribute('data-reason-required') === '1';
       const yesNoBlock = form.querySelector('[data-yes-no-field="' + fieldId + '"]');
-      const textarea = reasonWrap.querySelector('textarea');
-      if (!yesNoBlock || !textarea) return;
+      const control = reasonWrap.querySelector('textarea, input');
+      if (!yesNoBlock || !control) return;
 
       const selected = yesNoBlock.querySelector('input[type="radio"]:checked');
       const show = selected && selected.value === when;
 
       reasonWrap.hidden = !show;
-      textarea.disabled = !show;
+      control.disabled = !show;
       if (!show) {
-        textarea.value = '';
-        textarea.removeAttribute('required');
+        control.value = '';
+        control.removeAttribute('required');
       } else if (required) {
-        textarea.setAttribute('required', 'required');
+        control.setAttribute('required', 'required');
       } else {
-        textarea.removeAttribute('required');
+        control.removeAttribute('required');
       }
     });
   }
@@ -668,6 +1027,11 @@
       return;
     }
 
+    if (wrap.querySelector('[data-phone-field]')) {
+      setPhoneFieldValue(wrap, Array.isArray(value) ? value.join(', ') : String(value));
+      return;
+    }
+
     const select = wrap.querySelector('select');
     if (select) {
       select.value = String(value);
@@ -700,8 +1064,8 @@
       const reasonKey = name + '_reason';
       if (reasonKey in data) {
         const reasonWrap = form.querySelector('[data-yes-no-reason-for="' + wrap.getAttribute('data-field-id') + '"]');
-        const ta = reasonWrap?.querySelector('textarea');
-        if (ta) ta.value = String(data[reasonKey]);
+        const control = reasonWrap?.querySelector('textarea, input');
+        if (control) control.value = String(data[reasonKey]);
       }
     });
     applyConditions();
@@ -831,41 +1195,8 @@
       return;
     }
 
-    const pagesRoot = document.getElementById('form-pages');
-    if (pagesRoot && pagesRoot.getAttribute('data-multipage') === '1') {
-      const visiblePage = pagesRoot.querySelector('.custom-form-page:not([hidden])');
-      if (!validatePage(visiblePage)) return;
-    }
-
-    const ageInvalid = form.querySelector('input[type="date"][data-min-age]');
-    if (ageInvalid) {
-      let blocked = false;
-      form.querySelectorAll('input[type="date"][data-min-age]').forEach((input) => {
-        const max = input.getAttribute('max') || '';
-        const minAge = input.getAttribute('data-min-age') || '';
-        if (input.value && max && input.value > max) {
-          blocked = true;
-          input.setCustomValidity('Must be at least ' + minAge + ' years old.');
-          input.reportValidity();
-        }
-      });
-      if (blocked) {
-        statusEl.textContent = 'Please check the date of birth / age requirements.';
-        statusEl.className = 'custom-form-status is-error';
-        return;
-      }
-    }
-
-    for (const wrap of form.querySelectorAll('[data-file-field][data-required="1"]')) {
-      const fieldWrap = wrap.closest('[data-field-id]');
-      if (fieldWrap && fieldWrap.style.display === 'none') continue;
-      const tokenBox = wrap.querySelector('.custom-form-file-tokens');
-      const hasTokens = tokenBox && tokenBox.querySelector('input[data-staged-token]');
-      if (!hasTokens) {
-        statusEl.textContent = 'Please upload all required files.';
-        statusEl.className = 'custom-form-status is-error';
-        return;
-      }
+    if (!validateVisibleFormFields({ allPages: true })) {
+      return;
     }
 
     statusEl.textContent = 'Submitting…';

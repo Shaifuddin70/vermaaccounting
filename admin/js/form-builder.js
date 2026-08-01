@@ -546,8 +546,6 @@
               const presets = {
                 '': 'None (plain number)',
                 '###-###-###': 'SIN (Social Insurance Number) — ###-###-###',
-                '(###) ###-####': 'Phone — (###) ###-####',
-                '###-###-####': 'Phone — ###-###-####',
                 '#####': 'Postal (digits) — #####',
               };
               const presetKeys = Object.keys(presets);
@@ -576,6 +574,68 @@
           : ''
       }
       ${
+        field.type === 'tel'
+          ? (() => {
+              const countries = {
+                CA: { name: 'Canada', dial: '+1', format: '(###) ###-####' },
+                US: { name: 'United States', dial: '+1', format: '(###) ###-####' },
+                GB: { name: 'United Kingdom', dial: '+44', format: '#### ######' },
+                AU: { name: 'Australia', dial: '+61', format: '### ### ###' },
+                IN: { name: 'India', dial: '+91', format: '##### #####' },
+                BD: { name: 'Bangladesh', dial: '+880', format: '####-######' },
+                PK: { name: 'Pakistan', dial: '+92', format: '### #######' },
+                AE: { name: 'United Arab Emirates', dial: '+971', format: '## ### ####' },
+                SA: { name: 'Saudi Arabia', dial: '+966', format: '## ### ####' },
+                DE: { name: 'Germany', dial: '+49', format: '### #######' },
+                FR: { name: 'France', dial: '+33', format: '# ## ## ## ##' },
+                IT: { name: 'Italy', dial: '+39', format: '### ### ####' },
+                ES: { name: 'Spain', dial: '+34', format: '### ## ## ##' },
+                NL: { name: 'Netherlands', dial: '+31', format: '# ########' },
+                IE: { name: 'Ireland', dial: '+353', format: '## ### ####' },
+                NZ: { name: 'New Zealand', dial: '+64', format: '## ### ####' },
+                SG: { name: 'Singapore', dial: '+65', format: '#### ####' },
+                PH: { name: 'Philippines', dial: '+63', format: '### ### ####' },
+                NG: { name: 'Nigeria', dial: '+234', format: '### ### ####' },
+                ZA: { name: 'South Africa', dial: '+27', format: '## ### ####' },
+                BR: { name: 'Brazil', dial: '+55', format: '## #####-####' },
+                MX: { name: 'Mexico', dial: '+52', format: '## #### ####' },
+                CN: { name: 'China', dial: '+86', format: '### #### ####' },
+                JP: { name: 'Japan', dial: '+81', format: '##-####-####' },
+                KR: { name: 'South Korea', dial: '+82', format: '##-####-####' },
+                OTHER: { name: 'Other', dial: '+', format: '##############' },
+              };
+              const country = countries[field.phoneCountry] ? field.phoneCountry : 'CA';
+              const fmt = field.phoneFormat || countries[country].format;
+              const allowSelect = field.phoneAllowCountrySelect !== false;
+              return `
+      <div class="admin-fields-2col">
+        <div class="admin-field">
+          <label for="fe-phone-country">Default country</label>
+          <select id="fe-phone-country">
+            ${Object.keys(countries)
+              .map(
+                (code) =>
+                  `<option value="${code}" ${code === country ? 'selected' : ''}>${countries[code].name} (${countries[code].dial})</option>`
+              )
+              .join('')}
+          </select>
+        </div>
+        <div class="admin-field">
+          <label for="fe-phone-format">Number format</label>
+          <input type="text" id="fe-phone-format" value="${escapeAttr(fmt)}" placeholder="(###) ###-####">
+          <small class="admin-field-hint">Use <code>#</code> for each digit. Changes with country unless you customize.</small>
+        </div>
+        <div class="admin-field admin-field--full">
+          <label class="admin-checkbox-label">
+            <input type="checkbox" id="fe-phone-allow-cc" ${allowSelect ? 'checked' : ''}>
+            <span>Allow visitors to change country code</span>
+          </label>
+        </div>
+      </div>`;
+            })()
+          : ''
+      }
+      ${
         field.type === 'date'
           ? `<div class="admin-field admin-field--full">
               <label for="fe-min-age">Minimum age (years)</label>
@@ -595,7 +655,7 @@
           ? `
       <hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
       <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Follow-up reason</h3>
-      <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Show a text field when the user picks Yes or No (e.g. ask why they answered No).</p>
+      <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Show a follow-up field when the user picks Yes or No.</p>
       <div class="admin-fields-2col">
         <div class="admin-field">
           <label>Ask for reason when answer is</label>
@@ -603,6 +663,17 @@
             <option value="" ${!(field.reasonWhen) ? 'selected' : ''}>Never</option>
             <option value="no" ${field.reasonWhen === 'no' ? 'selected' : ''}>No</option>
             <option value="yes" ${field.reasonWhen === 'yes' ? 'selected' : ''}>Yes</option>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label for="fe-reason-type">Reason field type</label>
+          <select id="fe-reason-type">
+            <option value="textarea" ${(!field.reasonType || field.reasonType === 'textarea') ? 'selected' : ''}>Long text</option>
+            <option value="text" ${field.reasonType === 'text' ? 'selected' : ''}>Short text</option>
+            <option value="email" ${field.reasonType === 'email' ? 'selected' : ''}>Email</option>
+            <option value="tel" ${field.reasonType === 'tel' ? 'selected' : ''}>Phone</option>
+            <option value="number" ${field.reasonType === 'number' ? 'selected' : ''}>Number</option>
+            <option value="date" ${field.reasonType === 'date' ? 'selected' : ''}>Date</option>
           </select>
         </div>
         <div class="admin-field admin-field--full">
@@ -776,6 +847,15 @@
       if (el('fe-number-format')) {
         field.numberFormat = String(el('fe-number-format').value || '').trim();
       }
+      if (el('fe-phone-country')) {
+        field.phoneCountry = String(el('fe-phone-country').value || 'CA');
+      }
+      if (el('fe-phone-format')) {
+        field.phoneFormat = String(el('fe-phone-format').value || '').trim();
+      }
+      if (el('fe-phone-allow-cc')) {
+        field.phoneAllowCountrySelect = el('fe-phone-allow-cc').checked;
+      }
       if (el('fe-min-age')) {
         const raw = String(el('fe-min-age').value || '').trim();
         const age = raw === '' ? 0 : parseInt(raw, 10);
@@ -784,10 +864,52 @@
       renderFieldList();
     };
 
-    ['fe-label', 'fe-name', 'fe-required', 'fe-placeholder', 'fe-help', 'fe-accept', 'fe-max-files', 'fe-number-format', 'fe-min-age'].forEach((id) => {
+    ['fe-label', 'fe-name', 'fe-required', 'fe-placeholder', 'fe-help', 'fe-accept', 'fe-max-files', 'fe-number-format', 'fe-phone-format', 'fe-min-age'].forEach((id) => {
       const node = el(id);
       if (node) node.addEventListener('input', sync);
       if (node && node.type === 'checkbox') node.addEventListener('change', sync);
+    });
+
+    el('fe-phone-allow-cc')?.addEventListener('change', sync);
+
+    const PHONE_FORMATS = {
+      CA: '(###) ###-####',
+      US: '(###) ###-####',
+      GB: '#### ######',
+      AU: '### ### ###',
+      IN: '##### #####',
+      BD: '####-######',
+      PK: '### #######',
+      AE: '## ### ####',
+      SA: '## ### ####',
+      DE: '### #######',
+      FR: '# ## ## ## ##',
+      IT: '### ### ####',
+      ES: '### ## ## ##',
+      NL: '# ########',
+      IE: '## ### ####',
+      NZ: '## ### ####',
+      SG: '#### ####',
+      PH: '### ### ####',
+      NG: '### ### ####',
+      ZA: '## ### ####',
+      BR: '## #####-####',
+      MX: '## #### ####',
+      CN: '### #### ####',
+      JP: '##-####-####',
+      KR: '##-####-####',
+      OTHER: '##############',
+    };
+
+    el('fe-phone-country')?.addEventListener('change', (e) => {
+      const code = e.target.value;
+      const nextFmt = PHONE_FORMATS[code] || '(###) ###-####';
+      if (el('fe-phone-format')) {
+        el('fe-phone-format').value = nextFmt;
+      }
+      field.phoneCountry = code;
+      field.phoneFormat = nextFmt;
+      renderFieldList();
     });
 
     el('fe-number-format-preset')?.addEventListener('change', (e) => {
@@ -807,18 +929,19 @@
       const fmt = String(el('fe-number-format').value || '').trim();
       const preset = el('fe-number-format-preset');
       if (!preset) return;
-      const known = ['', '###-###-###', '(###) ###-####', '###-###-####', '#####'];
+      const known = ['', '###-###-###', '#####'];
       preset.value = known.includes(fmt) ? fmt : '__custom';
     });
 
     const syncYesNoReason = () => {
       if (field.type !== 'yes_no') return;
       field.reasonWhen = el('fe-reason-when')?.value || '';
+      field.reasonType = el('fe-reason-type')?.value || 'textarea';
       field.reasonLabel = el('fe-reason-label')?.value || 'Please explain your answer';
       field.reasonPlaceholder = el('fe-reason-placeholder')?.value || '';
       field.reasonRequired = el('fe-reason-required')?.checked ?? true;
     };
-    ['fe-reason-when', 'fe-reason-label', 'fe-reason-placeholder', 'fe-reason-required'].forEach((id) => {
+    ['fe-reason-when', 'fe-reason-type', 'fe-reason-label', 'fe-reason-placeholder', 'fe-reason-required'].forEach((id) => {
       const node = el(id);
       if (node) {
         node.addEventListener('input', syncYesNoReason);
@@ -890,7 +1013,16 @@
       text: { type: 'text', label: 'Short text', required: true, options: [], conditions: [] },
       textarea: { type: 'textarea', label: 'Long text', required: true, options: [], conditions: [] },
       email: { type: 'email', label: 'Email', required: true, options: [], conditions: [] },
-      tel: { type: 'tel', label: 'Phone', required: true, options: [], conditions: [] },
+      tel: {
+        type: 'tel',
+        label: 'Phone',
+        required: true,
+        phoneCountry: 'CA',
+        phoneFormat: '(###) ###-####',
+        phoneAllowCountrySelect: true,
+        options: [],
+        conditions: [],
+      },
       number: { type: 'number', label: 'Number', required: false, numberFormat: '', options: [], conditions: [] },
       date: { type: 'date', label: 'Date', required: false, minAge: 0, options: [], conditions: [] },
       select: {
@@ -944,6 +1076,7 @@
         reasonLabel: 'Please explain why',
         reasonPlaceholder: '',
         reasonRequired: true,
+        reasonType: 'textarea',
         conditions: [],
       },
       file: { type: 'file', label: 'File upload', required: false, accept: 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,application/pdf,application/zip,application/x-zip-compressed', maxFiles: 5, options: [], conditions: [] },
