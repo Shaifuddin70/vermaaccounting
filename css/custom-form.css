@@ -621,9 +621,12 @@
   margin-top: 0.4rem;
   padding: 0.5rem 0.65rem;
   background: #f8fafc;
-  border: 1px solid rgba(255, 127, 53, 0.15);
+  border: 1px solid var(--verma-border);
   border-radius: 6px;
-  border-left: 3px solid var(--verma-orange);
+}
+
+.yes-no-reason-wrap + .yes-no-reason-wrap {
+  margin-top: 0.5rem;
 }
 
 .yes-no-reason-wrap label {

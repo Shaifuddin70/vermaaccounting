@@ -325,25 +325,33 @@
   }
 
   function validateFieldFormats(wrap) {
-    const reasonWrap = wrap.querySelector('[data-yes-no-reason-for]');
-    if (reasonWrap && !reasonWrap.hidden) {
+    const reasonWraps = wrap.querySelectorAll('[data-yes-no-reason-for]');
+    for (const reasonWrap of reasonWraps) {
+      if (reasonWrap.hidden) continue;
       const control = reasonWrap.querySelector('textarea, input');
       const type = reasonWrap.getAttribute('data-reason-type') || 'textarea';
-      if (control && control.value) {
-        if (type === 'email' && !validateEmailValue(control.value)) {
+      const required = reasonWrap.getAttribute('data-reason-required') === '1';
+      if (!control) continue;
+      const value = String(control.value || '').trim();
+      if (required && !value) {
+        control.setCustomValidity('This field is required.');
+        return failField(wrap, 'Please complete: ' + (reasonWrap.querySelector('label')?.textContent || fieldLabel(wrap)), control);
+      }
+      if (value) {
+        if (type === 'email' && !validateEmailValue(value)) {
           control.setCustomValidity('Enter a valid email.');
           return failField(wrap, 'Please enter a valid email for: ' + fieldLabel(wrap), control);
         }
-        if (type === 'number' && !validatePlainNumberValue(control.value)) {
+        if (type === 'number' && !validatePlainNumberValue(value)) {
           control.setCustomValidity('Enter a valid number.');
           return failField(wrap, 'Please enter a valid number for: ' + fieldLabel(wrap), control);
         }
-        if (type === 'tel' && !/\d/.test(control.value)) {
+        if (type === 'tel' && !/\d/.test(value)) {
           control.setCustomValidity('Enter a phone number.');
           return failField(wrap, 'Please enter a phone number for: ' + fieldLabel(wrap), control);
         }
-        control.setCustomValidity('');
       }
+      control.setCustomValidity('');
     }
 
     const phoneLocal = wrap.querySelector('[data-phone-local]');
@@ -1061,12 +1069,14 @@
       const name = wrap.getAttribute('data-field-name');
       if (!name || !(name in data)) return;
       setFieldValueFromPrefill(wrap, data[name]);
-      const reasonKey = name + '_reason';
-      if (reasonKey in data) {
-        const reasonWrap = form.querySelector('[data-yes-no-reason-for="' + wrap.getAttribute('data-field-id') + '"]');
-        const control = reasonWrap?.querySelector('textarea, input');
-        if (control) control.value = String(data[reasonKey]);
-      }
+      const fieldId = wrap.getAttribute('data-field-id');
+      form.querySelectorAll('[data-yes-no-reason-for="' + fieldId + '"]').forEach((reasonWrap) => {
+        const control = reasonWrap.querySelector('textarea, input');
+        if (!control || !control.name) return;
+        if (control.name in data) {
+          control.value = String(data[control.name]);
+        }
+      });
     });
     applyConditions();
   }

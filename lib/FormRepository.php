@@ -157,6 +157,28 @@ final class FormRepository
 
     public function delete(int $id): bool
     {
+        $id = (int) $id;
+        if ($id < 1) {
+            return false;
+        }
+
+        foreach ($this->filesForForm($id) as $file) {
+            $path = UPLOADS_DIR . '/' . ($file['stored_name'] ?? '');
+            if ($path !== UPLOADS_DIR . '/' && is_file($path)) {
+                @unlink($path);
+            }
+        }
+
+        $formDir = UPLOADS_DIR . '/' . $id;
+        if (is_dir($formDir)) {
+            foreach (glob($formDir . '/*') ?: [] as $path) {
+                if (is_file($path)) {
+                    @unlink($path);
+                }
+            }
+            @rmdir($formDir);
+        }
+
         $stmt = $this->db->prepare('DELETE FROM forms WHERE id = ?');
         return $stmt->execute([$id]);
     }

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
+Auth::requireRole('admin');
 
 $repo = new FormRepository();
 $formId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
@@ -45,6 +46,20 @@ require __DIR__ . '/includes/layout-start.php';
       <?php if ($form['status'] === 'published'): ?>
         <a href="/form/<?= e($form['slug']) ?>" class="admin-btn admin-btn-secondary" target="_blank" rel="noopener">Preview</a>
       <?php endif; ?>
+      <?php
+        $subCounts = $repo->submissionCountsByFormId();
+        $subCount = (int) ($subCounts[(int) $form['id']]['all'] ?? 0);
+        $deleteConfirm = $subCount > 0
+            ? 'Delete “' . $form['title'] . '”? This will permanently remove the form and its ' . number_format($subCount) . ' submission' . ($subCount === 1 ? '' : 's') . '. This cannot be undone.'
+            : 'Delete “' . $form['title'] . '”? This cannot be undone.';
+      ?>
+      <form method="post" action="/admin/form-action" class="inline-form"
+        onsubmit="return confirm(<?= e(json_encode($deleteConfirm)) ?>);">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+        <input type="hidden" name="form_id" value="<?= (int) $form['id'] ?>">
+        <input type="hidden" name="action" value="delete">
+        <button type="submit" class="admin-btn admin-btn-danger">Delete form</button>
+      </form>
     <?php endif; ?>
     <button type="button" id="save-form-btn" class="admin-btn">Save form</button>
   </div>
@@ -253,5 +268,5 @@ require __DIR__ . '/includes/layout-start.php';
     activePartners: <?= json_encode((new UserRepository())->activePartners(), JSON_UNESCAPED_UNICODE) ?>
   };
 </script>
-<script src="/admin/js/form-builder.js?v=18"></script>
+<script src="/admin/js/form-builder.js?v=19"></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

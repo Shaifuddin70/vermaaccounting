@@ -519,11 +519,11 @@ body.admin-body {
   font-weight: 600;
 }
 
-.admin-table .admin-table-actions .admin-btn:not(.admin-btn-secondary):not(.admin-btn-disabled) {
+.admin-table .admin-table-actions .admin-btn:not(.admin-btn-secondary):not(.admin-btn-disabled):not(.admin-btn-danger) {
   color: #fff;
 }
 
-.admin-table .admin-table-actions .admin-btn:not(.admin-btn-secondary):not(.admin-btn-disabled):hover {
+.admin-table .admin-table-actions .admin-btn:not(.admin-btn-secondary):not(.admin-btn-disabled):not(.admin-btn-danger):hover {
   color: #fff;
 }
 
@@ -2558,6 +2558,14 @@ body.admin-body {
   gap: 0.5rem;
   margin-bottom: 0.5rem;
   align-items: end;
+}
+
+.yes-no-followup-row {
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid #dbe3f0;
+  border-radius: 8px;
+  background: #f8fafc;
 }
 
 .embed-code {

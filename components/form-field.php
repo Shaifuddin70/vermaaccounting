@@ -57,9 +57,7 @@ if ($condJson) {
           </div>
 
         <?php elseif ($type === 'yes_no'):
-          $reasonWhen = $field['reasonWhen'] ?? '';
-          $reasonName = $field['name'] . '_reason';
-          $reasonRequired = !empty($field['reasonRequired']);
+          $followUps = yes_no_follow_ups($field);
         ?>
           <div class="yes-no-toggle" data-yes-no-field="<?= $id ?>" role="group" aria-label="<?= e($field['label']) ?>">
             <?php foreach ($field['options'] ?? [] as $i => $opt):
@@ -76,31 +74,34 @@ if ($condJson) {
               </div>
             <?php endforeach; ?>
           </div>
-          <?php if ($reasonWhen !== ''):
-            $reasonType = normalize_yes_no_reason_type($field['reasonType'] ?? 'textarea');
+          <?php foreach ($followUps as $followUp):
+            $fuId = e((string) $followUp['id']);
+            $reasonType = normalize_yes_no_reason_type($followUp['type'] ?? 'textarea');
             $reasonInputType = in_array($reasonType, ['email', 'tel', 'number', 'date'], true) ? $reasonType : 'text';
+            $reasonName = yes_no_follow_up_storage_key((string) $field['name'], $followUp);
+            $controlId = 'cf-' . $id . '-fu-' . $fuId;
           ?>
             <div class="yes-no-reason-wrap"
               data-yes-no-reason-for="<?= $id ?>"
-              data-reason-when="<?= e($reasonWhen) ?>"
-              data-reason-required="<?= $reasonRequired ? '1' : '0' ?>"
+              data-reason-when="<?= e($followUp['when']) ?>"
+              data-reason-required="<?= !empty($followUp['required']) ? '1' : '0' ?>"
               data-reason-type="<?= e($reasonType) ?>"
               hidden>
-              <label for="cf-<?= $id ?>-reason"><?= e($field['reasonLabel'] ?? 'Please explain your answer') ?></label>
+              <label for="<?= $controlId ?>"><?= e($followUp['label']) ?></label>
               <?php if ($reasonType === 'textarea'): ?>
-                <textarea id="cf-<?= $id ?>-reason"
+                <textarea id="<?= $controlId ?>"
                   name="<?= e($reasonName) ?>"
                   rows="3"
-                  placeholder="<?= e($field['reasonPlaceholder'] ?? '') ?>"></textarea>
+                  placeholder="<?= e($followUp['placeholder'] ?? '') ?>"></textarea>
               <?php else: ?>
                 <input type="<?= e($reasonInputType) ?>"
-                  id="cf-<?= $id ?>-reason"
+                  id="<?= $controlId ?>"
                   name="<?= e($reasonName) ?>"
-                  placeholder="<?= e($field['reasonPlaceholder'] ?? '') ?>"
+                  placeholder="<?= e($followUp['placeholder'] ?? '') ?>"
                   <?php if ($reasonType === 'number'): ?>inputmode="decimal"<?php endif; ?>>
               <?php endif; ?>
             </div>
-          <?php endif; ?>
+          <?php endforeach; ?>
 
         <?php elseif ($type === 'checkbox'): ?>
           <div class="custom-form-options">

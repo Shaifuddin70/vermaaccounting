@@ -262,12 +262,11 @@ function submission_email_field_rows(array $schema, array $data): array
         if ($value === '') {
             continue;
         }
-        $reasonWhen = (string) ($field['reasonWhen'] ?? '');
-        if ($reasonWhen !== '' && $value === $reasonWhen) {
-            $reasonKey = $name . '_reason';
+        foreach (yes_no_follow_ups_for_answer($field, $value) as $followUp) {
+            $reasonKey = yes_no_follow_up_storage_key($name, $followUp);
             $reasonVal = trim((string) ($data[$reasonKey] ?? ''));
             if ($reasonVal !== '') {
-                $value .= ' — ' . ($field['reasonLabel'] ?? 'Reason') . ': ' . $reasonVal;
+                $value .= ' — ' . ($followUp['label'] ?? 'Follow-up') . ': ' . $reasonVal;
             }
         }
         $rows[] = [

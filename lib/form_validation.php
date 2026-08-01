@@ -167,16 +167,16 @@ function validate_plain_number_field_value(string $label, string $value): ?strin
 }
 
 /**
- * Validate a Yes/No follow-up reason value for its configured type.
+ * Validate a Yes/No follow-up value for its configured type.
  */
-function validate_yes_no_reason_value(string $label, string $value, array $field): ?string
+function validate_yes_no_reason_value(string $label, string $value, string $reasonType = 'textarea'): ?string
 {
     $value = trim($value);
     if ($value === '') {
         return null;
     }
 
-    $reasonType = normalize_yes_no_reason_type($field['reasonType'] ?? 'textarea');
+    $reasonType = normalize_yes_no_reason_type($reasonType);
 
     return match ($reasonType) {
         'email' => validate_email_field_value($label, $value),
@@ -254,15 +254,14 @@ function validate_scalar_form_field(array $field, string $value, bool $visible, 
             $errors[] = $label . ' is required.';
         }
 
-        $reasonWhen = (string) ($field['reasonWhen'] ?? '');
-        if ($reasonWhen !== '' && $value === $reasonWhen) {
-            $reasonKey = (string) $field['name'] . '_reason';
+        foreach (yes_no_follow_ups_for_answer($field, $value) as $followUp) {
+            $reasonKey = yes_no_follow_up_storage_key((string) $field['name'], $followUp);
             $reasonVal = trim((string) ($post[$reasonKey] ?? ''));
-            $reasonLabel = (string) ($field['reasonLabel'] ?? 'Reason');
-            if (!empty($field['reasonRequired']) && $reasonVal === '') {
+            $reasonLabel = (string) ($followUp['label'] ?? 'Reason');
+            if (!empty($followUp['required']) && $reasonVal === '') {
                 $errors[] = $reasonLabel . ' is required.';
             }
-            $reasonError = validate_yes_no_reason_value($reasonLabel, $reasonVal, $field);
+            $reasonError = validate_yes_no_reason_value($reasonLabel, $reasonVal, (string) ($followUp['type'] ?? 'textarea'));
             if ($reasonError !== null) {
                 $errors[] = $reasonError;
             }

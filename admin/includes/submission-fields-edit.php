@@ -57,10 +57,7 @@
         </div>
 
       <?php elseif ($type === 'yes_no'):
-        $reasonWhen = $field['reasonWhen'] ?? '';
-        $reasonName = $name . '_reason';
-        $reasonVal = $data[$reasonName] ?? '';
-        $showReason = $reasonWhen !== '' && (string) $value === $reasonWhen;
+        $followUps = yes_no_follow_ups($field);
       ?>
         <div class="submission-edit-options">
           <?php foreach ($field['options'] ?? [] as $opt): ?>
@@ -72,22 +69,28 @@
             </label>
           <?php endforeach; ?>
         </div>
-        <?php if ($reasonWhen !== ''):
-          $reasonType = normalize_yes_no_reason_type($field['reasonType'] ?? 'textarea');
+        <?php foreach ($followUps as $followUp):
+          $reasonType = normalize_yes_no_reason_type($followUp['type'] ?? 'textarea');
           $reasonInputType = in_array($reasonType, ['email', 'tel', 'number', 'date'], true) ? $reasonType : 'text';
+          $reasonName = yes_no_follow_up_storage_key($name, $followUp);
+          $reasonVal = $data[$reasonName] ?? '';
+          $showReason = (string) $value === (string) $followUp['when'];
+          $controlId = 'sub-' . e($id) . '-fu-' . e((string) $followUp['id']);
         ?>
-          <div class="submission-edit-reason" <?= $showReason ? '' : 'hidden' ?> data-reason-when="<?= e($reasonWhen) ?>" data-field-name="<?= e($name) ?>">
-            <label for="sub-<?= e($id) ?>-reason"><?= e($field['reasonLabel'] ?? 'Please explain') ?></label>
+          <div class="submission-edit-reason" <?= $showReason ? '' : 'hidden' ?>
+            data-reason-when="<?= e($followUp['when']) ?>"
+            data-field-name="<?= e($name) ?>">
+            <label for="<?= $controlId ?>"><?= e($followUp['label']) ?></label>
             <?php if ($reasonType === 'textarea'): ?>
-              <textarea id="sub-<?= e($id) ?>-reason" name="<?= e($reasonName) ?>" rows="3"><?= e((string) $reasonVal) ?></textarea>
+              <textarea id="<?= $controlId ?>" name="<?= e($reasonName) ?>" rows="3"><?= e((string) $reasonVal) ?></textarea>
             <?php else: ?>
               <input type="<?= e($reasonInputType) ?>"
-                id="sub-<?= e($id) ?>-reason"
+                id="<?= $controlId ?>"
                 name="<?= e($reasonName) ?>"
                 value="<?= e((string) $reasonVal) ?>">
             <?php endif; ?>
           </div>
-        <?php endif; ?>
+        <?php endforeach; ?>
 
       <?php elseif ($type === 'checkbox'):
         $checked = is_array($value) ? $value : [];

@@ -42,7 +42,7 @@ function form_field_uses_half_column(string $type, array $field = []): bool
         return true;
     }
     if ($type === 'yes_no') {
-        return empty($field['reasonWhen']);
+        return yes_no_follow_ups($field) === [];
     }
     return false;
 }
@@ -314,6 +314,86 @@ function normalize_yes_no_reason_type(mixed $type): string
     return array_key_exists($type, yes_no_reason_types()) ? $type : 'textarea';
 }
 
+/**
+ * Normalize Yes/No follow-up fields. Migrates legacy single reason* settings.
+ *
+ * @return list<array{id: string, when: string, type: string, label: string, placeholder: string, required: bool, legacy: bool}>
+ */
+function normalize_yes_no_follow_ups(array $field): array
+{
+    $raw = $field['followUps'] ?? null;
+    $followUps = [];
+
+    if (is_array($raw) && $raw !== []) {
+        foreach ($raw as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $when = (string) ($item['when'] ?? '');
+            if (!in_array($when, ['yes', 'no'], true)) {
+                continue;
+            }
+            $id = preg_replace('/[^a-zA-Z0-9_]/', '_', (string) ($item['id'] ?? '')) ?: ('fu_' . bin2hex(random_bytes(3)));
+            $followUps[] = [
+                'id' => $id,
+                'when' => $when,
+                'type' => normalize_yes_no_reason_type($item['type'] ?? 'textarea'),
+                'label' => trim((string) ($item['label'] ?? 'Please explain your answer')) ?: 'Please explain your answer',
+                'placeholder' => (string) ($item['placeholder'] ?? ''),
+                'required' => !empty($item['required']),
+                'legacy' => !empty($item['legacy']) || $id === 'legacy_reason',
+            ];
+        }
+    }
+
+    if ($followUps === []) {
+        $when = (string) ($field['reasonWhen'] ?? '');
+        if (in_array($when, ['yes', 'no'], true)) {
+            $followUps[] = [
+                'id' => 'legacy_reason',
+                'when' => $when,
+                'type' => normalize_yes_no_reason_type($field['reasonType'] ?? 'textarea'),
+                'label' => trim((string) ($field['reasonLabel'] ?? 'Please explain your answer')) ?: 'Please explain your answer',
+                'placeholder' => (string) ($field['reasonPlaceholder'] ?? ''),
+                'required' => array_key_exists('reasonRequired', $field) ? !empty($field['reasonRequired']) : true,
+                'legacy' => true,
+            ];
+        }
+    }
+
+    return array_values($followUps);
+}
+
+/** Storage key for a Yes/No follow-up answer in submission data. */
+function yes_no_follow_up_storage_key(string $fieldName, array $followUp): string
+{
+    if (!empty($followUp['legacy']) || ($followUp['id'] ?? '') === 'legacy_reason') {
+        return $fieldName . '_reason';
+    }
+    $id = preg_replace('/[^a-zA-Z0-9_]/', '_', (string) ($followUp['id'] ?? 'fu')) ?: 'fu';
+
+    return $fieldName . '_fu_' . $id;
+}
+
+/** @return list<array{id: string, when: string, type: string, label: string, placeholder: string, required: bool, legacy: bool}> */
+function yes_no_follow_ups(array $field): array
+{
+    return normalize_yes_no_follow_ups($field);
+}
+
+/** Follow-ups that should show for a given Yes/No answer. */
+function yes_no_follow_ups_for_answer(array $field, string $answer): array
+{
+    if (!in_array($answer, ['yes', 'no'], true)) {
+        return [];
+    }
+
+    return array_values(array_filter(
+        yes_no_follow_ups($field),
+        static fn (array $fu): bool => ($fu['when'] ?? '') === $answer
+    ));
+}
+
 function default_field(string $type = 'text'): array
 {
     $id = 'f_' . bin2hex(random_bytes(4));
@@ -341,6 +421,8 @@ function default_field(string $type = 'text'): array
             ['value' => 'yes', 'label' => 'Yes'],
             ['value' => 'no', 'label' => 'No'],
         ];
+        $base['followUps'] = [];
+        // Legacy single-reason keys kept for older schemas until normalize migrates them.
         $base['reasonWhen'] = '';
         $base['reasonLabel'] = 'Please explain your answer';
         $base['reasonPlaceholder'] = '';
@@ -696,12 +778,22 @@ function normalize_form_schema(array $schema): array
         $merged['id'] = (string) ($merged['id'] ?? ('f_' . bin2hex(random_bytes(4))));
         $merged['name'] = preg_replace('/[^a-zA-Z0-9_]/', '_', (string) ($merged['name'] ?? $merged['id'])) ?: $merged['id'];
         if ($type === 'yes_no') {
-            $when = (string) ($merged['reasonWhen'] ?? '');
-            $merged['reasonWhen'] = in_array($when, ['yes', 'no'], true) ? $when : '';
-            $merged['reasonLabel'] = trim((string) ($merged['reasonLabel'] ?? 'Please explain your answer'));
-            $merged['reasonPlaceholder'] = (string) ($merged['reasonPlaceholder'] ?? '');
-            $merged['reasonRequired'] = !empty($merged['reasonRequired']);
-            $merged['reasonType'] = normalize_yes_no_reason_type($merged['reasonType'] ?? 'textarea');
+            $merged['followUps'] = normalize_yes_no_follow_ups($merged);
+            // Keep legacy mirrors for older readers / partial UI updates.
+            $first = $merged['followUps'][0] ?? null;
+            if ($first) {
+                $merged['reasonWhen'] = $first['when'];
+                $merged['reasonLabel'] = $first['label'];
+                $merged['reasonPlaceholder'] = $first['placeholder'];
+                $merged['reasonRequired'] = $first['required'];
+                $merged['reasonType'] = $first['type'];
+            } else {
+                $merged['reasonWhen'] = '';
+                $merged['reasonLabel'] = 'Please explain your answer';
+                $merged['reasonPlaceholder'] = '';
+                $merged['reasonRequired'] = true;
+                $merged['reasonType'] = 'textarea';
+            }
         }
         if ($type === 'partners') {
             $input = (string) ($merged['partnerInput'] ?? 'select');

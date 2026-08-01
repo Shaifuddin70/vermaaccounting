@@ -129,13 +129,6 @@ foreach ($schema['fields'] as $field) {
     foreach ($result['extra'] as $extraKey => $extraVal) {
         $data[$extraKey] = $extraVal;
     }
-    if ($type === 'yes_no') {
-        $reasonWhen = (string) ($field['reasonWhen'] ?? '');
-        $reasonKey = $name . '_reason';
-        if ($reasonWhen === '' || $result['value'] !== $reasonWhen) {
-            unset($data[$reasonKey]);
-        }
-    }
 }
 
 if ($errors) {

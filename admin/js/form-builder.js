@@ -652,45 +652,77 @@
       }
       ${
         field.type === 'yes_no'
-          ? `
+          ? (() => {
+              if (!Array.isArray(field.followUps)) {
+                field.followUps = [];
+                if (field.reasonWhen === 'yes' || field.reasonWhen === 'no') {
+                  field.followUps.push({
+                    id: 'legacy_reason',
+                    when: field.reasonWhen,
+                    type: field.reasonType || 'textarea',
+                    label: field.reasonLabel || 'Please explain your answer',
+                    placeholder: field.reasonPlaceholder || '',
+                    required: field.reasonRequired !== false,
+                    legacy: true,
+                  });
+                }
+              }
+              const typeOpts = [
+                ['textarea', 'Long text'],
+                ['text', 'Short text'],
+                ['email', 'Email'],
+                ['tel', 'Phone'],
+                ['number', 'Number'],
+                ['date', 'Date'],
+              ];
+              const rows = (field.followUps || [])
+                .map((fu, i) => {
+                  const typeOptions = typeOpts
+                    .map(
+                      ([val, lab]) =>
+                        `<option value="${val}" ${fu.type === val || (!fu.type && val === 'textarea') ? 'selected' : ''}>${lab}</option>`
+                    )
+                    .join('');
+                  return `
+        <div class="yes-no-followup-row" data-followup-index="${i}">
+          <div class="admin-fields-2col">
+            <div class="admin-field">
+              <label>Show when answer is</label>
+              <select data-fu-when="${i}">
+                <option value="no" ${fu.when === 'no' ? 'selected' : ''}>No</option>
+                <option value="yes" ${fu.when === 'yes' ? 'selected' : ''}>Yes</option>
+              </select>
+            </div>
+            <div class="admin-field">
+              <label>Field type</label>
+              <select data-fu-type="${i}">${typeOptions}</select>
+            </div>
+            <div class="admin-field">
+              <label>Label</label>
+              <input type="text" data-fu-label="${i}" value="${escapeAttr(fu.label || '')}" placeholder="Please explain">
+            </div>
+            <div class="admin-field">
+              <label>Placeholder</label>
+              <input type="text" data-fu-placeholder="${i}" value="${escapeAttr(fu.placeholder || '')}">
+            </div>
+            <div class="admin-field admin-field--full" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
+              <label class="admin-checkbox-label">
+                <input type="checkbox" data-fu-required="${i}" ${fu.required !== false ? 'checked' : ''}>
+                <span>Required when shown</span>
+              </label>
+              <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-fu-remove="${i}">Remove</button>
+            </div>
+          </div>
+        </div>`;
+                })
+                .join('');
+              return `
       <hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
-      <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Follow-up reason</h3>
-      <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Show a follow-up field when the user picks Yes or No.</p>
-      <div class="admin-fields-2col">
-        <div class="admin-field">
-          <label>Ask for reason when answer is</label>
-          <select id="fe-reason-when">
-            <option value="" ${!(field.reasonWhen) ? 'selected' : ''}>Never</option>
-            <option value="no" ${field.reasonWhen === 'no' ? 'selected' : ''}>No</option>
-            <option value="yes" ${field.reasonWhen === 'yes' ? 'selected' : ''}>Yes</option>
-          </select>
-        </div>
-        <div class="admin-field">
-          <label for="fe-reason-type">Reason field type</label>
-          <select id="fe-reason-type">
-            <option value="textarea" ${(!field.reasonType || field.reasonType === 'textarea') ? 'selected' : ''}>Long text</option>
-            <option value="text" ${field.reasonType === 'text' ? 'selected' : ''}>Short text</option>
-            <option value="email" ${field.reasonType === 'email' ? 'selected' : ''}>Email</option>
-            <option value="tel" ${field.reasonType === 'tel' ? 'selected' : ''}>Phone</option>
-            <option value="number" ${field.reasonType === 'number' ? 'selected' : ''}>Number</option>
-            <option value="date" ${field.reasonType === 'date' ? 'selected' : ''}>Date</option>
-          </select>
-        </div>
-        <div class="admin-field admin-field--full">
-          <label class="admin-checkbox-label">
-            <input type="checkbox" id="fe-reason-required" ${field.reasonRequired !== false ? 'checked' : ''}>
-            <span>Reason required when shown</span>
-          </label>
-        </div>
-        <div class="admin-field">
-          <label>Reason field label</label>
-          <input type="text" id="fe-reason-label" value="${escapeAttr(field.reasonLabel || 'Please explain your answer')}">
-        </div>
-        <div class="admin-field">
-          <label>Reason placeholder</label>
-          <input type="text" id="fe-reason-placeholder" value="${escapeAttr(field.reasonPlaceholder || '')}">
-        </div>
-      </div>`
+      <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Follow-up fields</h3>
+      <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Add one or more fields that appear when the user picks Yes or No.</p>
+      <div id="fe-followups">${rows || '<p style="font-size:0.85rem;color:#94a3b8;margin:0 0 0.75rem;">No follow-up fields yet.</p>'}</div>
+      <button type="button" class="admin-btn admin-btn-secondary" id="fe-add-followup">+ Add follow-up field</button>`;
+            })()
           : ''
       }
       ${
@@ -933,20 +965,60 @@
       preset.value = known.includes(fmt) ? fmt : '__custom';
     });
 
-    const syncYesNoReason = () => {
+    const syncYesNoFollowUps = () => {
       if (field.type !== 'yes_no') return;
-      field.reasonWhen = el('fe-reason-when')?.value || '';
-      field.reasonType = el('fe-reason-type')?.value || 'textarea';
-      field.reasonLabel = el('fe-reason-label')?.value || 'Please explain your answer';
-      field.reasonPlaceholder = el('fe-reason-placeholder')?.value || '';
-      field.reasonRequired = el('fe-reason-required')?.checked ?? true;
-    };
-    ['fe-reason-when', 'fe-reason-type', 'fe-reason-label', 'fe-reason-placeholder', 'fe-reason-required'].forEach((id) => {
-      const node = el(id);
-      if (node) {
-        node.addEventListener('input', syncYesNoReason);
-        node.addEventListener('change', syncYesNoReason);
+      if (!Array.isArray(field.followUps)) field.followUps = [];
+      field.followUps.forEach((fu, i) => {
+        const whenEl = fieldEditor.querySelector(`[data-fu-when="${i}"]`);
+        const typeEl = fieldEditor.querySelector(`[data-fu-type="${i}"]`);
+        const labelEl = fieldEditor.querySelector(`[data-fu-label="${i}"]`);
+        const phEl = fieldEditor.querySelector(`[data-fu-placeholder="${i}"]`);
+        const reqEl = fieldEditor.querySelector(`[data-fu-required="${i}"]`);
+        if (whenEl) fu.when = whenEl.value === 'yes' ? 'yes' : 'no';
+        if (typeEl) fu.type = typeEl.value || 'textarea';
+        if (labelEl) fu.label = labelEl.value || 'Please explain your answer';
+        if (phEl) fu.placeholder = phEl.value || '';
+        if (reqEl) fu.required = reqEl.checked;
+      });
+      const first = field.followUps[0];
+      if (first) {
+        field.reasonWhen = first.when;
+        field.reasonType = first.type;
+        field.reasonLabel = first.label;
+        field.reasonPlaceholder = first.placeholder;
+        field.reasonRequired = first.required;
+      } else {
+        field.reasonWhen = '';
       }
+    };
+
+    fieldEditor.querySelectorAll('[data-fu-when], [data-fu-type], [data-fu-label], [data-fu-placeholder], [data-fu-required]').forEach((node) => {
+      node.addEventListener('input', syncYesNoFollowUps);
+      node.addEventListener('change', syncYesNoFollowUps);
+    });
+
+    el('fe-add-followup')?.addEventListener('click', () => {
+      if (!Array.isArray(field.followUps)) field.followUps = [];
+      field.followUps.push({
+        id: 'fu_' + Math.random().toString(36).slice(2, 8),
+        when: 'no',
+        type: 'textarea',
+        label: 'Please explain why',
+        placeholder: '',
+        required: true,
+        legacy: false,
+      });
+      renderFieldEditor();
+    });
+
+    fieldEditor.querySelectorAll('[data-fu-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.getAttribute('data-fu-remove'));
+        if (!Array.isArray(field.followUps)) return;
+        field.followUps.splice(i, 1);
+        syncYesNoFollowUps();
+        renderFieldEditor();
+      });
     });
 
     el('fe-partner-input')?.addEventListener('change', (e) => {
@@ -1071,6 +1143,17 @@
         options: [
           { label: 'Yes', value: 'yes' },
           { label: 'No', value: 'no' },
+        ],
+        followUps: [
+          {
+            id: 'fu_reason',
+            when: 'no',
+            type: 'textarea',
+            label: 'Please explain why',
+            placeholder: '',
+            required: true,
+            legacy: false,
+          },
         ],
         reasonWhen: 'no',
         reasonLabel: 'Please explain why',

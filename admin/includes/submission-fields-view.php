@@ -103,12 +103,16 @@
           <?php endif; ?>
         <?php elseif ($type === 'yes_no'):
           $val = $data[$name] ?? '';
-          $reasonKey = $name . '_reason';
         ?>
-          <p class="submission-value"><?= e($val !== '' ? ucfirst($val) : '—') ?></p>
-          <?php if (!empty($data[$reasonKey])): ?>
-            <p class="submission-reason"><strong><?= e($field['reasonLabel'] ?? 'Reason') ?>:</strong> <?= nl2br(e((string) $data[$reasonKey])) ?></p>
-          <?php endif; ?>
+          <p class="submission-value"><?= e($val !== '' ? ucfirst((string) $val) : '—') ?></p>
+          <?php foreach (yes_no_follow_ups($field) as $followUp):
+            $reasonKey = yes_no_follow_up_storage_key($name, $followUp);
+            if (!isset($data[$reasonKey]) || trim((string) $data[$reasonKey]) === '') {
+                continue;
+            }
+          ?>
+            <p class="submission-reason"><strong><?= e($followUp['label']) ?>:</strong> <?= nl2br(e((string) $data[$reasonKey])) ?></p>
+          <?php endforeach; ?>
         <?php elseif ($type === 'checkbox'): ?>
           <p class="submission-value"><?= e(format_submission_value($data[$name] ?? [])) ?: '—' ?></p>
         <?php elseif ($type === 'partners'): ?>

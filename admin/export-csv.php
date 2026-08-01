@@ -61,8 +61,10 @@ if ($taxYearOn) {
 $headers[] = 'IP Address';
 foreach ($inputFields as $field) {
     $headers[] = $field['label'];
-    if ($field['type'] === 'yes_no' && !empty($field['reasonWhen'])) {
-        $headers[] = ($field['reasonLabel'] ?? 'Reason') . ' (' . $field['label'] . ')';
+    if ($field['type'] === 'yes_no') {
+        foreach (yes_no_follow_ups($field) as $followUp) {
+            $headers[] = ($followUp['label'] ?? 'Follow-up') . ' (' . $field['label'] . ')';
+        }
     }
 }
 $headers[] = 'Uploaded Files';
@@ -86,8 +88,11 @@ foreach ($submissions as $sub) {
             $val = implode('; ', $val);
         }
         $row[] = (string) $val;
-        if ($field['type'] === 'yes_no' && !empty($field['reasonWhen'])) {
-            $row[] = (string) ($data[$key . '_reason'] ?? '');
+        if ($field['type'] === 'yes_no') {
+            foreach (yes_no_follow_ups($field) as $followUp) {
+                $fuKey = yes_no_follow_up_storage_key($key, $followUp);
+                $row[] = (string) ($data[$fuKey] ?? '');
+            }
         }
     }
 

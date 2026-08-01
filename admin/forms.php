@@ -20,6 +20,7 @@ $paginationLabel = 'forms';
 $paginationAriaLabel = 'Forms list pages';
 $paginationUrl = fn (int $p) => pagination_url('/admin/forms', [], $p, $pagination['per_page']);
 
+$csrf = Auth::csrfToken();
 $pageTitle = 'All forms';
 $activeNav = 'forms';
 require __DIR__ . '/includes/layout-start.php';
@@ -55,6 +56,9 @@ require __DIR__ . '/includes/layout-start.php';
         <?php foreach ($forms as $form):
           $fid = (int) $form['id'];
           $subCount = $submissionCounts[$fid]['all'] ?? 0;
+          $deleteConfirm = $subCount > 0
+              ? 'Delete “' . $form['title'] . '”? This will permanently remove the form and its ' . number_format($subCount) . ' submission' . ($subCount === 1 ? '' : 's') . '. This cannot be undone.'
+              : 'Delete “' . $form['title'] . '”? This cannot be undone.';
         ?>
           <tr>
             <td>
@@ -90,6 +94,13 @@ require __DIR__ . '/includes/layout-start.php';
                 <?php else: ?>
                   <span class="admin-btn admin-btn-sm admin-btn-disabled" title="No submissions yet">CSV</span>
                 <?php endif; ?>
+                <form method="post" action="/admin/form-action" class="inline-form"
+                  onsubmit="return confirm(<?= e(json_encode($deleteConfirm)) ?>);">
+                  <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                  <input type="hidden" name="form_id" value="<?= $fid ?>">
+                  <input type="hidden" name="action" value="delete">
+                  <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">Delete</button>
+                </form>
               </div>
             </td>
           </tr>
