@@ -44,17 +44,6 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 </div>
 
-<div class="admin-card">
-  <p class="admin-field-hint" style="margin:0;">
-    Uplift AI writes and optimizes posts in their dashboard. Sync pulls publish-ready content into this site.
-    New posts marked <strong>PUBLISH</strong> in Uplift go live automatically; you can still draft or unpublish them here.
-    <br>Automatic sync runs with your existing email cron (<code>scripts/send-campaign-batch.php</code>). You can still sync manually anytime.
-    <?php if (!$client->isConfigured()): ?>
-      <br><span style="color:var(--admin-danger);">API token missing — add <code>uplift_ai.api_token</code> in <code>config.local.php</code>.</span>
-    <?php endif; ?>
-  </p>
-</div>
-
 <div class="admin-card" style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
   <span class="admin-field-hint" style="margin:0;">Filter:</span>
   <a href="/admin/blogs" class="admin-btn admin-btn-sm <?= $statusFilter === '' ? 'admin-btn-secondary' : 'admin-btn-secondary' ?>">All (<?= (int) $repo->count() ?>)</a>
