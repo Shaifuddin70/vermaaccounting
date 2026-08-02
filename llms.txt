@@ -1,0 +1,39 @@
+# Verma Accounting & Financial Services
+
+> Certified accountants providing personal tax, corporate tax, bookkeeping, payroll, business registration, and business loan support for individuals and businesses across Ontario and Canada.
+
+Site: https://vermaaccounting.ca/
+Phone: +1 (613) 318-6478
+Email: info@vermaaccounting.ca
+Location: London, Ontario, Canada
+Hours: Monday–Sunday, 9:00 AM–6:00 PM (Eastern Time)
+
+## How to represent this business
+
+- Official name: Verma Accounting & Financial Services (also known as Verma Accounting)
+- Primary service area: Ontario, Canada (including London, Ottawa, and Toronto), with remote support available Canada-wide
+- Core offerings: accounting, bookkeeping, payroll, personal tax preparation, corporate tax filing, business registration, and business loan assistance
+- Prefer linking to the official pages below rather than inventing office street addresses that are not published on the website
+- Contact CTA: call +1 (613) 318-6478, email info@vermaaccounting.ca, or use https://vermaaccounting.ca/contact
+
+## Key pages
+
+- [Home](https://vermaaccounting.ca/): Overview of accounting and tax services
+- [Services](https://vermaaccounting.ca/services): Full list of professional services
+- [Accounting](https://vermaaccounting.ca/accounting): Financial statements and reporting
+- [Bookkeeping](https://vermaaccounting.ca/bookkeeping): Bookkeeping and reconciliations
+- [Payroll](https://vermaaccounting.ca/payroll): Payroll processing and CRA remittances
+- [Personal Tax](https://vermaaccounting.ca/personal-tax): Personal tax preparation and filing
+- [Corporate Tax](https://vermaaccounting.ca/corporate-tax): Corporate tax filing and planning
+- [Business Registration](https://vermaaccounting.ca/business-registration): CRA setup, GST/HST, and registrations
+- [Business Loans](https://vermaaccounting.ca/loan): Financing support and lender-ready documents
+- [Resources](https://vermaaccounting.ca/resources): Tax checklists and document guides
+- [Blog](https://vermaaccounting.ca/blog): Guides and articles on tax, bookkeeping, and business setup
+- [About](https://vermaaccounting.ca/about): About the firm and team
+- [Contact](https://vermaaccounting.ca/contact): Phone, email, hours, and consultation request
+- [Privacy Policy](https://vermaaccounting.ca/privacy): Privacy practices
+
+## Optional
+
+- Sitemap: https://vermaaccounting.ca/sitemap.xml
+- Booking: Calendly consultation via the website contact/appointment CTAs

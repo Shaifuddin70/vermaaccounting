@@ -98,6 +98,109 @@ function seo_site_base_url(): string
 }
 
 /**
+ * Absolute asset URL for schema/meta images.
+ */
+function seo_absolute_url(string $pathOrUrl): string
+{
+    $value = trim($pathOrUrl);
+    if ($value === '') {
+        return seo_site_base_url() . '/';
+    }
+    if (preg_match('#^https?://#i', $value)) {
+        return $value;
+    }
+    return seo_site_base_url() . '/' . ltrim($value, '/');
+}
+
+/**
+ * Catalog of public service pages for ItemList / Service schema.
+ *
+ * @return list<array{path: string, name: string, serviceType: string}>
+ */
+function seo_service_catalog(): array
+{
+    return [
+        ['path' => '/accounting', 'name' => 'Accounting Services', 'serviceType' => 'Accounting'],
+        ['path' => '/bookkeeping', 'name' => 'Bookkeeping Services', 'serviceType' => 'Bookkeeping'],
+        ['path' => '/payroll', 'name' => 'Payroll Services', 'serviceType' => 'Payroll'],
+        ['path' => '/personal-tax', 'name' => 'Personal Tax Preparation', 'serviceType' => 'Personal tax preparation'],
+        ['path' => '/corporate-tax', 'name' => 'Corporate Tax Filing', 'serviceType' => 'Corporate tax filing'],
+        ['path' => '/business-registration', 'name' => 'Business Registration', 'serviceType' => 'Business registration'],
+        ['path' => '/loan', 'name' => 'Business Loan Services', 'serviceType' => 'Business financing'],
+    ];
+}
+
+/**
+ * Homepage FAQ pairs used for visible FAQ UI + FAQPage schema.
+ *
+ * @return list<array{question: string, answer: string}>
+ */
+function seo_home_faqs(): array
+{
+    return [
+        [
+            'question' => 'Do you offer online or remote accounting services?',
+            'answer' => 'Yes. Using secure, cloud-based systems, we can manage your accounts, filings, and financial documents remotely, no matter where you are in Canada.',
+        ],
+        [
+            'question' => 'Can you help with both personal and corporate taxes?',
+            'answer' => 'Absolutely. We prepare and file personal and corporate tax returns with full CRA compliance while maximizing eligible deductions and credits.',
+        ],
+        [
+            'question' => 'Do you assist with business registration?',
+            'answer' => 'Yes. We handle CRA business numbers, GST/HST registration, payroll accounts, and other compliance steps to ensure your business is legally registered and ready to operate.',
+        ],
+        [
+            'question' => 'How do you ensure accuracy in accounting and tax filings?',
+            'answer' => 'Every ledger, statement, and return is double-checked. Our accountants combine professional expertise with advanced tools and secure systems to ensure precision and CRA compliance.',
+        ],
+        [
+            'question' => 'Will I receive ongoing support after tax filing or setup?',
+            'answer' => 'Yes. We provide continuous updates, insights, and guidance to help you make informed financial decisions throughout the year.',
+        ],
+        [
+            'question' => 'What makes your bookkeeping and accounting services different?',
+            'answer' => 'Our approach blends accuracy, clarity, and compliance. Using cloud-based tools, we provide real-time access to organized records, detailed reports, and audit-ready financial statements.',
+        ],
+    ];
+}
+
+/**
+ * Build FAQPage JSON-LD from Q&A pairs.
+ *
+ * @param list<array{question: string, answer: string}> $faqs
+ * @return array<string, mixed>|null
+ */
+function seo_faq_page_schema(array $faqs): ?array
+{
+    $entities = [];
+    foreach ($faqs as $faq) {
+        $q = trim((string) ($faq['question'] ?? ''));
+        $a = trim((string) ($faq['answer'] ?? ''));
+        if ($q === '' || $a === '') {
+            continue;
+        }
+        $entities[] = [
+            '@type' => 'Question',
+            'name' => $q,
+            'acceptedAnswer' => [
+                '@type' => 'Answer',
+                'text' => $a,
+            ],
+        ];
+    }
+    if ($entities === []) {
+        return null;
+    }
+
+    return [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => $entities,
+    ];
+}
+
+/**
  * Page-level structured data for key landing pages.
  *
  * @return array<string, mixed>|null
@@ -107,6 +210,25 @@ function seo_page_schema(string $path): ?array
     $path = seo_normalize_path($path);
     $base = seo_site_base_url();
     $meta = seo_meta_for_path($path);
+    $businessId = $base . '/#business';
+    $websiteId = $base . '/#website';
+
+    if ($path === '/') {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'WebPage',
+            '@id' => $base . '/#webpage',
+            'url' => $base . '/',
+            'name' => $meta['title'],
+            'description' => $meta['description'],
+            'isPartOf' => ['@id' => $websiteId],
+            'about' => ['@id' => $businessId],
+            'primaryImageOfPage' => [
+                '@type' => 'ImageObject',
+                'url' => seo_absolute_url(brand_logo_url()),
+            ],
+        ];
+    }
 
     if ($path === '/contact') {
         return [
@@ -116,22 +238,28 @@ function seo_page_schema(string $path): ?array
             'url' => $base . '/contact',
             'name' => $meta['title'],
             'description' => $meta['description'],
-            'isPartOf' => ['@id' => $base . '/#website'],
-            'about' => ['@id' => $base . '/#business'],
-            'mainEntity' => ['@id' => $base . '/#business'],
+            'isPartOf' => ['@id' => $websiteId],
+            'about' => ['@id' => $businessId],
+            'mainEntity' => ['@id' => $businessId],
+        ];
+    }
+
+    if ($path === '/about') {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'AboutPage',
+            '@id' => $base . '/about#webpage',
+            'url' => $base . '/about',
+            'name' => $meta['title'],
+            'description' => $meta['description'],
+            'isPartOf' => ['@id' => $websiteId],
+            'about' => ['@id' => $businessId],
+            'mainEntity' => ['@id' => $businessId],
         ];
     }
 
     if ($path === '/services') {
-        $services = [
-            ['name' => 'Bookkeeping Services', 'url' => $base . '/bookkeeping'],
-            ['name' => 'Accounting Services', 'url' => $base . '/accounting'],
-            ['name' => 'Payroll Services', 'url' => $base . '/payroll'],
-            ['name' => 'Personal Tax Preparation', 'url' => $base . '/personal-tax'],
-            ['name' => 'Corporate Tax Filing', 'url' => $base . '/corporate-tax'],
-            ['name' => 'Business Registration', 'url' => $base . '/business-registration'],
-            ['name' => 'Business Loan Services', 'url' => $base . '/loan'],
-        ];
+        $services = seo_service_catalog();
 
         return [
             '@context' => 'https://schema.org',
@@ -140,8 +268,8 @@ function seo_page_schema(string $path): ?array
             'url' => $base . '/services',
             'name' => $meta['title'],
             'description' => $meta['description'],
-            'isPartOf' => ['@id' => $base . '/#website'],
-            'about' => ['@id' => $base . '/#business'],
+            'isPartOf' => ['@id' => $websiteId],
+            'about' => ['@id' => $businessId],
             'mainEntity' => [
                 '@type' => 'ItemList',
                 'itemListElement' => array_map(
@@ -149,7 +277,7 @@ function seo_page_schema(string $path): ?array
                         '@type' => 'ListItem',
                         'position' => $index + 1,
                         'name' => $service['name'],
-                        'url' => $service['url'],
+                        'url' => $base . $service['path'],
                     ],
                     $services,
                     array_keys($services)
@@ -158,6 +286,33 @@ function seo_page_schema(string $path): ?array
         ];
     }
 
+    if ($path === '/blog') {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'Blog',
+            '@id' => $base . '/blog#blog',
+            'url' => $base . '/blog',
+            'name' => $meta['title'],
+            'description' => $meta['description'],
+            'publisher' => ['@id' => $businessId],
+            'isPartOf' => ['@id' => $websiteId],
+        ];
+    }
+
+    if ($path === '/resources') {
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'CollectionPage',
+            '@id' => $base . '/resources#webpage',
+            'url' => $base . '/resources',
+            'name' => $meta['title'],
+            'description' => $meta['description'],
+            'isPartOf' => ['@id' => $websiteId],
+            'about' => ['@id' => $businessId],
+        ];
+    }
+
+    // Service pages already emit Service + FAQPage JSON-LD in their templates.
     return null;
 }
 
@@ -181,19 +336,34 @@ function seo_resolve(?string $path = null, ?string $titleOverride = null, ?strin
     return $meta;
 }
 
-function seo_local_business_schema(): array
+function seo_website_schema(): array
 {
-    $logo = brand_logo_url();
-    if (str_starts_with($logo, '/')) {
-        $logo = 'https://vermaaccounting.ca' . $logo;
-    }
+    $base = seo_site_base_url();
 
     return [
         '@context' => 'https://schema.org',
-        '@type' => 'AccountingService',
-        '@id' => seo_site_base_url() . '/#business',
+        '@type' => 'WebSite',
+        '@id' => $base . '/#website',
+        'url' => $base . '/',
         'name' => 'Verma Accounting & Financial Services',
-        'url' => seo_site_base_url() . '/',
+        'description' => 'Certified accountants providing personal tax, corporate tax, bookkeeping, payroll, and business registration services across Ontario, Canada.',
+        'publisher' => ['@id' => $base . '/#business'],
+        'inLanguage' => 'en-CA',
+    ];
+}
+
+function seo_local_business_schema(): array
+{
+    $base = seo_site_base_url();
+    $logo = seo_absolute_url(brand_logo_url());
+
+    return [
+        '@context' => 'https://schema.org',
+        '@type' => ['LocalBusiness', 'AccountingService'],
+        '@id' => $base . '/#business',
+        'name' => 'Verma Accounting & Financial Services',
+        'alternateName' => 'Verma Accounting',
+        'url' => $base . '/',
         'image' => $logo,
         'logo' => $logo,
         'description' => 'Certified accountants providing personal tax, corporate tax, bookkeeping, payroll, and business registration services across Ontario, Canada.',
@@ -201,8 +371,10 @@ function seo_local_business_schema(): array
         'telephone' => '+1-613-318-6478',
         'priceRange' => '$$',
         'currenciesAccepted' => 'CAD',
+        'paymentAccepted' => 'Cash, Credit Card, Debit Card, Interac e-Transfer',
         'address' => [
             '@type' => 'PostalAddress',
+            'addressLocality' => 'London',
             'addressRegion' => 'ON',
             'addressCountry' => 'CA',
         ],
@@ -211,9 +383,47 @@ function seo_local_business_schema(): array
             'latitude' => 42.9849,
             'longitude' => -81.2453,
         ],
+        'contactPoint' => [
+            [
+                '@type' => 'ContactPoint',
+                'telephone' => '+1-613-318-6478',
+                'contactType' => 'customer service',
+                'email' => 'info@vermaaccounting.ca',
+                'areaServed' => 'CA-ON',
+                'availableLanguage' => ['English'],
+                'hoursAvailable' => [
+                    '@type' => 'OpeningHoursSpecification',
+                    'dayOfWeek' => ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+                    'opens' => '09:00',
+                    'closes' => '18:00',
+                ],
+            ],
+        ],
         'areaServed' => [
-            '@type' => 'State',
-            'name' => 'Ontario',
+            [
+                '@type' => 'City',
+                'name' => 'London',
+                'containedInPlace' => [
+                    '@type' => 'State',
+                    'name' => 'Ontario',
+                ],
+            ],
+            [
+                '@type' => 'City',
+                'name' => 'Ottawa',
+            ],
+            [
+                '@type' => 'City',
+                'name' => 'Toronto',
+            ],
+            [
+                '@type' => 'State',
+                'name' => 'Ontario',
+            ],
+            [
+                '@type' => 'Country',
+                'name' => 'Canada',
+            ],
         ],
         'openingHoursSpecification' => [
             [
@@ -229,6 +439,24 @@ function seo_local_business_schema(): array
             'Bookkeeping',
             'Payroll',
             'Business Registration',
+            'Business Loans',
+        ],
+        'hasOfferCatalog' => [
+            '@type' => 'OfferCatalog',
+            'name' => 'Accounting and tax services',
+            'itemListElement' => array_map(
+                static function (array $service) use ($base): array {
+                    return [
+                        '@type' => 'Offer',
+                        'itemOffered' => [
+                            '@type' => 'Service',
+                            'name' => $service['name'],
+                            'url' => $base . $service['path'],
+                        ],
+                    ];
+                },
+                seo_service_catalog()
+            ),
         ],
         'sameAs' => [
             'https://www.facebook.com/profile.php?id=61570236688782',

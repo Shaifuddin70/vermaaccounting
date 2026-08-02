@@ -50,11 +50,13 @@ if ($canonicalPath !== '/') {
   <link rel="icon" type="image/jpeg" sizes="16x16" href="<?= asset('images/verma-accounting-favicon.jpg') ?>" />
 
   <!-- Additional SEO Meta Tags -->
-  <meta name="author" content="Verma Accounting & Financial Services" />
   <meta name="geo.region" content="CA-ON" />
-  <meta name="geo.placename" content="Ontario" />
+  <meta name="geo.placename" content="London, Ontario" />
   <meta name="geo.position" content="42.9849;-81.2453" />
   <meta name="ICBM" content="42.9849, -81.2453" />
+  <meta name="author" content="Verma Accounting & Financial Services" />
+  <link rel="me" href="tel:+16133186478" />
+  <link rel="me" href="mailto:info@vermaaccounting.ca" />
 
   <!-- Open Graph Meta Tags -->
   <meta property="og:title" content="<?= e($seoMeta['title']) ?>" />
@@ -86,22 +88,20 @@ if ($canonicalPath !== '/') {
 
 
 
-  <?php if ($canonicalPath === '/'): ?>
-  <!-- Structured Data for Local Business (home page only) -->
+  <!-- Structured data (JSON-LD) -->
   <script type="application/ld+json"><?= json_encode(seo_local_business_schema(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
-  <script type="application/ld+json"><?= json_encode([
-    '@context' => 'https://schema.org',
-    '@type' => 'WebSite',
-    '@id' => seo_site_base_url() . '/#website',
-    'url' => seo_site_base_url() . '/',
-    'name' => 'Verma Accounting & Financial Services',
-    'publisher' => ['@id' => seo_site_base_url() . '/#business'],
-  ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
-  <?php elseif ($seoPageSchema !== null): ?>
+  <script type="application/ld+json"><?= json_encode(seo_website_schema(), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+  <?php if ($seoPageSchema !== null): ?>
   <script type="application/ld+json"><?= json_encode($seoPageSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
   <?php endif; ?>
+  <?php if ($canonicalPath === '/'):
+    $homeFaqSchema = seo_faq_page_schema(seo_home_faqs());
+    if ($homeFaqSchema !== null):
+  ?>
+  <script type="application/ld+json"><?= json_encode($homeFaqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+  <?php endif; endif; ?>
 
-  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=69" />
+  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=71" />
 </head>
 
 <body>
@@ -121,7 +121,7 @@ if ($canonicalPath !== '/') {
               class="verma-logo-img" />
           </a>
         </div>
-        <a href="tel:613-318-6478" class="cta-button orange d-lg-none phone-icon-button" aria-label="Call 613-318-6478">
+        <a href="tel:+16133186478" class="cta-button orange d-lg-none phone-icon-button" aria-label="Call +1 613-318-6478">
           <i class="fas fa-phone" aria-hidden="true"></i>
         </a>
         <!-- Mobile Menu Toggle - Hamburger -->
@@ -201,7 +201,7 @@ if ($canonicalPath !== '/') {
               <div class="verma-contact-icon">
                 <i class="fas fa-phone"></i>
               </div>
-              <a href="tel:613-318-6478" class="verma-phone-link">613-318-6478</a>
+              <a href="tel:+16133186478" class="verma-phone-link">+1 (613) 318-6478</a>
             </div>
           </div>
           <div class="verma-cta">

@@ -64,6 +64,13 @@ if (!function_exists('asset')) {
          <h3 class="footer-heading">Get In Touch</h3>
          <ul class="footer-contact">
            <li>
+             <i class="fas fa-map-marker-alt"></i>
+             <div>
+               <strong>Location</strong>
+               <span>London, Ontario, Canada</span>
+             </div>
+           </li>
+           <li>
              <i class="fas fa-clock"></i>
              <div>
                <strong>Business Hours</strong>
@@ -81,7 +88,7 @@ if (!function_exists('asset')) {
              <i class="fas fa-phone"></i>
              <div>
                <strong>Call Us</strong>
-               <a href="tel:613-318-6478">+1 (613) 318-6478</a>
+               <a href="tel:+16133186478">+1 (613) 318-6478</a>
              </div>
            </li>
          </ul>

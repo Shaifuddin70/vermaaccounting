@@ -131,6 +131,58 @@ function blog_prepare_content_html(string $html): string
 }
 
 /**
+ * Extract FAQ question/answer pairs from prepared or raw blog HTML.
+ *
+ * @return list<array{question: string, answer: string}>
+ */
+function blog_extract_faqs(string $html): array
+{
+    $html = trim($html);
+    if ($html === '') {
+        return [];
+    }
+
+    // Prefer already-transformed accordion markup
+    if (preg_match_all(
+        '/<button\b[^>]*class=(["\'])[^"\']*\bfaq-question\b[^"\']*\1[^>]*>\s*<span>(.*?)<\/span>.*?<\/button>\s*<div\b[^>]*class=(["\'])[^"\']*\bfaq-answer\b[^"\']*\3[^>]*>(.*?)<\/div>/is',
+        $html,
+        $matches,
+        PREG_SET_ORDER
+    )) {
+        $faqs = [];
+        foreach ($matches as $match) {
+            $q = trim(html_entity_decode(strip_tags($match[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $a = trim(html_entity_decode(strip_tags($match[4]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            if ($q !== '' && $a !== '') {
+                $faqs[] = ['question' => $q, 'answer' => $a];
+            }
+        }
+        if ($faqs !== []) {
+            return $faqs;
+        }
+    }
+
+    if (!preg_match('/(<h2\b[^>]*>\s*(?:FAQs?|Frequently Asked Questions)\s*<\/h2>)\s*(.*?)(?=<h2\b|<section\b|$)/is', $html, $section)) {
+        return [];
+    }
+
+    if (!preg_match_all('/<h3\b[^>]*>(.*?)<\/h3>\s*(.*?)(?=<h3\b|$)/is', $section[2], $items, PREG_SET_ORDER)) {
+        return [];
+    }
+
+    $faqs = [];
+    foreach ($items as $item) {
+        $q = trim(html_entity_decode(strip_tags($item[1]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        $a = trim(html_entity_decode(strip_tags($item[2]), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($q !== '' && $a !== '') {
+            $faqs[] = ['question' => $q, 'answer' => $a];
+        }
+    }
+
+    return $faqs;
+}
+
+/**
  * Convert Uplift FAQ blocks (H2 + H3/P pairs) into the site accordion FAQ markup.
  */
 function blog_transform_faqs_html(string $html): string

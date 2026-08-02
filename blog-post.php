@@ -146,24 +146,43 @@ $authorPhoto = asset('images/rishab-verma-lg.jpg');
 $articleSchema = [
     '@context' => 'https://schema.org',
     '@type' => 'BlogPosting',
+    '@id' => 'https://vermaaccounting.ca' . $canonicalPath . '#article',
     'headline' => (string) $blog['title'],
     'description' => $seoDescription,
     'datePublished' => (string) ($blog['publish_date'] ?? ''),
     'dateModified' => (string) ($blog['source_updated_at'] ?? $blog['updated_at'] ?? ''),
     'author' => [
         '@type' => 'Person',
-        'name' => $author !== '' ? $author : 'Verma Accounting',
+        'name' => $author !== '' ? $author : 'Rishabh Verma',
+        'url' => 'https://vermaaccounting.ca/about',
+        'image' => seo_absolute_url(asset('images/rishab-verma-lg.jpg')),
     ],
     'publisher' => [
         '@type' => 'Organization',
+        '@id' => 'https://vermaaccounting.ca/#business',
         'name' => 'Verma Accounting & Financial Services',
         'url' => 'https://vermaaccounting.ca/',
+        'logo' => [
+            '@type' => 'ImageObject',
+            'url' => seo_absolute_url(brand_logo_url()),
+        ],
     ],
-    'mainEntityOfPage' => 'https://vermaaccounting.ca' . $canonicalPath,
+    'mainEntityOfPage' => [
+        '@type' => 'WebPage',
+        '@id' => 'https://vermaaccounting.ca' . $canonicalPath,
+    ],
+    'isPartOf' => [
+        '@type' => 'Blog',
+        '@id' => 'https://vermaaccounting.ca/blog#blog',
+    ],
 ];
 if ($ogImage !== '') {
-    $articleSchema['image'] = [$ogImage];
+    $articleSchema['image'] = [seo_absolute_url($ogImage)];
 }
+$blogFaqSchema = seo_faq_page_schema(blog_extract_faqs($contentHtml));
 ?>
 <script type="application/ld+json"><?= json_encode($articleSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+<?php if ($blogFaqSchema !== null): ?>
+<script type="application/ld+json"><?= json_encode($blogFaqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+<?php endif; ?>
 <?php include 'components/footer.php'; ?>

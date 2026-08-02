@@ -6,7 +6,7 @@
   <section class="page-header">
     <div class="container">
       <h1>Contact Verma Accounting</h1>
-      <p>Reach our Ontario tax and accounting team by phone, email, or the form below.</p>
+      <p>Ontario tax and accounting support by phone, email, or the form below. Serving London, Ottawa, Toronto, and clients across Canada.</p>
     </div>
     <a class="appointment-button" href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"> <i class="fas fa-calendar-alt"></i>Book an Appointment</a>
   </section>
@@ -21,6 +21,52 @@
     </div>
   </section>
 
+  <!-- Local contact / NAP -->
+  <section class="common-section contact-nap-section">
+    <div class="container">
+      <div class="section-header-modern">
+        <h2>Visit, call, or book online</h2>
+        <p>Clear contact details for Verma Accounting &amp; Financial Services in Ontario.</p>
+      </div>
+      <div class="contact-nap-grid">
+        <div class="contact-nap-card">
+          <h3>Phone</h3>
+          <p>
+            <a href="tel:+16133186478">+1 (613) 318-6478</a>
+          </p>
+          <p class="contact-nap-note">Call or WhatsApp for a free consultation.</p>
+        </div>
+        <div class="contact-nap-card">
+          <h3>Email</h3>
+          <p>
+            <a href="mailto:info@vermaaccounting.ca">info@vermaaccounting.ca</a>
+          </p>
+          <p class="contact-nap-note">We typically reply within one business day.</p>
+        </div>
+        <div class="contact-nap-card">
+          <h3>Location</h3>
+          <p>
+            <strong>Verma Accounting &amp; Financial Services</strong><br>
+            London, Ontario, Canada<br>
+            Serving clients across Ontario and Canada
+          </p>
+        </div>
+        <div class="contact-nap-card">
+          <h3>Business hours</h3>
+          <p>Monday – Sunday<br>9:00 AM – 6:00 PM (Eastern Time)</p>
+          <p class="contact-nap-note">Remote appointments available province-wide.</p>
+        </div>
+      </div>
+      <div class="contact-map-wrap">
+        <iframe
+          title="Verma Accounting service area — London, Ontario"
+          src="https://maps.google.com/maps?q=London%2C%20Ontario%2C%20Canada&z=10&output=embed"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          allowfullscreen></iframe>
+      </div>
+    </div>
+  </section>
 
   <!-- Contact Form Section -->
   <section class="contact-form-section">
@@ -57,16 +103,16 @@
           <div class="contact-form-content scroll-animate-left">
             <h2>Get In Touch</h2>
             <p class="contact-description">
-              We're here to help with all your tax and accounting needs. Contact
-              us today for a consultation.
+              We're here to help with all your tax and accounting needs across Ontario.
+              Contact us today for a consultation by phone, email, or the form.
             </p>
             <div class="contact-info">
-              <a href="tel:613-318-6478">
+              <a href="tel:+16133186478">
                 <div class="contact-item">
                   <i class="fas fa-phone"></i>
                   <div>
                     <h4>Phone</h4>
-                    613-318-6478
+                    +1 (613) 318-6478
                   </div>
                 </div>
               </a>
@@ -88,6 +134,13 @@
                   </div>
                 </div>
               </a>
+              <div class="contact-item">
+                <i class="fas fa-map-marker-alt"></i>
+                <div>
+                  <h4>Service area</h4>
+                  <span>London, Ontario · Ottawa · Toronto · Canada-wide</span>
+                </div>
+              </div>
               <div class="contact-item">
                 <i class="fas fa-clock"></i>
                 <div>
