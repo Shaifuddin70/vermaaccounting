@@ -46,6 +46,11 @@ return [
 
     'site_url' => 'https://vermaaccounting.ca',
 
+    // Uplift AI Custom API token (Website Integration → Custom API)
+    'uplift_ai' => [
+        'api_token' => 'uai_YOUR_TOKEN_HERE',
+    ],
+
     'mail' => [
         'enabled' => true,
         'transport' => 'smtp',

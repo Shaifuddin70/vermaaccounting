@@ -664,16 +664,23 @@
                     placeholder: field.reasonPlaceholder || '',
                     required: field.reasonRequired !== false,
                     legacy: true,
+                    options: [],
                   });
                 }
               }
               const typeOpts = [
-                ['textarea', 'Long text'],
                 ['text', 'Short text'],
+                ['textarea', 'Long text'],
                 ['email', 'Email'],
                 ['tel', 'Phone'],
                 ['number', 'Number'],
                 ['date', 'Date'],
+                ['select', 'Dropdown'],
+                ['radio', 'Single choice'],
+                ['checkbox', 'Multiple choice'],
+                ['partners', 'Partner reference'],
+                ['file', 'File upload'],
+                ['image', 'Image upload'],
               ];
               const rows = (field.followUps || [])
                 .map((fu, i) => {
@@ -683,6 +690,103 @@
                         `<option value="${val}" ${fu.type === val || (!fu.type && val === 'textarea') ? 'selected' : ''}>${lab}</option>`
                     )
                     .join('');
+                  const needsOptions = ['select', 'radio', 'checkbox'].includes(fu.type);
+                  if (needsOptions && (!Array.isArray(fu.options) || !fu.options.length)) {
+                    fu.options = [
+                      { value: 'option_1', label: 'Option 1' },
+                      { value: 'option_2', label: 'Option 2' },
+                    ];
+                  }
+                  const optionsHtml = needsOptions
+                    ? (fu.options || [])
+                        .map(
+                          (opt, oi) => `
+              <div class="condition-row" style="grid-template-columns:1fr 1fr auto;">
+                <input type="text" data-fu-opt-label="${i}:${oi}" value="${escapeAttr(opt.label || '')}" placeholder="Label">
+                <input type="text" data-fu-opt-value="${i}:${oi}" value="${escapeAttr(opt.value || '')}" placeholder="Value">
+                <button type="button" class="admin-btn admin-btn-danger" data-fu-opt-remove="${i}:${oi}">×</button>
+              </div>`
+                        )
+                        .join('') +
+                      `<button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" data-fu-opt-add="${i}">+ Option</button>`
+                    : '';
+                  const extraSettings =
+                    fu.type === 'number'
+                      ? `<div class="admin-field admin-field--full">
+              <label>Number format</label>
+              <input type="text" data-fu-number-format="${i}" value="${escapeAttr(fu.numberFormat || '')}" placeholder="e.g. ###-###-###">
+              <small class="admin-field-hint">Use # for each digit. Leave blank for a plain number.</small>
+            </div>`
+                      : fu.type === 'date'
+                        ? `<div class="admin-field admin-field--full">
+              <label>Minimum age (years)</label>
+              <input type="number" data-fu-min-age="${i}" min="0" max="120" value="${Number(fu.minAge) > 0 ? Number(fu.minAge) : ''}" placeholder="e.g. 18">
+            </div>`
+                        : fu.type === 'tel'
+                          ? `<div class="admin-fields-2col">
+              <div class="admin-field">
+                <label>Default country</label>
+                <select data-fu-phone-country="${i}">
+                  <option value="CA" ${(!fu.phoneCountry || fu.phoneCountry === 'CA') ? 'selected' : ''}>Canada (+1)</option>
+                  <option value="US" ${fu.phoneCountry === 'US' ? 'selected' : ''}>United States (+1)</option>
+                  <option value="GB" ${fu.phoneCountry === 'GB' ? 'selected' : ''}>United Kingdom (+44)</option>
+                  <option value="IN" ${fu.phoneCountry === 'IN' ? 'selected' : ''}>India (+91)</option>
+                  <option value="BD" ${fu.phoneCountry === 'BD' ? 'selected' : ''}>Bangladesh (+880)</option>
+                  <option value="OTHER" ${fu.phoneCountry === 'OTHER' ? 'selected' : ''}>Other</option>
+                </select>
+              </div>
+              <div class="admin-field">
+                <label>Phone format</label>
+                <input type="text" data-fu-phone-format="${i}" value="${escapeAttr(fu.phoneFormat || '(###) ###-####')}" placeholder="(###) ###-####">
+              </div>
+              <div class="admin-field admin-field--full">
+                <label class="admin-checkbox-label">
+                  <input type="checkbox" data-fu-phone-allow-cc="${i}" ${fu.phoneAllowCountrySelect !== false ? 'checked' : ''}>
+                  <span>Allow visitors to change country code</span>
+                </label>
+              </div>
+            </div>`
+                          : ['file', 'image'].includes(fu.type)
+                            ? `<div class="admin-fields-2col">
+              <div class="admin-field">
+                <label>Accept</label>
+                <input type="text" data-fu-accept="${i}" value="${escapeAttr(fu.accept || (fu.type === 'image' ? 'image/*' : 'image/*,.pdf,.zip'))}">
+              </div>
+              <div class="admin-field">
+                <label>Max files</label>
+                <input type="number" data-fu-max-files="${i}" min="1" max="10" value="${fu.maxFiles || 5}">
+              </div>
+            </div>`
+                            : fu.type === 'partners'
+                              ? (() => {
+                                  const partners = config.activePartners || [];
+                                  const selected = new Set((fu.partnerIds || []).map(String));
+                                  const input = fu.partnerInput || 'select';
+                                  const checks = partners.length
+                                    ? partners
+                                        .map(
+                                          (p) =>
+                                            `<label class="admin-checkbox-label" style="display:flex;margin:0.35rem 0;">
+                      <input type="checkbox" data-fu-partner-id="${i}:${p.id}" ${selected.has(String(p.id)) ? 'checked' : ''}>
+                      <span>${escapeHtml(p.name)}</span>
+                    </label>`
+                                        )
+                                        .join('')
+                                    : '<p class="admin-note">No active partners yet.</p>';
+                                  return `<div class="admin-field admin-field--full">
+              <label>Partner input</label>
+              <select data-fu-partner-input="${i}">
+                <option value="select" ${input === 'select' ? 'selected' : ''}>Dropdown</option>
+                <option value="text" ${input === 'text' ? 'selected' : ''}>Text</option>
+                <option value="number" ${input === 'number' ? 'selected' : ''}>Number</option>
+              </select>
+            </div>
+            <div class="admin-field admin-field--full">
+              <label>Partners to include</label>
+              <div class="data-match-fields">${checks}</div>
+            </div>`;
+                                })()
+                              : '';
                   return `
         <div class="yes-no-followup-row" data-followup-index="${i}">
           <div class="admin-fields-2col">
@@ -705,6 +809,12 @@
               <label>Placeholder</label>
               <input type="text" data-fu-placeholder="${i}" value="${escapeAttr(fu.placeholder || '')}">
             </div>
+            ${extraSettings}
+            ${
+              needsOptions
+                ? `<div class="admin-field admin-field--full"><label>Options</label>${optionsHtml}</div>`
+                : ''
+            }
             <div class="admin-field admin-field--full" style="display:flex;align-items:center;justify-content:space-between;gap:0.75rem;">
               <label class="admin-checkbox-label">
                 <input type="checkbox" data-fu-required="${i}" ${fu.required !== false ? 'checked' : ''}>
@@ -719,7 +829,7 @@
               return `
       <hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
       <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Follow-up fields</h3>
-      <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Add one or more fields that appear when the user picks Yes or No.</p>
+      <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Add one or more fields that appear when the user picks Yes or No. Any field type is supported.</p>
       <div id="fe-followups">${rows || '<p style="font-size:0.85rem;color:#94a3b8;margin:0 0 0.75rem;">No follow-up fields yet.</p>'}</div>
       <button type="button" class="admin-btn admin-btn-secondary" id="fe-add-followup">+ Add follow-up field</button>`;
             })()
@@ -979,6 +1089,44 @@
         if (labelEl) fu.label = labelEl.value || 'Please explain your answer';
         if (phEl) fu.placeholder = phEl.value || '';
         if (reqEl) fu.required = reqEl.checked;
+
+        const nf = fieldEditor.querySelector(`[data-fu-number-format="${i}"]`);
+        if (nf) fu.numberFormat = String(nf.value || '').trim();
+        const ma = fieldEditor.querySelector(`[data-fu-min-age="${i}"]`);
+        if (ma) {
+          const age = parseInt(String(ma.value || '').trim(), 10);
+          fu.minAge = Number.isFinite(age) ? Math.max(0, Math.min(120, age)) : 0;
+        }
+        const pc = fieldEditor.querySelector(`[data-fu-phone-country="${i}"]`);
+        if (pc) fu.phoneCountry = pc.value || 'CA';
+        const pf = fieldEditor.querySelector(`[data-fu-phone-format="${i}"]`);
+        if (pf) fu.phoneFormat = String(pf.value || '').trim();
+        const pac = fieldEditor.querySelector(`[data-fu-phone-allow-cc="${i}"]`);
+        if (pac) fu.phoneAllowCountrySelect = pac.checked;
+        const acc = fieldEditor.querySelector(`[data-fu-accept="${i}"]`);
+        if (acc) fu.accept = acc.value || '';
+        const mf = fieldEditor.querySelector(`[data-fu-max-files="${i}"]`);
+        if (mf) fu.maxFiles = Number(mf.value) || 5;
+        const pi = fieldEditor.querySelector(`[data-fu-partner-input="${i}"]`);
+        if (pi) fu.partnerInput = pi.value || 'select';
+        const partnerIds = [];
+        fieldEditor.querySelectorAll(`[data-fu-partner-id^="${i}:"]`).forEach((cb) => {
+          if (cb.checked) {
+            const id = Number(String(cb.getAttribute('data-fu-partner-id') || '').split(':')[1]);
+            if (id > 0) partnerIds.push(id);
+          }
+        });
+        if (fu.type === 'partners') fu.partnerIds = partnerIds;
+
+        if (['select', 'radio', 'checkbox'].includes(fu.type)) {
+          if (!Array.isArray(fu.options)) fu.options = [];
+          fu.options.forEach((opt, oi) => {
+            const lab = fieldEditor.querySelector(`[data-fu-opt-label="${i}:${oi}"]`);
+            const val = fieldEditor.querySelector(`[data-fu-opt-value="${i}:${oi}"]`);
+            if (lab) opt.label = lab.value;
+            if (val) opt.value = val.value.replace(/[^a-zA-Z0-9_]/g, '_');
+          });
+        }
       });
       const first = field.followUps[0];
       if (first) {
@@ -992,10 +1140,29 @@
       }
     };
 
-    fieldEditor.querySelectorAll('[data-fu-when], [data-fu-type], [data-fu-label], [data-fu-placeholder], [data-fu-required]').forEach((node) => {
-      node.addEventListener('input', syncYesNoFollowUps);
-      node.addEventListener('change', syncYesNoFollowUps);
-    });
+    fieldEditor
+      .querySelectorAll(
+        '[data-fu-when], [data-fu-type], [data-fu-label], [data-fu-placeholder], [data-fu-required], [data-fu-number-format], [data-fu-min-age], [data-fu-phone-country], [data-fu-phone-format], [data-fu-phone-allow-cc], [data-fu-accept], [data-fu-max-files], [data-fu-partner-input], [data-fu-partner-id], [data-fu-opt-label], [data-fu-opt-value]'
+      )
+      .forEach((node) => {
+        node.addEventListener('input', syncYesNoFollowUps);
+        node.addEventListener('change', () => {
+          if (node.hasAttribute('data-fu-type')) {
+            syncYesNoFollowUps();
+            const i = Number(node.getAttribute('data-fu-type'));
+            const fu = field.followUps?.[i];
+            if (fu && ['select', 'radio', 'checkbox'].includes(fu.type) && (!fu.options || !fu.options.length)) {
+              fu.options = [
+                { value: 'option_1', label: 'Option 1' },
+                { value: 'option_2', label: 'Option 2' },
+              ];
+            }
+            renderFieldEditor();
+            return;
+          }
+          syncYesNoFollowUps();
+        });
+      });
 
     el('fe-add-followup')?.addEventListener('click', () => {
       if (!Array.isArray(field.followUps)) field.followUps = [];
@@ -1007,6 +1174,16 @@
         placeholder: '',
         required: true,
         legacy: false,
+        options: [],
+        numberFormat: '',
+        minAge: 0,
+        phoneCountry: 'CA',
+        phoneFormat: '(###) ###-####',
+        phoneAllowCountrySelect: true,
+        accept: '',
+        maxFiles: 5,
+        partnerInput: 'select',
+        partnerIds: [],
       });
       renderFieldEditor();
     });
@@ -1017,6 +1194,30 @@
         if (!Array.isArray(field.followUps)) return;
         field.followUps.splice(i, 1);
         syncYesNoFollowUps();
+        renderFieldEditor();
+      });
+    });
+
+    fieldEditor.querySelectorAll('[data-fu-opt-add]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.getAttribute('data-fu-opt-add'));
+        const fu = field.followUps?.[i];
+        if (!fu) return;
+        if (!Array.isArray(fu.options)) fu.options = [];
+        const n = fu.options.length + 1;
+        fu.options.push({ label: 'Option ' + n, value: 'option_' + n });
+        renderFieldEditor();
+      });
+    });
+
+    fieldEditor.querySelectorAll('[data-fu-opt-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const [iStr, oiStr] = String(btn.getAttribute('data-fu-opt-remove') || '').split(':');
+        const i = Number(iStr);
+        const oi = Number(oiStr);
+        const fu = field.followUps?.[i];
+        if (!fu || !Array.isArray(fu.options)) return;
+        fu.options.splice(oi, 1);
         renderFieldEditor();
       });
     });

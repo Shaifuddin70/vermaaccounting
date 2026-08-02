@@ -107,11 +107,23 @@
           <p class="submission-value"><?= e($val !== '' ? ucfirst((string) $val) : '—') ?></p>
           <?php foreach (yes_no_follow_ups($field) as $followUp):
             $reasonKey = yes_no_follow_up_storage_key($name, $followUp);
-            if (!isset($data[$reasonKey]) || trim((string) $data[$reasonKey]) === '') {
+            if (!isset($data[$reasonKey])) {
                 continue;
             }
+            $raw = $data[$reasonKey];
+            if (is_array($raw)) {
+              $display = implode(', ', array_map('strval', $raw));
+            } else {
+              $display = trim((string) $raw);
+            }
+            if ($display === '') {
+                continue;
+            }
+            if (($followUp['type'] ?? '') === 'partners') {
+              $display = format_partner_submission_value($raw);
+            }
           ?>
-            <p class="submission-reason"><strong><?= e($followUp['label']) ?>:</strong> <?= nl2br(e((string) $data[$reasonKey])) ?></p>
+            <p class="submission-reason"><strong><?= e($followUp['label']) ?>:</strong> <?= nl2br(e($display)) ?></p>
           <?php endforeach; ?>
         <?php elseif ($type === 'checkbox'): ?>
           <p class="submission-value"><?= e(format_submission_value($data[$name] ?? [])) ?: '—' ?></p>

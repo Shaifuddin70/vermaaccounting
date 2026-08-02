@@ -96,6 +96,29 @@ foreach ($schema['fields'] as $field) {
     foreach ($result['extra'] as $extraKey => $extraVal) {
         $data[$extraKey] = $extraVal;
     }
+
+    if ($type === 'yes_no' && in_array($result['value'], ['yes', 'no'], true)) {
+        foreach (yes_no_follow_ups_for_answer($field, $result['value']) as $followUp) {
+            $pseudo = yes_no_follow_up_as_field($field, $followUp);
+            if (!in_array($pseudo['type'], ['file', 'image'], true)) {
+                continue;
+            }
+            [$fileValue, $fieldFilesMeta] = process_field_file_uploads(
+                $pseudo,
+                $form,
+                $schema,
+                $uploadSession,
+                $_POST,
+                $maxBytes,
+                $allowedMimes,
+                $errors
+            );
+            $data[(string) $pseudo['name']] = $fileValue;
+            foreach ($fieldFilesMeta as $meta) {
+                $filesMeta[] = $meta;
+            }
+        }
+    }
 }
 
 $taxYear = null;

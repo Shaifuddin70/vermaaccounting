@@ -173,6 +173,7 @@ if ($canonicalPath !== '/') {
             </div>
           </div>
           <a href="/resources" class="verma-link" data-page="resources">Resources</a>
+          <a href="/blog" class="verma-link" data-page="blog">Blog</a>
           <div class="verma-submenu">
             <a
               href="/about"
@@ -186,7 +187,6 @@ if ($canonicalPath !== '/') {
             <div class="verma-submenu-items">
               <a href="/about" class="verma-submenu-link verma-submenu-all d-lg-none">About Us</a>
               <a href="/contact" class="verma-submenu-link">Contact Us</a>
-              <a href="/privacy" class="verma-submenu-link">Privacy Policy</a>
             </div>
           </div>
           <?php if ($siteCta['nav_label'] !== ''): ?>

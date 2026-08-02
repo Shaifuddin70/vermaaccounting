@@ -91,7 +91,11 @@ foreach ($submissions as $sub) {
         if ($field['type'] === 'yes_no') {
             foreach (yes_no_follow_ups($field) as $followUp) {
                 $fuKey = yes_no_follow_up_storage_key($key, $followUp);
-                $row[] = (string) ($data[$fuKey] ?? '');
+                $fuVal = $data[$fuKey] ?? '';
+                if (is_array($fuVal)) {
+                    $fuVal = implode('; ', $fuVal);
+                }
+                $row[] = (string) $fuVal;
             }
         }
     }

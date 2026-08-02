@@ -264,7 +264,14 @@ function submission_email_field_rows(array $schema, array $data): array
         }
         foreach (yes_no_follow_ups_for_answer($field, $value) as $followUp) {
             $reasonKey = yes_no_follow_up_storage_key($name, $followUp);
-            $reasonVal = trim((string) ($data[$reasonKey] ?? ''));
+            $raw = $data[$reasonKey] ?? '';
+            if (is_array($raw)) {
+                $reasonVal = implode(', ', array_map('strval', $raw));
+            } elseif (($followUp['type'] ?? '') === 'partners') {
+                $reasonVal = format_partner_submission_value($raw);
+            } else {
+                $reasonVal = trim((string) $raw);
+            }
             if ($reasonVal !== '') {
                 $value .= ' — ' . ($followUp['label'] ?? 'Follow-up') . ': ' . $reasonVal;
             }

@@ -75,33 +75,10 @@ if ($condJson) {
             <?php endforeach; ?>
           </div>
           <?php foreach ($followUps as $followUp):
-            $fuId = e((string) $followUp['id']);
-            $reasonType = normalize_yes_no_reason_type($followUp['type'] ?? 'textarea');
-            $reasonInputType = in_array($reasonType, ['email', 'tel', 'number', 'date'], true) ? $reasonType : 'text';
-            $reasonName = yes_no_follow_up_storage_key((string) $field['name'], $followUp);
-            $controlId = 'cf-' . $id . '-fu-' . $fuId;
-          ?>
-            <div class="yes-no-reason-wrap"
-              data-yes-no-reason-for="<?= $id ?>"
-              data-reason-when="<?= e($followUp['when']) ?>"
-              data-reason-required="<?= !empty($followUp['required']) ? '1' : '0' ?>"
-              data-reason-type="<?= e($reasonType) ?>"
-              hidden>
-              <label for="<?= $controlId ?>"><?= e($followUp['label']) ?></label>
-              <?php if ($reasonType === 'textarea'): ?>
-                <textarea id="<?= $controlId ?>"
-                  name="<?= e($reasonName) ?>"
-                  rows="3"
-                  placeholder="<?= e($followUp['placeholder'] ?? '') ?>"></textarea>
-              <?php else: ?>
-                <input type="<?= e($reasonInputType) ?>"
-                  id="<?= $controlId ?>"
-                  name="<?= e($reasonName) ?>"
-                  placeholder="<?= e($followUp['placeholder'] ?? '') ?>"
-                  <?php if ($reasonType === 'number'): ?>inputmode="decimal"<?php endif; ?>>
-              <?php endif; ?>
-            </div>
-          <?php endforeach; ?>
+            $parentField = $field;
+            $parentId = $id;
+            include __DIR__ . '/yes-no-followup.php';
+          endforeach; ?>
 
         <?php elseif ($type === 'checkbox'): ?>
           <div class="custom-form-options">

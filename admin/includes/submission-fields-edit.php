@@ -70,9 +70,9 @@
           <?php endforeach; ?>
         </div>
         <?php foreach ($followUps as $followUp):
-          $reasonType = normalize_yes_no_reason_type($followUp['type'] ?? 'textarea');
-          $reasonInputType = in_array($reasonType, ['email', 'tel', 'number', 'date'], true) ? $reasonType : 'text';
-          $reasonName = yes_no_follow_up_storage_key($name, $followUp);
+          $pseudo = yes_no_follow_up_as_field($field, $followUp);
+          $reasonType = (string) $pseudo['type'];
+          $reasonName = (string) $pseudo['name'];
           $reasonVal = $data[$reasonName] ?? '';
           $showReason = (string) $value === (string) $followUp['when'];
           $controlId = 'sub-' . e($id) . '-fu-' . e((string) $followUp['id']);
@@ -80,14 +80,47 @@
           <div class="submission-edit-reason" <?= $showReason ? '' : 'hidden' ?>
             data-reason-when="<?= e($followUp['when']) ?>"
             data-field-name="<?= e($name) ?>">
-            <label for="<?= $controlId ?>"><?= e($followUp['label']) ?></label>
+            <label for="<?= $controlId ?>"><?= e($pseudo['label']) ?></label>
             <?php if ($reasonType === 'textarea'): ?>
-              <textarea id="<?= $controlId ?>" name="<?= e($reasonName) ?>" rows="3"><?= e((string) $reasonVal) ?></textarea>
-            <?php else: ?>
+              <textarea id="<?= $controlId ?>" name="<?= e($reasonName) ?>" rows="3"><?= e(is_array($reasonVal) ? implode(', ', $reasonVal) : (string) $reasonVal) ?></textarea>
+            <?php elseif ($reasonType === 'select'): ?>
+              <select id="<?= $controlId ?>" name="<?= e($reasonName) ?>">
+                <option value="">Select…</option>
+                <?php foreach ($pseudo['options'] ?? [] as $opt): ?>
+                  <option value="<?= e((string) $opt['value']) ?>" <?= (string) $reasonVal === (string) $opt['value'] ? 'selected' : '' ?>><?= e((string) $opt['label']) ?></option>
+                <?php endforeach; ?>
+              </select>
+            <?php elseif ($reasonType === 'radio'): ?>
+              <div class="submission-edit-options">
+                <?php foreach ($pseudo['options'] ?? [] as $opt): ?>
+                  <label class="submission-edit-option">
+                    <input type="radio" name="<?= e($reasonName) ?>" value="<?= e((string) $opt['value']) ?>"
+                      <?= (string) $reasonVal === (string) $opt['value'] ? 'checked' : '' ?>>
+                    <?= e((string) $opt['label']) ?>
+                  </label>
+                <?php endforeach; ?>
+              </div>
+            <?php elseif ($reasonType === 'checkbox'):
+              $checked = is_array($reasonVal) ? $reasonVal : [];
+            ?>
+              <div class="submission-edit-options">
+                <?php foreach ($pseudo['options'] ?? [] as $opt): ?>
+                  <label class="submission-edit-option">
+                    <input type="checkbox" name="<?= e($reasonName) ?>[]" value="<?= e((string) $opt['value']) ?>"
+                      <?= in_array((string) $opt['value'], array_map('strval', $checked), true) ? 'checked' : '' ?>>
+                    <?= e((string) $opt['label']) ?>
+                  </label>
+                <?php endforeach; ?>
+              </div>
+            <?php elseif (in_array($reasonType, ['file', 'image'], true)): ?>
+              <p class="submission-edit-hint">File follow-ups can be re-uploaded from the public form. Current value: <?= e(is_array($reasonVal) ? implode(', ', $reasonVal) : (string) ($reasonVal ?: '—')) ?></p>
+            <?php else:
+              $reasonInputType = in_array($reasonType, ['email', 'tel', 'number', 'date'], true) ? $reasonType : 'text';
+            ?>
               <input type="<?= e($reasonInputType) ?>"
                 id="<?= $controlId ?>"
                 name="<?= e($reasonName) ?>"
-                value="<?= e((string) $reasonVal) ?>">
+                value="<?= e(is_array($reasonVal) ? implode(', ', $reasonVal) : (string) $reasonVal) ?>">
             <?php endif; ?>
           </div>
         <?php endforeach; ?>

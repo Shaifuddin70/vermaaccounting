@@ -63,6 +63,10 @@ $adminToastMessages = array_merge(
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></span>
           <span class="admin-nav-label">All forms</span>
         </a>
+        <a href="/admin/blogs" class="admin-nav-item <?= $activeNav === 'blogs' ? 'active' : '' ?>">
+          <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
+          <span class="admin-nav-label">Blogs</span>
+        </a>
         <a href="/admin/files" class="admin-nav-item <?= $activeNav === 'files' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></span>
           <span class="admin-nav-label">Files</span>

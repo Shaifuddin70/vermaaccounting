@@ -72,6 +72,9 @@ require_once __DIR__ . '/FileFolderRepository.php';
 require_once __DIR__ . '/profile_helpers.php';
 require_once __DIR__ . '/partner_helpers.php';
 require_once __DIR__ . '/email_assets.php';
+require_once __DIR__ . '/UpliftAiClient.php';
+require_once __DIR__ . '/BlogRepository.php';
+require_once __DIR__ . '/blog_helpers.php';
 
 ensure_data_dirs();
 

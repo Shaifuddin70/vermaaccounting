@@ -328,45 +328,110 @@
     const reasonWraps = wrap.querySelectorAll('[data-yes-no-reason-for]');
     for (const reasonWrap of reasonWraps) {
       if (reasonWrap.hidden) continue;
-      const control = reasonWrap.querySelector('textarea, input');
       const type = reasonWrap.getAttribute('data-reason-type') || 'textarea';
       const required = reasonWrap.getAttribute('data-reason-required') === '1';
+      const label =
+        reasonWrap.querySelector(':scope > label')?.textContent?.trim() || fieldLabel(wrap);
+
+      if (type === 'checkbox') {
+        const checks = reasonWrap.querySelectorAll('input[type="checkbox"]');
+        const any = Array.from(checks).some((c) => c.checked);
+        if (required && !any) {
+          return failField(wrap, 'Please complete: ' + label, checks[0]);
+        }
+        continue;
+      }
+
+      if (type === 'radio') {
+        const radios = reasonWrap.querySelectorAll('input[type="radio"]');
+        const any = Array.from(radios).some((r) => r.checked);
+        if (required && !any) {
+          return failField(wrap, 'Please complete: ' + label, radios[0]);
+        }
+        continue;
+      }
+
+      if (type === 'file' || type === 'image') {
+        const fileField = reasonWrap.querySelector('[data-file-field]');
+        if (required && fileField) {
+          const tokenBox = fileField.querySelector('.custom-form-file-tokens');
+          const hasTokens = tokenBox && tokenBox.querySelector('input[data-staged-token]');
+          if (!hasTokens) {
+            return failField(
+              wrap,
+              'Please upload a file for: ' + label,
+              fileField.querySelector('input[type="file"]')
+            );
+          }
+        }
+        continue;
+      }
+
+      if (type === 'tel') {
+        const phoneWrap = reasonWrap.querySelector('[data-phone-field]');
+        if (phoneWrap) {
+          syncPhoneCombined(phoneWrap);
+          const local = phoneWrap.querySelector('[data-phone-local]');
+          const format = phoneFormatFromWrap(phoneWrap);
+          const slots = (format.match(/#/g) || []).length;
+          const digits = String(local?.value || '').replace(/\D+/g, '');
+          if ((required || digits.length) && slots > 0 && digits.length !== slots) {
+            local?.setCustomValidity('Enter a complete phone number.');
+            return failField(wrap, 'Please enter a complete phone number.', local);
+          }
+          local?.setCustomValidity('');
+        }
+        continue;
+      }
+
+      const control = reasonWrap.querySelector(
+        'textarea, select, input[type="text"], input[type="email"], input[type="number"], input[type="date"]'
+      );
       if (!control) continue;
       const value = String(control.value || '').trim();
       if (required && !value) {
         control.setCustomValidity('This field is required.');
-        return failField(wrap, 'Please complete: ' + (reasonWrap.querySelector('label')?.textContent || fieldLabel(wrap)), control);
+        return failField(wrap, 'Please complete: ' + label, control);
       }
       if (value) {
         if (type === 'email' && !validateEmailValue(value)) {
           control.setCustomValidity('Enter a valid email.');
-          return failField(wrap, 'Please enter a valid email for: ' + fieldLabel(wrap), control);
+          return failField(wrap, 'Please enter a valid email for: ' + label, control);
         }
-        if (type === 'number' && !validatePlainNumberValue(value)) {
-          control.setCustomValidity('Enter a valid number.');
-          return failField(wrap, 'Please enter a valid number for: ' + fieldLabel(wrap), control);
-        }
-        if (type === 'tel' && !/\d/.test(value)) {
-          control.setCustomValidity('Enter a phone number.');
-          return failField(wrap, 'Please enter a phone number for: ' + fieldLabel(wrap), control);
+        if (type === 'number') {
+          const format = control.getAttribute('data-number-format') || '';
+          if (format) {
+            if (!validateNumberFormatValue(value, format)) {
+              control.setCustomValidity('Enter a complete value.');
+              return failField(wrap, 'Please complete: ' + label, control);
+            }
+          } else if (!validatePlainNumberValue(value)) {
+            control.setCustomValidity('Enter a valid number.');
+            return failField(wrap, 'Please enter a valid number for: ' + label, control);
+          }
         }
       }
       control.setCustomValidity('');
     }
 
-    const phoneLocal = wrap.querySelector('[data-phone-local]');
-    if (phoneLocal) {
-      const format = phoneFormatFromWrap(wrap);
+    const topPhone = Array.from(wrap.querySelectorAll('.custom-form-phone')).find(
+      (el) => !el.closest('[data-yes-no-reason-for]')
+    );
+    if (topPhone) {
+      const local = topPhone.querySelector('[data-phone-local]');
+      const format = phoneFormatFromWrap(topPhone);
       const slots = (format.match(/#/g) || []).length;
-      const digits = String(phoneLocal.value || '').replace(/\D+/g, '');
-      if ((phoneLocal.required || digits.length) && slots > 0 && digits.length !== slots) {
-        phoneLocal.setCustomValidity('Enter a complete phone number.');
-        return failField(wrap, 'Please enter a complete phone number.', phoneLocal);
+      const digits = String(local?.value || '').replace(/\D+/g, '');
+      if (local && (local.required || digits.length) && slots > 0 && digits.length !== slots) {
+        local.setCustomValidity('Enter a complete phone number.');
+        return failField(wrap, 'Please enter a complete phone number.', local);
       }
-      phoneLocal.setCustomValidity('');
+      if (local) local.setCustomValidity('');
     }
 
-    const emailInput = wrap.querySelector('input[type="email"]:not([data-phone-local])');
+    const emailInput = Array.from(wrap.querySelectorAll('input[type="email"]')).find(
+      (el) => !el.closest('[data-yes-no-reason-for]')
+    );
     if (emailInput && emailInput.value && !validateEmailValue(emailInput.value)) {
       emailInput.setCustomValidity('Enter a valid email.');
       return failField(wrap, 'Please enter a valid email for: ' + fieldLabel(wrap), emailInput);
@@ -950,21 +1015,58 @@
       const when = reasonWrap.getAttribute('data-reason-when');
       const required = reasonWrap.getAttribute('data-reason-required') === '1';
       const yesNoBlock = form.querySelector('[data-yes-no-field="' + fieldId + '"]');
-      const control = reasonWrap.querySelector('textarea, input');
-      if (!yesNoBlock || !control) return;
+      if (!yesNoBlock) return;
 
       const selected = yesNoBlock.querySelector('input[type="radio"]:checked');
       const show = selected && selected.value === when;
 
       reasonWrap.hidden = !show;
-      control.disabled = !show;
-      if (!show) {
-        control.value = '';
-        control.removeAttribute('required');
-      } else if (required) {
-        control.setAttribute('required', 'required');
-      } else {
-        control.removeAttribute('required');
+      const fileField = reasonWrap.querySelector('[data-file-field]');
+      if (fileField) {
+        fileField.setAttribute('data-required', show && required ? '1' : '0');
+      }
+
+      reasonWrap.querySelectorAll('textarea, input, select').forEach((control) => {
+        if (control.closest('.custom-form-file-tokens')) return;
+        control.disabled = !show;
+        if (!show) {
+          if (control.type === 'checkbox' || control.type === 'radio') {
+            control.checked = false;
+          } else if (control.type !== 'file') {
+            control.value = '';
+          }
+          control.removeAttribute('required');
+          if (typeof control.setCustomValidity === 'function') {
+            control.setCustomValidity('');
+          }
+        } else if (required) {
+          const type = reasonWrap.getAttribute('data-reason-type') || '';
+          if (
+            control.matches('[data-phone-local]') ||
+            (control.matches('textarea, select, input[type="text"], input[type="email"], input[type="tel"], input[type="number"], input[type="date"]') &&
+              !control.matches('[data-phone-cc]') &&
+              !control.matches('[data-phone-combined]'))
+          ) {
+            control.setAttribute('required', 'required');
+          } else if (type === 'radio' && control.type === 'radio') {
+            /* HTML5 required on one radio in group is enough — set on first */
+          } else {
+            control.removeAttribute('required');
+          }
+        } else {
+          control.removeAttribute('required');
+        }
+      });
+
+      if (show && required) {
+        const type = reasonWrap.getAttribute('data-reason-type') || '';
+        if (type === 'radio') {
+          const radios = reasonWrap.querySelectorAll('input[type="radio"]');
+          radios.forEach((r, idx) => {
+            if (idx === 0) r.setAttribute('required', 'required');
+            else r.removeAttribute('required');
+          });
+        }
       }
     });
   }

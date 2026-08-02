@@ -255,16 +255,82 @@ function validate_scalar_form_field(array $field, string $value, bool $visible, 
         }
 
         foreach (yes_no_follow_ups_for_answer($field, $value) as $followUp) {
-            $reasonKey = yes_no_follow_up_storage_key((string) $field['name'], $followUp);
+            $pseudo = yes_no_follow_up_as_field($field, $followUp);
+            $fuType = (string) $pseudo['type'];
+            $reasonKey = (string) $pseudo['name'];
+            $reasonLabel = (string) $pseudo['label'];
+
+            if (in_array($fuType, ['file', 'image'], true)) {
+                // File follow-ups are processed in submit.php via process_field_file_uploads.
+                continue;
+            }
+
+            if ($fuType === 'checkbox') {
+                $raw = $post[$reasonKey] ?? [];
+                $values = is_array($raw) ? array_map('strval', $raw) : [];
+                $choiceError = validate_checkbox_field_values($reasonLabel, $values, $pseudo, !empty($pseudo['required']));
+                if ($choiceError !== null) {
+                    $errors[] = $choiceError;
+                }
+                $extra[$reasonKey] = $values;
+                continue;
+            }
+
+            if ($fuType === 'partners') {
+                $partnerErrors = [];
+                $partnerVal = partners_field_from_post($pseudo, $post, $partnerErrors);
+                foreach ($partnerErrors as $err) {
+                    $errors[] = $err;
+                }
+                $extra[$reasonKey] = $partnerVal;
+                continue;
+            }
+
             $reasonVal = trim((string) ($post[$reasonKey] ?? ''));
-            $reasonLabel = (string) ($followUp['label'] ?? 'Reason');
-            if (!empty($followUp['required']) && $reasonVal === '') {
+            if (!empty($pseudo['required']) && $reasonVal === '') {
                 $errors[] = $reasonLabel . ' is required.';
             }
-            $reasonError = validate_yes_no_reason_value($reasonLabel, $reasonVal, (string) ($followUp['type'] ?? 'textarea'));
-            if ($reasonError !== null) {
-                $errors[] = $reasonError;
+
+            if ($reasonVal !== '') {
+                if ($fuType === 'email') {
+                    $err = validate_email_field_value($reasonLabel, $reasonVal);
+                    if ($err !== null) {
+                        $errors[] = $err;
+                    }
+                } elseif ($fuType === 'number') {
+                    $format = normalize_number_format((string) ($pseudo['numberFormat'] ?? ''));
+                    if ($format !== '') {
+                        $reasonVal = apply_number_format($reasonVal, $format);
+                        $formatError = validate_number_format_value($reasonLabel, $reasonVal, $format, false);
+                        if ($formatError !== null) {
+                            $errors[] = $formatError;
+                        }
+                    } else {
+                        $err = validate_plain_number_field_value($reasonLabel, $reasonVal);
+                        if ($err !== null) {
+                            $errors[] = $err;
+                        }
+                    }
+                } elseif ($fuType === 'tel') {
+                    $phoneError = validate_phone_field_value($reasonLabel, $reasonVal, $pseudo, false);
+                    if ($phoneError !== null) {
+                        $errors[] = $phoneError;
+                    }
+                } elseif ($fuType === 'date') {
+                    $dateError = validate_date_field_value($reasonLabel, $reasonVal, $pseudo);
+                    if ($dateError !== null) {
+                        $errors[] = $dateError;
+                    }
+                } elseif (in_array($fuType, ['select', 'radio'], true)) {
+                    $choiceError = validate_choice_field_value($reasonLabel, $reasonVal, $pseudo, false);
+                    if ($choiceError !== null) {
+                        $errors[] = $choiceError;
+                    }
+                } elseif (in_array($fuType, ['text', 'textarea'], true) && strlen($reasonVal) > 20000) {
+                    $errors[] = $reasonLabel . ' is too long.';
+                }
             }
+
             $extra[$reasonKey] = $reasonVal;
         }
 

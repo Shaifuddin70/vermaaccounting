@@ -48,6 +48,10 @@ function seo_meta_for_path(string $path): array
             'title' => 'Tax & Accounting Resources | Verma Accounting Ontario',
             'description' => 'Free tax tips, key deadlines, and accounting resources for Ontario individuals and businesses from the team at Verma Accounting.',
         ],
+        '/blog' => [
+            'title' => 'Accounting & Tax Blog | Verma Accounting Ontario',
+            'description' => 'Practical tax, bookkeeping, and accounting guides for Ontario individuals and businesses from Verma Accounting.',
+        ],
         '/contact' => [
             'title' => 'Contact Verma Accounting | Ontario Tax Accountants',
             'description' => 'Contact Verma Accounting for tax, bookkeeping, and payroll help across Ontario. Call +1 (613) 318-6478 or email info@vermaaccounting.ca.',

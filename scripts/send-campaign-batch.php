@@ -16,6 +16,38 @@ require_once $projectRoot . '/lib/bootstrap.php';
 $holidayResult = process_due_holiday_sends();
 $birthdayResult = process_due_birthday_sends();
 $result = process_due_campaign_batches();
+$blogResult = [
+    'ok' => false,
+    'skipped' => true,
+    'fetched' => 0,
+    'created' => 0,
+    'updated' => 0,
+    'error' => null,
+];
+
+try {
+    $client = new UpliftAiClient();
+    if (!$client->isConfigured()) {
+        $blogResult['error'] = 'Uplift AI token not configured';
+    } else {
+        $sync = blog_sync_from_uplift($client);
+        $blogResult = [
+            'ok' => true,
+            'skipped' => false,
+            'fetched' => $sync['fetched'],
+            'created' => $sync['created'],
+            'updated' => $sync['updated'],
+            'error' => null,
+        ];
+        if ($sync['created'] > 0 || $sync['updated'] > 0) {
+            ActivityLog::record('blog.synced', 'blog', null, $sync + ['source' => 'cron']);
+        }
+    }
+} catch (Throwable $e) {
+    $blogResult['skipped'] = false;
+    $blogResult['error'] = $e->getMessage();
+}
+
 $env = app_environment();
 
 if (PHP_SAPI === 'cli') {
@@ -40,6 +72,16 @@ if (PHP_SAPI === 'cli') {
     if ($birthdayResult['errors'] !== []) {
         $line .= ' | birthday errors: ' . implode('; ', $birthdayResult['errors']);
     }
+    if (!empty($blogResult['ok'])) {
+        $line .= sprintf(
+            ' | blogs: fetched=%d created=%d updated=%d',
+            $blogResult['fetched'],
+            $blogResult['created'],
+            $blogResult['updated']
+        );
+    } elseif (!empty($blogResult['error'])) {
+        $line .= ' | blog sync error: ' . $blogResult['error'];
+    }
     if ($result['campaigns'] === 0) {
         $diag = campaign_queue_diagnostics();
         $line .= sprintf(
@@ -57,9 +99,9 @@ if (PHP_SAPI === 'cli') {
         if ($diag['scheduled_future'] > 0 && $diag['scheduled_due'] === 0 && $diag['sending'] === 0) {
             $line .= ' (scheduled campaigns are waiting for their send time)';
         }
-        if (Mailer::fromAppConfig() === null) {
-            $line .= ' | WARNING: mail not configured';
-        }
+    }
+    if (Mailer::fromAppConfig() === null) {
+        $line .= ' | WARNING: mail not configured';
     }
     fwrite(STDOUT, $line . "\n");
     exit(0);
@@ -70,4 +112,5 @@ echo json_encode([
     'ok' => true,
     'holidays' => $holidayResult,
     'birthdays' => $birthdayResult,
+    'blogs' => $blogResult,
 ] + $result, JSON_UNESCAPED_UNICODE);

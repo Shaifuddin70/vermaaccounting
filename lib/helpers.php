@@ -295,16 +295,22 @@ function field_types(): array
     ];
 }
 
-/** Allowed input types for a Yes/No follow-up reason field. */
+/** Allowed input types for a Yes/No follow-up field (all interactive types). */
 function yes_no_reason_types(): array
 {
     return [
-        'textarea' => 'Long text',
         'text' => 'Short text',
+        'textarea' => 'Long text',
         'email' => 'Email',
         'tel' => 'Phone',
         'number' => 'Number',
         'date' => 'Date',
+        'select' => 'Dropdown',
+        'radio' => 'Single choice',
+        'checkbox' => 'Multiple choice',
+        'partners' => 'Partner reference',
+        'file' => 'File upload',
+        'image' => 'Image upload',
     ];
 }
 
@@ -317,7 +323,7 @@ function normalize_yes_no_reason_type(mixed $type): string
 /**
  * Normalize Yes/No follow-up fields. Migrates legacy single reason* settings.
  *
- * @return list<array{id: string, when: string, type: string, label: string, placeholder: string, required: bool, legacy: bool}>
+ * @return list<array<string, mixed>>
  */
 function normalize_yes_no_follow_ups(array $field): array
 {
@@ -334,15 +340,77 @@ function normalize_yes_no_follow_ups(array $field): array
                 continue;
             }
             $id = preg_replace('/[^a-zA-Z0-9_]/', '_', (string) ($item['id'] ?? '')) ?: ('fu_' . bin2hex(random_bytes(3)));
-            $followUps[] = [
+            $type = normalize_yes_no_reason_type($item['type'] ?? 'textarea');
+            $fu = [
                 'id' => $id,
                 'when' => $when,
-                'type' => normalize_yes_no_reason_type($item['type'] ?? 'textarea'),
+                'type' => $type,
                 'label' => trim((string) ($item['label'] ?? 'Please explain your answer')) ?: 'Please explain your answer',
                 'placeholder' => (string) ($item['placeholder'] ?? ''),
                 'required' => !empty($item['required']),
                 'legacy' => !empty($item['legacy']) || $id === 'legacy_reason',
+                'helpText' => (string) ($item['helpText'] ?? ''),
+                'options' => [],
+                'numberFormat' => '',
+                'minAge' => 0,
+                'phoneCountry' => 'CA',
+                'phoneFormat' => phone_format_for_country('CA'),
+                'phoneAllowCountrySelect' => true,
+                'accept' => '',
+                'maxFiles' => 5,
+                'partnerInput' => 'select',
+                'partnerIds' => [],
             ];
+
+            if (in_array($type, ['select', 'radio', 'checkbox'], true)) {
+                $opts = [];
+                foreach ($item['options'] ?? [] as $opt) {
+                    if (!is_array($opt)) {
+                        continue;
+                    }
+                    $val = trim((string) ($opt['value'] ?? ''));
+                    $lab = trim((string) ($opt['label'] ?? $val));
+                    if ($val === '') {
+                        continue;
+                    }
+                    $opts[] = ['value' => $val, 'label' => $lab !== '' ? $lab : $val];
+                }
+                if ($opts === []) {
+                    $opts = [
+                        ['value' => 'option_1', 'label' => 'Option 1'],
+                        ['value' => 'option_2', 'label' => 'Option 2'],
+                    ];
+                }
+                $fu['options'] = $opts;
+            }
+
+            if ($type === 'number') {
+                $fu['numberFormat'] = normalize_number_format((string) ($item['numberFormat'] ?? ''));
+            }
+            if ($type === 'date') {
+                $fu['minAge'] = normalize_min_age($item['minAge'] ?? 0);
+            }
+            if ($type === 'tel') {
+                $phone = normalize_phone_field_settings($item);
+                $fu['phoneCountry'] = $phone['country'];
+                $fu['phoneFormat'] = $phone['format'];
+                $fu['phoneAllowCountrySelect'] = $phone['allowSelect'];
+            }
+            if (in_array($type, ['file', 'image'], true)) {
+                $fu['accept'] = trim((string) ($item['accept'] ?? ($type === 'image' ? 'image/*' : form_file_accept_default())));
+                $fu['maxFiles'] = max(1, min(10, (int) ($item['maxFiles'] ?? 5)));
+            }
+            if ($type === 'partners') {
+                $input = (string) ($item['partnerInput'] ?? 'select');
+                $fu['partnerInput'] = in_array($input, ['select', 'text', 'number'], true) ? $input : 'select';
+                $ids = $item['partnerIds'] ?? [];
+                $fu['partnerIds'] = array_values(array_unique(array_filter(
+                    array_map('intval', is_array($ids) ? $ids : []),
+                    static fn (int $pid): bool => $pid > 0
+                )));
+            }
+
+            $followUps[] = $fu;
         }
     }
 
@@ -357,6 +425,17 @@ function normalize_yes_no_follow_ups(array $field): array
                 'placeholder' => (string) ($field['reasonPlaceholder'] ?? ''),
                 'required' => array_key_exists('reasonRequired', $field) ? !empty($field['reasonRequired']) : true,
                 'legacy' => true,
+                'helpText' => '',
+                'options' => [],
+                'numberFormat' => '',
+                'minAge' => 0,
+                'phoneCountry' => 'CA',
+                'phoneFormat' => phone_format_for_country('CA'),
+                'phoneAllowCountrySelect' => true,
+                'accept' => '',
+                'maxFiles' => 5,
+                'partnerInput' => 'select',
+                'partnerIds' => [],
             ];
         }
     }
@@ -375,7 +454,7 @@ function yes_no_follow_up_storage_key(string $fieldName, array $followUp): strin
     return $fieldName . '_fu_' . $id;
 }
 
-/** @return list<array{id: string, when: string, type: string, label: string, placeholder: string, required: bool, legacy: bool}> */
+/** @return list<array<string, mixed>> */
 function yes_no_follow_ups(array $field): array
 {
     return normalize_yes_no_follow_ups($field);
@@ -392,6 +471,50 @@ function yes_no_follow_ups_for_answer(array $field, string $answer): array
         yes_no_follow_ups($field),
         static fn (array $fu): bool => ($fu['when'] ?? '') === $answer
     ));
+}
+
+/**
+ * Build a pseudo field schema from a Yes/No follow-up (for render/validate/upload).
+ *
+ * @return array<string, mixed>
+ */
+function yes_no_follow_up_as_field(array $parentField, array $followUp): array
+{
+    $type = normalize_yes_no_reason_type($followUp['type'] ?? 'textarea');
+    $parentId = (string) ($parentField['id'] ?? 'f');
+    $fuId = (string) ($followUp['id'] ?? 'fu');
+
+    $field = [
+        'id' => $parentId . '__fu__' . $fuId,
+        'type' => $type,
+        'name' => yes_no_follow_up_storage_key((string) ($parentField['name'] ?? 'field'), $followUp),
+        'label' => (string) ($followUp['label'] ?? 'Follow-up'),
+        'required' => !empty($followUp['required']),
+        'placeholder' => (string) ($followUp['placeholder'] ?? ''),
+        'helpText' => (string) ($followUp['helpText'] ?? ''),
+        'options' => is_array($followUp['options'] ?? null) ? $followUp['options'] : [],
+        'conditions' => [],
+        'numberFormat' => (string) ($followUp['numberFormat'] ?? ''),
+        'minAge' => normalize_min_age($followUp['minAge'] ?? 0),
+        'phoneCountry' => (string) ($followUp['phoneCountry'] ?? 'CA'),
+        'phoneFormat' => (string) ($followUp['phoneFormat'] ?? ''),
+        'phoneAllowCountrySelect' => array_key_exists('phoneAllowCountrySelect', $followUp)
+            ? !empty($followUp['phoneAllowCountrySelect'])
+            : true,
+        'accept' => (string) ($followUp['accept'] ?? ''),
+        'maxFiles' => max(1, min(10, (int) ($followUp['maxFiles'] ?? 5))),
+        'partnerInput' => (string) ($followUp['partnerInput'] ?? 'select'),
+        'partnerIds' => is_array($followUp['partnerIds'] ?? null) ? $followUp['partnerIds'] : [],
+    ];
+
+    if ($type === 'tel') {
+        $phone = normalize_phone_field_settings($field);
+        $field['phoneCountry'] = $phone['country'];
+        $field['phoneFormat'] = $phone['format'];
+        $field['phoneAllowCountrySelect'] = $phone['allowSelect'];
+    }
+
+    return $field;
 }
 
 function default_field(string $type = 'text'): array

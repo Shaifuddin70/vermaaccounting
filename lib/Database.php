@@ -173,6 +173,7 @@ final class Database
         $this->ensureEmailCampaignsTables();
         $this->ensureHolidaySchedulesTable();
         $this->ensureFileFoldersTable();
+        $this->ensureBlogsTable();
     }
 
     private function migrateSqlite(): void
@@ -251,6 +252,7 @@ final class Database
         $this->ensureEmailCampaignsTables();
         $this->ensureHolidaySchedulesTable();
         $this->ensureFileFoldersTable();
+        $this->ensureBlogsTable();
     }
 
     private function ensurePartnerRole(): void
@@ -698,6 +700,80 @@ final class Database
                 updated_at TEXT NOT NULL
             )
         ');
+    }
+
+    private function ensureBlogsTable(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS blogs (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    uplift_id VARCHAR(64) NOT NULL,
+                    title VARCHAR(500) NOT NULL,
+                    slug VARCHAR(191) NOT NULL,
+                    excerpt TEXT,
+                    content_html LONGTEXT NOT NULL,
+                    featured_image VARCHAR(1000) DEFAULT NULL,
+                    source_status VARCHAR(32) NOT NULL DEFAULT "DRAFT",
+                    local_status ENUM("draft", "published") NOT NULL DEFAULT "draft",
+                    publish_date DATE DEFAULT NULL,
+                    publish_time TIME DEFAULT NULL,
+                    author_name VARCHAR(191) DEFAULT NULL,
+                    author_url VARCHAR(500) DEFAULT NULL,
+                    seo_title VARCHAR(500) DEFAULT NULL,
+                    seo_description TEXT,
+                    focus_keyword VARCHAR(255) DEFAULT NULL,
+                    seo_score SMALLINT UNSIGNED DEFAULT 0,
+                    categories_json LONGTEXT,
+                    tags_json LONGTEXT,
+                    meta_json LONGTEXT,
+                    freshness_json LONGTEXT,
+                    custom_fields_json LONGTEXT,
+                    source_updated_at VARCHAR(64) DEFAULT NULL,
+                    last_synced_at DATETIME DEFAULT NULL,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    UNIQUE KEY uk_blogs_uplift_id (uplift_id),
+                    UNIQUE KEY uk_blogs_slug (slug),
+                    KEY idx_blogs_local_status (local_status),
+                    KEY idx_blogs_publish_date (publish_date)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS blogs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                uplift_id TEXT NOT NULL UNIQUE,
+                title TEXT NOT NULL,
+                slug TEXT NOT NULL UNIQUE,
+                excerpt TEXT,
+                content_html TEXT NOT NULL,
+                featured_image TEXT,
+                source_status TEXT NOT NULL DEFAULT "DRAFT",
+                local_status TEXT NOT NULL DEFAULT "draft",
+                publish_date TEXT,
+                publish_time TEXT,
+                author_name TEXT,
+                author_url TEXT,
+                seo_title TEXT,
+                seo_description TEXT,
+                focus_keyword TEXT,
+                seo_score INTEGER DEFAULT 0,
+                categories_json TEXT,
+                tags_json TEXT,
+                meta_json TEXT,
+                freshness_json TEXT,
+                custom_fields_json TEXT,
+                source_updated_at TEXT,
+                last_synced_at TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        ');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_blogs_local_status ON blogs(local_status)');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_blogs_publish_date ON blogs(publish_date)');
     }
 
     private function columnExists(string $table, string $column): bool
