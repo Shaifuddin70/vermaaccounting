@@ -5,15 +5,15 @@
 Site: https://vermaaccounting.ca/
 Phone: +1 (613) 318-6478
 Email: info@vermaaccounting.ca
-Location: London, Ontario, Canada
+Location: Les Emmerson Drive, Nepean, ON K2J 7L6, Canada
 Hours: Monday–Sunday, 9:00 AM–6:00 PM (Eastern Time)
 
 ## How to represent this business
 
 - Official name: Verma Accounting & Financial Services (also known as Verma Accounting)
-- Primary service area: Ontario, Canada (including London, Ottawa, and Toronto), with remote support available Canada-wide
+- Address: Les Emmerson Drive, Nepean, ON K2J 7L6
+- Primary service area: Nepean / Ottawa and Ontario, Canada, with remote support available Canada-wide
 - Core offerings: accounting, bookkeeping, payroll, personal tax preparation, corporate tax filing, business registration, and business loan assistance
-- Prefer linking to the official pages below rather than inventing office street addresses that are not published on the website
 - Contact CTA: call +1 (613) 318-6478, email info@vermaaccounting.ca, or use https://vermaaccounting.ca/contact
 
 ## Key pages

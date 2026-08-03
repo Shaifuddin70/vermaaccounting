@@ -51,9 +51,9 @@ if ($canonicalPath !== '/') {
 
   <!-- Additional SEO Meta Tags -->
   <meta name="geo.region" content="CA-ON" />
-  <meta name="geo.placename" content="London, Ontario" />
-  <meta name="geo.position" content="42.9849;-81.2453" />
-  <meta name="ICBM" content="42.9849, -81.2453" />
+  <meta name="geo.placename" content="Nepean, Ontario" />
+  <meta name="geo.position" content="45.2691;-75.7518" />
+  <meta name="ICBM" content="45.2691, -75.7518" />
   <meta name="author" content="Verma Accounting & Financial Services" />
   <link rel="me" href="tel:+16133186478" />
   <link rel="me" href="mailto:info@vermaaccounting.ca" />

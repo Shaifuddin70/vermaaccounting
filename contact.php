@@ -6,7 +6,7 @@
   <section class="page-header">
     <div class="container">
       <h1>Contact Verma Accounting</h1>
-      <p>Ontario tax and accounting support by phone, email, or the form below. Serving London, Ottawa, Toronto, and clients across Canada.</p>
+      <p>Ontario tax and accounting support by phone, email, or the form below. Serving Nepean, Ottawa, and clients across Canada.</p>
     </div>
     <a class="appointment-button" href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"> <i class="fas fa-calendar-alt"></i>Book an Appointment</a>
   </section>
@@ -47,7 +47,8 @@
           <h3>Location</h3>
           <p>
             <strong>Verma Accounting &amp; Financial Services</strong><br>
-            London, Ontario, Canada<br>
+            Les Emmerson Drive<br>
+            Nepean, ON K2J 7L6<br>
             Serving clients across Ontario and Canada
           </p>
         </div>
@@ -59,8 +60,8 @@
       </div>
       <div class="contact-map-wrap">
         <iframe
-          title="Verma Accounting service area — London, Ontario"
-          src="https://maps.google.com/maps?q=London%2C%20Ontario%2C%20Canada&z=10&output=embed"
+          title="Verma Accounting — Les Emmerson Drive, Nepean, ON"
+          src="https://maps.google.com/maps?q=Les%20Emmerson%20Drive%2C%20Nepean%2C%20ON%20K2J%207L6&z=15&output=embed"
           loading="lazy"
           referrerpolicy="no-referrer-when-downgrade"
           allowfullscreen></iframe>
@@ -138,7 +139,7 @@
                 <i class="fas fa-map-marker-alt"></i>
                 <div>
                   <h4>Service area</h4>
-                  <span>London, Ontario · Ottawa · Toronto · Canada-wide</span>
+                  <span>Les Emmerson Drive, Nepean, ON K2J 7L6 · Ottawa · Canada-wide</span>
                 </div>
               </div>
               <div class="contact-item">

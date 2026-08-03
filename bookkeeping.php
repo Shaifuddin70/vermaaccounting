@@ -394,11 +394,13 @@ include 'components/header.php';
       "telephone": "613-318-6478",
       "email": "info@vermaaccounting.ca",
       "address": {
-        "@type": "PostalAddress",
-        "addressCountry": "CA",
-        "addressRegion": "ON",
-        "addressLocality": "London"
-      },
+      "@type": "PostalAddress",
+      "streetAddress": "Les Emmerson Drive",
+      "addressLocality": "Nepean",
+      "addressRegion": "ON",
+      "postalCode": "K2J 7L6",
+      "addressCountry": "CA"
+    },
       "areaServed": {
         "@type": "Country",
         "name": "Canada"

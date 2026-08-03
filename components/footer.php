@@ -67,7 +67,7 @@ if (!function_exists('asset')) {
              <i class="fas fa-map-marker-alt"></i>
              <div>
                <strong>Location</strong>
-               <span>London, Ontario, Canada</span>
+               <span>Les Emmerson Drive, Nepean, ON K2J 7L6</span>
              </div>
            </li>
            <li>

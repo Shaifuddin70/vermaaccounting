@@ -439,9 +439,11 @@
     "email": "info@vermaaccounting.ca",
     "address": {
       "@type": "PostalAddress",
-      "addressCountry": "CA",
+      "streetAddress": "Les Emmerson Drive",
+      "addressLocality": "Nepean",
       "addressRegion": "ON",
-      "addressLocality": "London"
+      "postalCode": "K2J 7L6",
+      "addressCountry": "CA"
     },
     "areaServed": {
       "@type": "Country",

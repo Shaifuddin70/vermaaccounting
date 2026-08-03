@@ -374,14 +374,16 @@ function seo_local_business_schema(): array
         'paymentAccepted' => 'Cash, Credit Card, Debit Card, Interac e-Transfer',
         'address' => [
             '@type' => 'PostalAddress',
-            'addressLocality' => 'London',
+            'streetAddress' => 'Les Emmerson Drive',
+            'addressLocality' => 'Nepean',
             'addressRegion' => 'ON',
+            'postalCode' => 'K2J 7L6',
             'addressCountry' => 'CA',
         ],
         'geo' => [
             '@type' => 'GeoCoordinates',
-            'latitude' => 42.9849,
-            'longitude' => -81.2453,
+            'latitude' => 45.2691,
+            'longitude' => -75.7518,
         ],
         'contactPoint' => [
             [
@@ -402,10 +404,10 @@ function seo_local_business_schema(): array
         'areaServed' => [
             [
                 '@type' => 'City',
-                'name' => 'London',
+                'name' => 'Nepean',
                 'containedInPlace' => [
-                    '@type' => 'State',
-                    'name' => 'Ontario',
+                    '@type' => 'City',
+                    'name' => 'Ottawa',
                 ],
             ],
             [
