@@ -34,6 +34,9 @@ RewriteRule ^llms\.txt$ llms.txt [L]
 # Public email images (used in campaign / holiday HTML)
 RewriteRule ^email-asset/([A-Za-z0-9._-]+)$ email-asset.php?f=$1 [L,QSA]
 
+# Email open-tracking pixel
+RewriteRule ^email-open/([a-fA-F0-9]{32})(?:\.gif)?$ email-open.php?t=$1 [L,QSA]
+
 # Admin dashboard: /admin -> admin/index.php
 RewriteRule ^admin/?$ admin/index.php [L]
 

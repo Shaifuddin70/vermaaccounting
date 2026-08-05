@@ -95,7 +95,14 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
             'content' => $pdf['bytes'],
             'mime' => $pdf['mime'],
         ]],
-        $text
+        $text,
+        null,
+        [
+            'kind' => 'invoice',
+            'ref_type' => 'invoice',
+            'ref_id' => (int) ($invoice['id'] ?? 0),
+            'client_id' => !empty($invoice['client_id']) ? (int) $invoice['client_id'] : null,
+        ]
     );
 
     if (!$ok) {

@@ -11,6 +11,7 @@ function birthday_email_default_html(): string
             . 'We hope your year ahead is filled with good health, happiness, and success.',
         'appreciation' => 'It is always our pleasure to serve you. Wishing you a wonderful celebration with family and friends.',
         'signoff' => 'Warm birthday wishes,',
+        'image_name' => 'Birthday',
     ]);
 }
 
@@ -38,12 +39,19 @@ function birthday_email_settings(): array
         ?? $defaults['send_time'];
     $subject = trim((string) ($stored['subject'] ?? ''));
     $body = trim((string) ($stored['body_html'] ?? ''));
+    $body = $body !== '' ? campaign_email_normalize_year_token($body) : $defaults['body_html'];
+
+    // Older saved templates may not include the banner — always keep birthday.jpg wired in.
+    $body = canada_holiday_email_apply_template_image(
+        $body,
+        canada_holiday_email_image_url_for_name('Birthday')
+    );
 
     return [
         'enabled' => array_key_exists('enabled', $stored) ? !empty($stored['enabled']) : true,
         'send_time' => $sendTime,
         'subject' => $subject !== '' ? $subject : $defaults['subject'],
-        'body_html' => $body !== '' ? campaign_email_normalize_year_token($body) : $defaults['body_html'],
+        'body_html' => $body,
     ];
 }
 
@@ -54,12 +62,20 @@ function birthday_email_save_settings(array $settings): void
     $sendTime = holiday_normalize_send_time((string) ($settings['send_time'] ?? '')) ?? $defaults['send_time'];
     $subject = trim((string) ($settings['subject'] ?? ''));
     $body = campaign_email_normalize_year_token(trim((string) ($settings['body_html'] ?? '')));
+    if ($body === '') {
+        $body = $defaults['body_html'];
+    } else {
+        $body = canada_holiday_email_apply_template_image(
+            $body,
+            canada_holiday_email_image_url_for_name('Birthday')
+        );
+    }
 
     (new SettingsRepository())->set('birthday_emails', [
         'enabled' => !empty($settings['enabled']),
         'send_time' => $sendTime,
         'subject' => $subject !== '' ? $subject : $defaults['subject'],
-        'body_html' => $body !== '' ? $body : $defaults['body_html'],
+        'body_html' => $body,
     ]);
 }
 
@@ -99,7 +115,9 @@ function birthday_send_test_email(?array $settings = null): array
     [$emailSubject, $html, $text] = build_campaign_email($subject, $body, $client);
     $emailSubject = '[TEST] ' . $emailSubject;
 
-    if (!$mailer->send($testEmail, $emailSubject, $html, $text)) {
+    if (!$mailer->send($testEmail, $emailSubject, $html, $text, null, [
+        'kind' => 'birthday_test',
+    ])) {
         return ['ok' => false, 'error' => $mailer->getLastError() ?: 'Test send failed.'];
     }
 

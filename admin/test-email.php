@@ -32,7 +32,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         . '<p style="margin:0;color:#334155;">If you received this, submission notifications are configured correctly.</p>',
                     'Test message from the Verma Accounting admin panel.'
                 ),
-                'Test email from Verma Accounting admin panel.'
+                'Test email from Verma Accounting admin panel.',
+                null,
+                ['kind' => 'test']
             );
             if ($ok) {
                 $result = 'Test email sent to ' . $to . '. Check your inbox and spam folder.';

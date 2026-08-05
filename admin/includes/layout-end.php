@@ -11,11 +11,14 @@
   ></div>
   <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.umd.js" defer></script>
   <script src="/admin/js/admin-fancybox.js?v=1" defer></script>
-  <script src="/admin/js/admin-topbar.js?v=3" defer></script>
+  <script src="/admin/js/admin-topbar.js?v=4" defer></script>
   <script src="/admin/js/admin-nav.js?v=1" defer></script>
   <script src="/admin/js/admin-ui.js?v=3" defer></script>
   <?php if (!empty($loadEmailEditor)): ?>
-  <script src="/admin/js/email-editor.js?v=3" defer></script>
+  <script src="/admin/js/email-editor.js?v=8" defer></script>
+  <?php endif; ?>
+  <?php if (!empty($loadEmailTemplateImage)): ?>
+  <script src="/admin/js/email-template-image.js?v=4" defer></script>
   <?php endif; ?>
 </body>
 </html>

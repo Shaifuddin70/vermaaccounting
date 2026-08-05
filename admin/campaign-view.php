@@ -19,6 +19,8 @@ $recipientTotal = (int) ($campaign['recipient_count'] ?? 0);
 $sent = (int) ($campaign['sent_count'] ?? 0);
 $failed = (int) ($campaign['failed_count'] ?? 0);
 $pending = $campaignRepo->countRecipients($campaignId, 'pending');
+$openStats = email_tracking_stats_for_campaign($campaignId);
+$openedRows = email_tracking_opens_for_campaign($campaignId, 100);
 $mailReady = Mailer::fromAppConfig() !== null;
 $clientEmailCount = (new ClientRepository())->countWithEmail();
 $scheduledAt = (string) ($campaign['scheduled_at'] ?? '');
@@ -86,6 +88,13 @@ require __DIR__ . '/includes/layout-start.php';
       <div>
         <span class="submission-meta-label">Failed</span>
         <strong><?= number_format($failed) ?></strong>
+      </div>
+      <div>
+        <span class="submission-meta-label">Opened</span>
+        <strong><?= number_format($openStats['opened']) ?></strong>
+        <?php if ($openStats['tracked'] > 0): ?>
+          <div class="admin-field-hint" style="margin:0.2rem 0 0;"><?= e((string) $openStats['open_rate']) ?>% of tracked</div>
+        <?php endif; ?>
       </div>
       <div>
         <span class="submission-meta-label">Pending</span>
@@ -196,6 +205,37 @@ require __DIR__ . '/includes/layout-start.php';
     </p>
   </div>
 </div>
+
+<?php if ($openStats['opened'] > 0): ?>
+  <div class="admin-card">
+    <h2 class="admin-card-title">Opened by</h2>
+    <p class="admin-field-hint" style="margin-top:0;">
+      Based on the tracking pixel loaded by the recipient’s email app.
+    </p>
+    <div class="admin-table-wrap">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>First opened</th>
+            <th>Last opened</th>
+            <th>Opens</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach ($openedRows as $row): ?>
+            <tr>
+              <td><?= e((string) ($row['to_email'] ?? '')) ?></td>
+              <td><?= e(campaign_format_datetime((string) ($row['opened_at'] ?? ''))) ?></td>
+              <td><?= e(campaign_format_datetime((string) ($row['last_opened_at'] ?? $row['opened_at'] ?? ''))) ?></td>
+              <td><?= number_format((int) ($row['open_count'] ?? 0)) ?></td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<?php endif; ?>
 
 <?php if ($failed > 0): ?>
   <div class="admin-card">

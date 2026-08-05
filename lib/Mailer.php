@@ -34,13 +34,14 @@ final class Mailer
         return $this->lastError;
     }
 
-    public function send(string $to, string $subject, string $htmlBody, ?string $textBody = null, ?string $replyTo = null): bool
+    public function send(string $to, string $subject, string $htmlBody, ?string $textBody = null, ?string $replyTo = null, ?array $tracking = null): bool
     {
-        return $this->sendMessage($to, $subject, $htmlBody, $textBody, $replyTo, []);
+        return $this->sendMessage($to, $subject, $htmlBody, $textBody, $replyTo, [], $tracking);
     }
 
     /**
      * @param list<array{filename: string, content: string, mime?: string}> $attachments
+     * @param array<string, mixed>|null $tracking
      */
     public function sendWithAttachments(
         string $to,
@@ -48,13 +49,15 @@ final class Mailer
         string $htmlBody,
         array $attachments,
         ?string $textBody = null,
-        ?string $replyTo = null
+        ?string $replyTo = null,
+        ?array $tracking = null
     ): bool {
-        return $this->sendMessage($to, $subject, $htmlBody, $textBody, $replyTo, $attachments);
+        return $this->sendMessage($to, $subject, $htmlBody, $textBody, $replyTo, $attachments, $tracking);
     }
 
     /**
      * @param list<array{filename: string, content: string, mime?: string}> $attachments
+     * @param array<string, mixed>|null $tracking Pass null to auto-track, or ['enabled' => false] to skip.
      */
     private function sendMessage(
         string $to,
@@ -62,7 +65,8 @@ final class Mailer
         string $htmlBody,
         ?string $textBody,
         ?string $replyTo,
-        array $attachments
+        array $attachments,
+        ?array $tracking = null
     ): bool {
         $this->lastError = '';
         $to = trim($to);
@@ -73,6 +77,14 @@ final class Mailer
         if ($this->fromEmail === '' || !filter_var($this->fromEmail, FILTER_VALIDATE_EMAIL)) {
             $this->lastError = 'Invalid From email address in config.';
             return false;
+        }
+
+        $trackingMeta = $tracking ?? ['kind' => 'email'];
+        if (($trackingMeta['enabled'] ?? true) !== false) {
+            $htmlBody = email_tracking_prepare_html($htmlBody, array_merge($trackingMeta, [
+                'to_email' => $to,
+                'subject' => $subject,
+            ]));
         }
 
         $textBody = $textBody ?? $this->htmlToText($htmlBody);

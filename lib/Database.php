@@ -175,6 +175,7 @@ final class Database
         $this->ensureFileFoldersTable();
         $this->ensureBlogsTable();
         $this->ensureInvoiceTables();
+        $this->ensureEmailTrackingTable();
     }
 
     private function migrateSqlite(): void
@@ -255,6 +256,63 @@ final class Database
         $this->ensureFileFoldersTable();
         $this->ensureBlogsTable();
         $this->ensureInvoiceTables();
+        $this->ensureEmailTrackingTable();
+    }
+
+    private function ensureEmailTrackingTable(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS email_tracked_sends (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    token CHAR(32) NOT NULL,
+                    kind VARCHAR(40) NOT NULL DEFAULT "email",
+                    to_email VARCHAR(191) NOT NULL,
+                    subject VARCHAR(500) NOT NULL DEFAULT "",
+                    campaign_id INT UNSIGNED NULL,
+                    recipient_id INT UNSIGNED NULL,
+                    client_id INT UNSIGNED NULL,
+                    ref_type VARCHAR(40) NULL,
+                    ref_id INT UNSIGNED NULL,
+                    sent_at DATETIME NOT NULL,
+                    opened_at DATETIME NULL,
+                    open_count INT UNSIGNED NOT NULL DEFAULT 0,
+                    last_opened_at DATETIME NULL,
+                    open_user_agent VARCHAR(500) NULL,
+                    created_at DATETIME NOT NULL,
+                    UNIQUE KEY uq_email_tracked_token (token),
+                    KEY idx_email_tracked_campaign (campaign_id),
+                    KEY idx_email_tracked_opened (opened_at),
+                    KEY idx_email_tracked_sent (sent_at),
+                    KEY idx_email_tracked_kind (kind)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS email_tracked_sends (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                token TEXT NOT NULL UNIQUE,
+                kind TEXT NOT NULL DEFAULT "email",
+                to_email TEXT NOT NULL,
+                subject TEXT NOT NULL DEFAULT "",
+                campaign_id INTEGER NULL,
+                recipient_id INTEGER NULL,
+                client_id INTEGER NULL,
+                ref_type TEXT NULL,
+                ref_id INTEGER NULL,
+                sent_at TEXT NOT NULL,
+                opened_at TEXT NULL,
+                open_count INTEGER NOT NULL DEFAULT 0,
+                last_opened_at TEXT NULL,
+                open_user_agent TEXT NULL,
+                created_at TEXT NOT NULL
+            )
+        ');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_email_tracked_campaign ON email_tracked_sends(campaign_id)');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_email_tracked_opened ON email_tracked_sends(opened_at)');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_email_tracked_sent ON email_tracked_sends(sent_at)');
     }
 
     private function ensureInvoiceTables(): void

@@ -52,7 +52,7 @@ if ($print) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/css/invoice-print.css?v=2">
+  <link rel="stylesheet" href="/admin/css/invoice-print.css?v=3">
 </head>
 <body class="invoice-print-body">
   <div class="invoice-print-toolbar no-print">
@@ -73,6 +73,8 @@ if ($print) {
 
 $pageTitle = 'Invoice #' . $invoice['invoice_number'];
 $activeNav = 'invoices';
+$clientName = trim((string) ($invoice['client_name'] ?? ''));
+$clientCompany = trim((string) ($invoice['client_company'] ?? ''));
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
@@ -87,17 +89,28 @@ require __DIR__ . '/includes/layout-start.php';
 </div>
 
 <div class="admin-card invoice-status-bar">
-  <form method="post" action="/admin/invoice-action" class="invoice-status-form">
-    <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-    <input type="hidden" name="id" value="<?= $id ?>">
-    <input type="hidden" name="action" value="status">
-    <label for="status-change">Status</label>
-    <select id="status-change" name="status" onchange="this.form.submit()">
-      <?php foreach (invoice_status_options() as $opt): ?>
-        <option value="<?= e($opt) ?>" <?= $status === $opt ? 'selected' : '' ?>><?= e(invoice_status_label($opt)) ?></option>
-      <?php endforeach; ?>
-    </select>
-  </form>
+  <div class="invoice-view-meta">
+    <form method="post" action="/admin/invoice-action" class="invoice-status-form">
+      <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+      <input type="hidden" name="id" value="<?= $id ?>">
+      <input type="hidden" name="action" value="status">
+      <label for="status-change">Status</label>
+      <select id="status-change" name="status" onchange="this.form.submit()">
+        <?php foreach (invoice_status_options() as $opt): ?>
+          <option value="<?= e($opt) ?>" <?= $status === $opt ? 'selected' : '' ?>><?= e(invoice_status_label($opt)) ?></option>
+        <?php endforeach; ?>
+      </select>
+    </form>
+    <?php if ($clientName !== ''): ?>
+      <div class="invoice-view-client">
+        <span class="admin-field-hint">Client</span>
+        <strong><?= e($clientName) ?></strong>
+        <?php if ($clientCompany !== '' && strcasecmp($clientCompany, $clientName) !== 0): ?>
+          <span class="admin-field-hint"><?= e($clientCompany) ?></span>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
+  </div>
   <p class="admin-field-hint" style="margin:0;">Download PDF or email it directly to the client.</p>
 </div>
 
@@ -138,7 +151,7 @@ require __DIR__ . '/includes/layout-start.php';
   </form>
 </div>
 
-<link rel="stylesheet" href="/admin/css/invoice-print.css?v=2">
+<link rel="stylesheet" href="/admin/css/invoice-print.css?v=3">
 <div class="invoice-preview-frame">
   <?php require __DIR__ . '/includes/invoice-document.php'; ?>
 </div>

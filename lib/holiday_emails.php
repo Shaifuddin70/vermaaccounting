@@ -371,7 +371,9 @@ function holiday_send_test_email(array $schedule): array
     [$emailSubject, $html, $text] = build_campaign_email($subject, $body, $client);
     $emailSubject = '[TEST] ' . $emailSubject;
 
-    if (!$mailer->send($testEmail, $emailSubject, $html, $text)) {
+    if (!$mailer->send($testEmail, $emailSubject, $html, $text, null, [
+        'kind' => 'holiday_test',
+    ])) {
         return ['ok' => false, 'error' => $mailer->getLastError() ?: 'Test send failed.'];
     }
 

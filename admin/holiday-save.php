@@ -34,6 +34,13 @@ $day = (int) ($_POST['holiday_day'] ?? 0);
 $sendTime = holiday_normalize_send_time((string) ($_POST['send_time'] ?? ''));
 $enabled = !empty($_POST['enabled']);
 
+if ($name !== '' && $body !== '') {
+    $body = canada_holiday_email_apply_template_image(
+        $body,
+        canada_holiday_email_image_url_for_name($name)
+    );
+}
+
 $errors = [];
 if ($name === '') {
     $errors[] = 'Holiday name is required.';

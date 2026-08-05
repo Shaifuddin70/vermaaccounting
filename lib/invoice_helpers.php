@@ -133,6 +133,32 @@ function invoice_parse_items_from_post(array $post): array
 {
     $items = [];
 
+    // Compact line-item rows (preferred).
+    $lineNames = is_array($post['line_name'] ?? null) ? $post['line_name'] : [];
+    if ($lineNames !== []) {
+        $lineServiceIds = is_array($post['line_service_id'] ?? null) ? $post['line_service_id'] : [];
+        $lineDescs = is_array($post['line_description'] ?? null) ? $post['line_description'] : [];
+        $linePrices = is_array($post['line_price'] ?? null) ? $post['line_price'] : [];
+        $lineQtys = is_array($post['line_qty'] ?? null) ? $post['line_qty'] : [];
+
+        foreach ($lineNames as $idx => $name) {
+            $name = trim((string) $name);
+            if ($name === '') {
+                continue;
+            }
+            $serviceId = (int) ($lineServiceIds[$idx] ?? 0);
+            $items[] = [
+                'service_id' => $serviceId > 0 ? $serviceId : null,
+                'name' => $name,
+                'description' => trim((string) ($lineDescs[$idx] ?? '')),
+                'unit_price' => (float) ($linePrices[$idx] ?? 0),
+                'quantity' => (float) ($lineQtys[$idx] ?? 1),
+            ];
+        }
+        return $items;
+    }
+
+    // Legacy checkbox + custom fields.
     $serviceIds = $post['service_ids'] ?? [];
     if (!is_array($serviceIds)) {
         $serviceIds = [];

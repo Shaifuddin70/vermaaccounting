@@ -11,6 +11,7 @@ $withDob = $clientRepo->countWithBirthday();
 $upcoming = $clientRepo->upcomingBirthdays(30, 12);
 $csrf = Auth::csrfToken();
 $loadEmailEditor = true;
+$loadEmailTemplateImage = true;
 $pageTitle = 'Birthday emails';
 $activeNav = 'birthdays';
 
@@ -48,10 +49,19 @@ require __DIR__ . '/includes/layout-start.php';
       </div>
 
       <?php
+      $templateImageFixedName = 'Birthday';
+      $templateImageInitialName = 'Birthday';
+      $templateImageBodyId = 'birthday-body';
+      $templateImageCsrf = $csrf;
+      include __DIR__ . '/includes/email-template-image.php';
+      ?>
+
+      <?php
       $emailEditorId = 'birthday-body';
       $emailEditorValue = $settings['body_html'];
       $emailEditorPlaceholder = 'Write your birthday HTML email…';
-      $emailEditorHint = 'Tokens: {client_name}, {client_email}, {sin}, {company}, {year}. Year fills automatically when sent.';
+      $emailEditorHint = 'Tokens: {client_name}, {client_email}, {sin}, {company}, {year}. Year fills automatically when sent. Use Preview to see the final email.';
+      $emailEditorSubjectId = 'birthday-subject';
       include __DIR__ . '/includes/email-editor.php';
       ?>
 

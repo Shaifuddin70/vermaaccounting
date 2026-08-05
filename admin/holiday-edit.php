@@ -30,6 +30,7 @@ $enabled = array_key_exists('enabled', $old) ? !empty($old['enabled']) : ($sched
 $recipientCount = $clientRepo->countWithEmail();
 $csrf = Auth::csrfToken();
 $loadEmailEditor = true;
+$loadEmailTemplateImage = true;
 $pageTitle = $schedule ? 'Edit holiday email' : 'Add holiday email';
 $activeNav = 'holidays';
 require __DIR__ . '/includes/layout-start.php';
@@ -115,9 +116,18 @@ require __DIR__ . '/includes/layout-start.php';
       </div>
 
       <?php
+      $templateImageNameInputId = 'holiday-name';
+      $templateImageInitialName = $name;
+      $templateImageBodyId = 'holiday-body';
+      $templateImageCsrf = $csrf;
+      include __DIR__ . '/includes/email-template-image.php';
+      ?>
+
+      <?php
       $emailEditorId = 'holiday-body';
       $emailEditorValue = $body;
       $emailEditorPlaceholder = 'Write your holiday HTML email…';
+      $emailEditorSubjectId = 'holiday-subject';
       include __DIR__ . '/includes/email-editor.php';
       ?>
 
@@ -146,7 +156,9 @@ require __DIR__ . '/includes/layout-start.php';
 
     <h2 class="admin-card-title" style="margin-top:1.5rem;">Tips</h2>
     <ul class="admin-field-hint" style="margin:0;padding-left:1.25rem;">
+      <li>Upload a template image above the message — it is saved as <code>holiday-name.jpg</code> and used in the email banner.</li>
       <li>Use {client_name} to personalize the greeting.</li>
+      <li>Use <strong>Preview</strong> in the editor toolbar to see the email as clients will receive it.</li>
       <li>Send a test email (goes to the admin address in Email settings) before enabling automatic sends.</li>
       <li>Uncheck “Send automatically” to pause a holiday without deleting it.</li>
       <li>Feb 29 holidays send on Feb 28 in non-leap years.</li>

@@ -18,6 +18,33 @@ if (!Auth::verifyCsrf($csrf)) {
 }
 
 $action = (string) ($_POST['action'] ?? 'upload_image');
+
+if ($action === 'upload_template_image') {
+    if (empty($_FILES['image'])) {
+        json_response(['ok' => false, 'error' => 'No image uploaded.'], 422);
+    }
+
+    $name = trim((string) ($_POST['name'] ?? ''));
+    try {
+        $asset = canada_holiday_email_image_upload($name, $_FILES['image']);
+    } catch (RuntimeException $e) {
+        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+    }
+
+    ActivityLog::record('email_template_image.uploaded', 'email_template_image', 0, [
+        'filename' => $asset['filename'],
+        'slug' => $asset['slug'],
+        'name' => $name,
+    ]);
+
+    json_response([
+        'ok' => true,
+        'url' => $asset['url'],
+        'filename' => $asset['filename'],
+        'slug' => $asset['slug'],
+    ]);
+}
+
 if ($action !== 'upload_image') {
     json_response(['ok' => false, 'error' => 'Unknown action.'], 400);
 }

@@ -21,6 +21,13 @@ $body = campaign_email_normalize_year_token(trim((string) ($_POST['body'] ?? '')
 $sendTime = holiday_normalize_send_time((string) ($_POST['send_time'] ?? ''));
 $enabled = !empty($_POST['enabled']);
 
+if ($body !== '') {
+    $body = canada_holiday_email_apply_template_image(
+        $body,
+        canada_holiday_email_image_url_for_name('Birthday')
+    );
+}
+
 $errors = [];
 if ($subject === '') {
     $errors[] = 'Email subject is required.';

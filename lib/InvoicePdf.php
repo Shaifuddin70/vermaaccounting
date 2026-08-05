@@ -60,13 +60,13 @@ final class InvoicePdf extends FPDF
         $startY = $this->GetY();
 
         if (is_file($logoPath)) {
-            $this->Image($logoPath, 16, $startY, 52);
+            $this->Image($logoPath, 16, $startY, 78);
         }
 
-        $this->SetXY(90, $startY);
+        $this->SetXY(105, $startY);
         $this->SetFont('Helvetica', 'B', 26);
         $this->SetTextColor(31, 41, 55);
-        $this->Cell(104, 10, 'INVOICE', 0, 2, 'R');
+        $this->Cell(89, 10, 'INVOICE', 0, 2, 'R');
 
         $this->SetFont('Helvetica', '', 9);
         $this->SetTextColor(100, 116, 139);
@@ -92,10 +92,10 @@ final class InvoicePdf extends FPDF
                 $this->SetFont('Helvetica', '', 9);
                 $this->SetTextColor(100, 116, 139);
             }
-            $this->Cell(104, 4.4, $this->t($line), 0, 2, 'R');
+            $this->Cell(89, 4.4, $this->t($line), 0, 2, 'R');
         }
 
-        $this->SetY(max($this->GetY(), $startY + 28) + 6);
+        $this->SetY(max($this->GetY(), $startY + 36) + 6);
     }
 
     private function drawBillToAndMeta(): void

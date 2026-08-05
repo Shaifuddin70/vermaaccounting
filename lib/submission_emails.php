@@ -43,7 +43,11 @@ function send_submission_notification_emails(
             );
             $replyTo = $clientInfo['email'] !== '' ? $clientInfo['email'] : null;
             foreach ($adminEmails as $adminTo) {
-                if (!$mailer->send($adminTo, $adminSubject, $adminHtml, $adminText, $replyTo)) {
+                if (!$mailer->send($adminTo, $adminSubject, $adminHtml, $adminText, $replyTo, [
+                    'kind' => 'submission_admin',
+                    'ref_type' => 'submission',
+                    'ref_id' => $submissionId,
+                ])) {
                     error_log('Submission email: admin notification failed for submission #' . $submissionId . ' to ' . $adminTo);
                 }
             }
@@ -65,7 +69,12 @@ function send_submission_notification_emails(
                 $taxYear,
                 $clientInfo
             );
-            if (!$mailer->send($clientInfo['email'], $clientSubject, $clientHtml, $clientText)) {
+            if (!$mailer->send($clientInfo['email'], $clientSubject, $clientHtml, $clientText, null, [
+                'kind' => 'submission_client',
+                'ref_type' => 'submission',
+                'ref_id' => $submissionId,
+                'client_id' => null,
+            ])) {
                 error_log('Submission email: client confirmation failed for submission #' . $submissionId);
             }
         }

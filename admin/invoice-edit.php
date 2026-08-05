@@ -23,39 +23,31 @@ $old = $_SESSION['invoice_edit_old'] ?? [];
 unset($_SESSION['invoice_edit_errors'], $_SESSION['invoice_edit_old']);
 
 $services = $serviceRepo->activeForSelect();
-// Include inactive services that are already on this invoice
-$selectedServiceIds = [];
+$lineItems = [];
 if ($old !== []) {
-    $parsed = invoice_parse_items_from_post($old);
-    foreach ($parsed as $item) {
-        if (!empty($item['service_id'])) {
-            $selectedServiceIds[(int) $item['service_id']] = $item;
-        }
-    }
+    $lineItems = invoice_parse_items_from_post($old);
 } else {
     foreach ($existingItems as $item) {
-        if (!empty($item['service_id'])) {
-            $selectedServiceIds[(int) $item['service_id']] = $item;
-        }
+        $lineItems[] = [
+            'service_id' => !empty($item['service_id']) ? (int) $item['service_id'] : null,
+            'name' => (string) ($item['name'] ?? ''),
+            'description' => (string) ($item['description'] ?? ''),
+            'unit_price' => number_format((float) ($item['unit_price'] ?? 0), 2, '.', ''),
+            'quantity' => rtrim(rtrim(number_format((float) ($item['quantity'] ?? 1), 2, '.', ''), '0'), '.') ?: '1',
+        ];
     }
 }
 
-$serviceIdsOnForm = array_keys($selectedServiceIds);
-foreach ($serviceIdsOnForm as $sid) {
-    $found = false;
-    foreach ($services as $s) {
-        if ((int) $s['id'] === $sid) {
-            $found = true;
-            break;
-        }
+// Normalize prices/qty for display when coming from parsed POST (floats).
+foreach ($lineItems as &$li) {
+    if (is_float($li['unit_price'] ?? null) || is_int($li['unit_price'] ?? null)) {
+        $li['unit_price'] = number_format((float) $li['unit_price'], 2, '.', '');
     }
-    if (!$found) {
-        $extra = $serviceRepo->find($sid);
-        if ($extra) {
-            $services[] = $extra;
-        }
+    if (is_float($li['quantity'] ?? null) || is_int($li['quantity'] ?? null)) {
+        $li['quantity'] = rtrim(rtrim(number_format((float) $li['quantity'], 2, '.', ''), '0'), '.') ?: '1';
     }
 }
+unset($li);
 
 $clients = $clientRepo->listForSelect();
 
@@ -77,41 +69,42 @@ if ($discountPercent === '') {
 $status = (string) ($old['status'] ?? $invoice['status'] ?? 'draft');
 $notes = (string) ($old['notes'] ?? $invoice['notes'] ?? invoice_default_notes());
 
-$customItems = [];
-if ($old !== []) {
-    $customNames = is_array($old['custom_name'] ?? null) ? $old['custom_name'] : [];
-    foreach ($customNames as $idx => $cname) {
-        if (trim((string) $cname) === '') {
-            continue;
-        }
-        $customItems[] = [
-            'name' => (string) $cname,
-            'description' => (string) (($old['custom_description'][$idx] ?? '')),
-            'unit_price' => (string) (($old['custom_price'][$idx] ?? '0')),
-            'quantity' => (string) (($old['custom_qty'][$idx] ?? '1')),
-        ];
-    }
-} else {
-    foreach ($existingItems as $item) {
-        if (!empty($item['service_id'])) {
-            continue;
-        }
-        $customItems[] = [
-            'name' => (string) ($item['name'] ?? ''),
-            'description' => (string) ($item['description'] ?? ''),
-            'unit_price' => number_format((float) ($item['unit_price'] ?? 0), 2, '.', ''),
-            'quantity' => rtrim(rtrim(number_format((float) ($item['quantity'] ?? 1), 2, '.', ''), '0'), '.') ?: '1',
-        ];
-    }
+$clientsList = [];
+foreach ($clients as $c) {
+    $clientsList[] = [
+        'id' => (int) $c['id'],
+        'name' => (string) $c['name'],
+        'company' => (string) $c['company'],
+        'email' => (string) $c['email'],
+    ];
 }
 
-$clientsJson = [];
-foreach ($clients as $c) {
-    $clientsJson[(string) $c['id']] = [
-        'name' => $c['name'],
-        'company' => $c['company'],
-        'email' => $c['email'],
+$servicesList = [];
+foreach ($services as $s) {
+    $servicesList[] = [
+        'id' => (int) $s['id'],
+        'name' => (string) $s['name'],
+        'description' => (string) ($s['description'] ?? ''),
+        'unit_price' => number_format((float) ($s['unit_price'] ?? 0), 2, '.', ''),
     ];
+}
+
+$selectedClient = null;
+if ($clientId !== '') {
+    foreach ($clientsList as $c) {
+        if ((string) $c['id'] === $clientId) {
+            $selectedClient = $c;
+            break;
+        }
+    }
+    if ($selectedClient === null && $invoice) {
+        $selectedClient = [
+            'id' => (int) $clientId,
+            'name' => (string) ($invoice['client_name'] ?? $billToName),
+            'company' => (string) ($invoice['client_company'] ?? $billToCompany),
+            'email' => (string) ($invoice['client_email'] ?? ''),
+        ];
+    }
 }
 
 $csrf = Auth::csrfToken();
@@ -123,9 +116,9 @@ require __DIR__ . '/includes/layout-start.php';
   <h1><?= $invoice ? 'Edit invoice #' . e((string) $invoice['invoice_number']) : 'New invoice' ?></h1>
   <div class="admin-header-actions">
     <?php if ($invoice): ?>
-      <a href="/admin/invoice-view?id=<?= (int) $invoice['id'] ?>" class="admin-btn admin-btn-secondary" target="_blank">Preview / print</a>
+      <a href="/admin/invoice-view?id=<?= (int) $invoice['id'] ?>" class="admin-btn admin-btn-secondary" target="_blank">Preview</a>
     <?php endif; ?>
-    <a href="/admin/invoices" class="admin-btn admin-btn-secondary">← All invoices</a>
+    <a href="/admin/invoices" class="admin-btn admin-btn-secondary">← Invoices</a>
   </div>
 </div>
 
@@ -141,7 +134,8 @@ require __DIR__ . '/includes/layout-start.php';
 
 <?php if ($services === []): ?>
   <div class="admin-alert admin-alert-info">
-    No active services found. <a href="/admin/invoice-service-edit">Add a service</a> first, or use a custom line item below.
+    No catalog services yet. You can still add custom lines, or
+    <a href="/admin/invoice-service-edit">create a service</a>.
   </div>
 <?php endif; ?>
 
@@ -151,226 +145,208 @@ require __DIR__ . '/includes/layout-start.php';
     <input type="hidden" name="id" value="<?= (int) $invoice['id'] ?>">
   <?php endif; ?>
 
-  <div class="admin-grid-2">
-    <div class="admin-card">
-      <h2 class="admin-card-title">Invoice details</h2>
-
-      <div class="admin-fields-2col">
-        <div class="admin-field">
-          <label for="invoice-number">Invoice number <span class="required">*</span></label>
-          <input type="text" id="invoice-number" name="invoice_number" required value="<?= e($invoiceNumber) ?>">
-        </div>
-        <div class="admin-field">
-          <label for="invoice-status">Status</label>
-          <select id="invoice-status" name="status">
-            <?php foreach (invoice_status_options() as $opt): ?>
-              <option value="<?= e($opt) ?>" <?= $status === $opt ? 'selected' : '' ?>><?= e(invoice_status_label($opt)) ?></option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-      </div>
-
-      <div class="admin-fields-2col">
-        <div class="admin-field">
-          <label for="invoice-date">Invoice date <span class="required">*</span></label>
-          <input type="date" id="invoice-date" name="invoice_date" required value="<?= e($invoiceDate) ?>">
-        </div>
-        <div class="admin-field">
-          <label for="due-date">Payment due <span class="required">*</span></label>
-          <input type="date" id="due-date" name="due_date" required value="<?= e($dueDate) ?>">
-        </div>
-      </div>
-
-      <div class="admin-field">
-        <label for="client-id">Client (optional)</label>
-        <select id="client-id" name="client_id">
-          <option value="">— Manual bill-to —</option>
-          <?php foreach ($clients as $c): ?>
-            <?php
-              $label = $c['name'];
-              if ($c['company'] !== '') {
-                  $label .= ' (' . $c['company'] . ')';
-              }
-            ?>
-            <option value="<?= (int) $c['id'] ?>" <?= (string) $c['id'] === $clientId ? 'selected' : '' ?>><?= e($label) ?></option>
-          <?php endforeach; ?>
-        </select>
-        <small class="admin-field-hint">Selecting a client prefills the bill-to name and company. Address is always entered below.</small>
-      </div>
-
-      <h2 class="admin-card-title" style="margin-top:1.25rem;">Bill to</h2>
-      <div class="admin-fields-2col">
-        <div class="admin-field">
-          <label for="bill-company">Company</label>
-          <input type="text" id="bill-company" name="bill_to_company" value="<?= e($billToCompany) ?>">
-        </div>
-        <div class="admin-field">
-          <label for="bill-name">Contact name</label>
-          <input type="text" id="bill-name" name="bill_to_name" value="<?= e($billToName) ?>">
-        </div>
-      </div>
-      <div class="admin-field">
-        <label for="bill-street">Street</label>
-        <input type="text" id="bill-street" name="bill_to_street" value="<?= e($billToStreet) ?>">
-      </div>
-      <div class="admin-fields-2col">
-        <div class="admin-field">
-          <label for="bill-city">City</label>
-          <input type="text" id="bill-city" name="bill_to_city" value="<?= e($billToCity) ?>">
-        </div>
-        <div class="admin-field">
-          <label for="bill-province">Province</label>
-          <input type="text" id="bill-province" name="bill_to_province" value="<?= e($billToProvince) ?>">
-        </div>
-      </div>
-      <div class="admin-fields-2col">
-        <div class="admin-field">
-          <label for="bill-postal">Postal code</label>
-          <input type="text" id="bill-postal" name="bill_to_postal" value="<?= e($billToPostal) ?>">
-        </div>
-        <div class="admin-field">
-          <label for="bill-country">Country</label>
-          <input type="text" id="bill-country" name="bill_to_country" value="<?= e($billToCountry) ?>">
-        </div>
-      </div>
-    </div>
-
-    <div class="admin-card">
-      <h2 class="admin-card-title">Totals &amp; notes</h2>
-      <div class="admin-field">
-        <label for="discount-percent">Discount (%)</label>
-        <input type="number" id="discount-percent" name="discount_percent" min="0" max="100" step="0.01" value="<?= e($discountPercent) ?>">
-      </div>
-      <div class="invoice-totals-preview" id="invoice-totals-preview" aria-live="polite">
-        <div class="invoice-totals-row"><span>Subtotal</span><strong id="preview-subtotal">$0.00</strong></div>
-        <div class="invoice-totals-row" id="preview-discount-row" hidden><span id="preview-discount-label">Discount</span><strong id="preview-discount">$0.00</strong></div>
-        <div class="invoice-totals-row invoice-totals-row--total"><span>Total</span><strong id="preview-total">$0.00</strong></div>
-      </div>
-      <div class="admin-field" style="margin-top:1rem;">
-        <label for="invoice-notes">Notes / Terms</label>
-        <textarea id="invoice-notes" name="notes" rows="5"><?= e($notes) ?></textarea>
-      </div>
-    </div>
-  </div>
-
-  <div class="admin-card" style="margin-top:1.25rem;">
-    <div class="invoice-section-head">
-      <h2 class="admin-card-title" style="margin:0;">Select services</h2>
-      <a href="/admin/invoice-service-edit" class="admin-btn admin-btn-secondary admin-btn-sm">+ Manage services</a>
-    </div>
-    <?php if ($services === []): ?>
-      <p class="admin-field-hint">No catalog services yet. Add custom line items below.</p>
-    <?php else: ?>
-      <div class="invoice-service-picker">
-        <?php foreach ($services as $service):
-          $sid = (int) $service['id'];
-          $selected = isset($selectedServiceIds[$sid]);
-          $sel = $selectedServiceIds[$sid] ?? null;
-          $priceVal = $sel
-            ? number_format((float) ($sel['unit_price'] ?? $service['unit_price']), 2, '.', '')
-            : number_format((float) $service['unit_price'], 2, '.', '');
-          $qtyVal = $sel
-            ? (rtrim(rtrim(number_format((float) ($sel['quantity'] ?? 1), 2, '.', ''), '0'), '.') ?: '1')
-            : '1';
-          $nameVal = $sel ? (string) ($sel['name'] ?? $service['name']) : (string) $service['name'];
-          $descVal = $sel ? (string) ($sel['description'] ?? $service['description'] ?? '') : (string) ($service['description'] ?? '');
-        ?>
-          <div class="invoice-service-row<?= $selected ? ' is-selected' : '' ?>" data-service-row>
-            <label class="invoice-service-check admin-checkbox-label">
-              <input type="checkbox" name="service_ids[]" value="<?= $sid ?>" class="invoice-service-toggle"
-                <?= $selected ? 'checked' : '' ?>>
-              <span class="invoice-service-check-label">
-                <strong><?= e((string) $service['name']) ?></strong>
-                <span class="admin-field-hint"><?= e(invoice_format_money($service['unit_price'] ?? 0)) ?> catalog price</span>
-              </span>
-            </label>
-            <div class="invoice-service-fields" <?= $selected ? '' : 'hidden' ?>>
-              <input type="hidden" name="service_name[<?= $sid ?>]" value="<?= e($nameVal) ?>">
-              <div class="admin-field">
-                <label>Description on invoice</label>
-                <textarea name="service_description[<?= $sid ?>]" rows="2" <?= $selected ? '' : 'disabled' ?>><?= e($descVal) ?></textarea>
-              </div>
-              <div class="admin-fields-2col">
-                <div class="admin-field">
-                  <label>Price</label>
-                  <input type="number" name="service_price[<?= $sid ?>]" min="0" step="0.01" value="<?= e($priceVal) ?>"
-                    class="invoice-calc-input" <?= $selected ? '' : 'disabled' ?>>
-                </div>
-                <div class="admin-field">
-                  <label>Qty</label>
-                  <input type="number" name="service_qty[<?= $sid ?>]" min="0.01" step="0.01" value="<?= e($qtyVal) ?>"
-                    class="invoice-calc-input" <?= $selected ? '' : 'disabled' ?>>
-                </div>
-              </div>
-            </div>
+  <div class="invoice-composer">
+    <div class="invoice-composer-main">
+    <section class="invoice-composer-panel">
+      <div class="invoice-composer-grid">
+        <div class="invoice-client-picker" id="invoice-client-picker">
+          <input type="hidden" name="client_id" id="client-id" value="<?= e($clientId) ?>">
+          <label for="client-search">Client</label>
+          <div class="invoice-client-search-wrap">
+            <input type="search" id="client-search" placeholder="Search name, company, or email…"
+              autocomplete="off" aria-autocomplete="list" aria-controls="client-results" aria-expanded="false">
+            <div id="client-results" class="invoice-client-results" role="listbox" hidden></div>
           </div>
-        <?php endforeach; ?>
-      </div>
-    <?php endif; ?>
-  </div>
+          <div id="client-selected" class="invoice-client-selected" <?= $selectedClient ? '' : 'hidden' ?>>
+            <div class="invoice-client-selected-main">
+              <strong id="client-selected-name"><?= e((string) ($selectedClient['name'] ?? '')) ?></strong>
+              <span class="admin-field-hint" id="client-selected-meta">
+                <?php
+                  if ($selectedClient) {
+                      $bits = array_filter([
+                          (string) ($selectedClient['company'] ?? ''),
+                          (string) ($selectedClient['email'] ?? ''),
+                      ]);
+                      echo e(implode(' · ', $bits));
+                  }
+                ?>
+              </span>
+            </div>
+            <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" id="client-clear">Clear</button>
+          </div>
+        </div>
 
-  <div class="admin-card" style="margin-top:1.25rem;">
-    <div class="invoice-section-head">
-      <h2 class="admin-card-title" style="margin:0;">Custom line items</h2>
-      <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" id="add-custom-item">+ Add line</button>
-    </div>
-    <div id="custom-items" class="invoice-custom-items">
-      <?php foreach ($customItems as $ci): ?>
-        <div class="invoice-custom-row" data-custom-row>
-          <div class="admin-fields-2col">
-            <div class="admin-field">
-              <label>Name</label>
-              <input type="text" name="custom_name[]" value="<?= e($ci['name']) ?>" class="invoice-calc-input">
-            </div>
-            <div class="admin-field invoice-custom-actions">
-              <label>Price</label>
-              <div class="invoice-custom-price-row">
-                <input type="number" name="custom_price[]" min="0" step="0.01" value="<?= e($ci['unit_price']) ?>" class="invoice-calc-input">
-                <input type="number" name="custom_qty[]" min="0.01" step="0.01" value="<?= e($ci['quantity']) ?>" class="invoice-calc-input" title="Quantity" aria-label="Quantity">
-                <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm remove-custom-item" aria-label="Remove">Remove</button>
-              </div>
-            </div>
+        <div class="invoice-meta-grid">
+          <div class="admin-field">
+            <label for="invoice-number">Invoice #</label>
+            <input type="text" id="invoice-number" name="invoice_number" required value="<?= e($invoiceNumber) ?>">
           </div>
           <div class="admin-field">
-            <label>Description</label>
-            <textarea name="custom_description[]" rows="2"><?= e($ci['description']) ?></textarea>
+            <label for="invoice-status">Status</label>
+            <select id="invoice-status" name="status">
+              <?php foreach (invoice_status_options() as $opt): ?>
+                <option value="<?= e($opt) ?>" <?= $status === $opt ? 'selected' : '' ?>><?= e(invoice_status_label($opt)) ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="admin-field">
+            <label for="invoice-date">Date</label>
+            <input type="date" id="invoice-date" name="invoice_date" required value="<?= e($invoiceDate) ?>">
+          </div>
+          <div class="admin-field">
+            <label for="due-date">Due</label>
+            <input type="date" id="due-date" name="due_date" required value="<?= e($dueDate) ?>">
           </div>
         </div>
-      <?php endforeach; ?>
-    </div>
-  </div>
+      </div>
 
-  <div class="admin-form-actions" style="margin-top:1.25rem;">
-    <button type="submit" class="admin-btn admin-btn-primary"><?= $invoice ? 'Save invoice' : 'Create invoice' ?></button>
-    <a href="/admin/invoices" class="admin-btn admin-btn-secondary">Cancel</a>
+      <details class="invoice-billto-details" open>
+        <summary>Bill to address</summary>
+        <div class="invoice-billto-grid">
+          <div class="admin-field">
+            <label for="bill-company">Company</label>
+            <input type="text" id="bill-company" name="bill_to_company" value="<?= e($billToCompany) ?>">
+          </div>
+          <div class="admin-field">
+            <label for="bill-name">Contact name</label>
+            <input type="text" id="bill-name" name="bill_to_name" value="<?= e($billToName) ?>">
+          </div>
+          <div class="admin-field invoice-billto-street">
+            <label for="bill-street">Street</label>
+            <input type="text" id="bill-street" name="bill_to_street" value="<?= e($billToStreet) ?>">
+          </div>
+          <div class="admin-field">
+            <label for="bill-city">City</label>
+            <input type="text" id="bill-city" name="bill_to_city" value="<?= e($billToCity) ?>">
+          </div>
+          <div class="admin-field">
+            <label for="bill-province">Province</label>
+            <input type="text" id="bill-province" name="bill_to_province" value="<?= e($billToProvince) ?>">
+          </div>
+          <div class="admin-field">
+            <label for="bill-postal">Postal</label>
+            <input type="text" id="bill-postal" name="bill_to_postal" value="<?= e($billToPostal) ?>">
+          </div>
+          <div class="admin-field">
+            <label for="bill-country">Country</label>
+            <input type="text" id="bill-country" name="bill_to_country" value="<?= e($billToCountry) ?>">
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <section class="invoice-composer-panel">
+      <div class="invoice-lines-head">
+        <h2>Line items</h2>
+        <a href="/admin/invoice-services" class="admin-btn admin-btn-secondary admin-btn-sm">Manage services</a>
+      </div>
+
+      <div class="invoice-add-bar">
+        <select id="service-add-select" aria-label="Add a service">
+          <option value="">Add a service…</option>
+          <?php foreach ($servicesList as $s): ?>
+            <option value="<?= (int) $s['id'] ?>">
+              <?= e($s['name']) ?> — <?= e(invoice_format_money($s['unit_price'])) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+        <button type="button" class="admin-btn admin-btn-primary" id="service-add-btn">Add</button>
+        <button type="button" class="admin-btn admin-btn-secondary" id="custom-add-btn">Custom line</button>
+      </div>
+
+      <div class="invoice-lines-table-wrap">
+        <table class="invoice-lines-table" aria-label="Invoice line items">
+          <thead>
+            <tr>
+              <th class="col-service">Service</th>
+              <th class="col-price">Price</th>
+              <th class="col-qty">Qty</th>
+              <th class="col-amount">Amount</th>
+              <th class="col-actions"></th>
+            </tr>
+          </thead>
+          <tbody id="invoice-lines-body">
+            <?php foreach ($lineItems as $item): ?>
+              <tr class="invoice-line-row" data-line-row>
+                <td class="col-service">
+                  <input type="hidden" name="line_service_id[]" value="<?= e((string) ($item['service_id'] ?? '')) ?>">
+                  <input type="text" name="line_name[]" value="<?= e((string) $item['name']) ?>" class="invoice-line-name" required placeholder="Service name">
+                  <textarea name="line_description[]" rows="2" class="invoice-line-desc" placeholder="Description (optional)"><?= e((string) ($item['description'] ?? '')) ?></textarea>
+                </td>
+                <td class="col-price">
+                  <input type="number" name="line_price[]" min="0" step="0.01" value="<?= e((string) $item['unit_price']) ?>" class="invoice-calc-input invoice-line-price">
+                </td>
+                <td class="col-qty">
+                  <input type="number" name="line_qty[]" min="0.01" step="0.01" value="<?= e((string) $item['quantity']) ?>" class="invoice-calc-input invoice-line-qty">
+                </td>
+                <td class="col-amount">
+                  <span class="invoice-line-amount">$0.00</span>
+                </td>
+                <td class="col-actions">
+                  <button type="button" class="invoice-line-remove" aria-label="Remove line">&times;</button>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+        <p class="invoice-lines-empty admin-field-hint" id="invoice-lines-empty" <?= $lineItems ? 'hidden' : '' ?>>
+          No line items yet. Choose a service from the dropdown or add a custom line.
+        </p>
+      </div>
+
+      <div class="admin-field invoice-notes-field">
+        <label for="invoice-notes">Notes / Terms</label>
+        <textarea id="invoice-notes" name="notes" rows="3"><?= e($notes) ?></textarea>
+      </div>
+    </section>
+    </div>
+
+    <aside class="invoice-composer-side">
+      <div class="invoice-summary invoice-composer-panel">
+        <h2 class="invoice-summary-title">Totals</h2>
+        <div class="admin-field">
+          <label for="discount-percent">Discount %</label>
+          <input type="number" id="discount-percent" name="discount_percent" min="0" max="100" step="0.01" value="<?= e($discountPercent) ?>">
+        </div>
+        <div class="invoice-totals-preview" id="invoice-totals-preview" aria-live="polite">
+          <div class="invoice-totals-row"><span>Subtotal</span><strong id="preview-subtotal">$0.00</strong></div>
+          <div class="invoice-totals-row" id="preview-discount-row" hidden><span id="preview-discount-label">Discount</span><strong id="preview-discount">$0.00</strong></div>
+          <div class="invoice-totals-row invoice-totals-row--total"><span>Total</span><strong id="preview-total">$0.00</strong></div>
+        </div>
+        <div class="invoice-summary-actions">
+          <button type="submit" class="admin-btn admin-btn-primary"><?= $invoice ? 'Save invoice' : 'Create invoice' ?></button>
+          <a href="/admin/invoices" class="admin-btn admin-btn-secondary">Cancel</a>
+        </div>
+      </div>
+    </aside>
   </div>
 </form>
 
-<template id="custom-item-template">
-  <div class="invoice-custom-row" data-custom-row>
-    <div class="admin-fields-2col">
-      <div class="admin-field">
-        <label>Name</label>
-        <input type="text" name="custom_name[]" value="" class="invoice-calc-input">
-      </div>
-      <div class="admin-field invoice-custom-actions">
-        <label>Price</label>
-        <div class="invoice-custom-price-row">
-          <input type="number" name="custom_price[]" min="0" step="0.01" value="0" class="invoice-calc-input">
-          <input type="number" name="custom_qty[]" min="0.01" step="0.01" value="1" class="invoice-calc-input" title="Quantity" aria-label="Quantity">
-          <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm remove-custom-item" aria-label="Remove">Remove</button>
-        </div>
-      </div>
-    </div>
-    <div class="admin-field">
-      <label>Description</label>
-      <textarea name="custom_description[]" rows="2"></textarea>
-    </div>
-  </div>
+<template id="invoice-line-template">
+  <tr class="invoice-line-row" data-line-row>
+    <td class="col-service">
+      <input type="hidden" name="line_service_id[]" value="">
+      <input type="text" name="line_name[]" value="" class="invoice-line-name" required placeholder="Service name">
+      <textarea name="line_description[]" rows="2" class="invoice-line-desc" placeholder="Description (optional)"></textarea>
+    </td>
+    <td class="col-price">
+      <input type="number" name="line_price[]" min="0" step="0.01" value="0" class="invoice-calc-input invoice-line-price">
+    </td>
+    <td class="col-qty">
+      <input type="number" name="line_qty[]" min="0.01" step="0.01" value="1" class="invoice-calc-input invoice-line-qty">
+    </td>
+    <td class="col-amount">
+      <span class="invoice-line-amount">$0.00</span>
+    </td>
+    <td class="col-actions">
+      <button type="button" class="invoice-line-remove" aria-label="Remove line">&times;</button>
+    </td>
+  </tr>
 </template>
 
 <script>
-window.INVOICE_CLIENTS = <?= json_encode($clientsJson, JSON_UNESCAPED_UNICODE) ?>;
+window.INVOICE_CLIENTS = <?= json_encode($clientsList, JSON_UNESCAPED_UNICODE) ?>;
+window.INVOICE_SERVICES = <?= json_encode($servicesList, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/admin/js/invoice-edit.js?v=1" defer></script>
+<script src="/admin/js/invoice-edit.js?v=3" defer></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

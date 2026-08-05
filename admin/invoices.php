@@ -41,31 +41,36 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 </div>
 
-<div class="admin-card clients-filters-card">
-  <form method="get" action="/admin/invoices" class="clients-filter-form invoice-filter-form">
+<div class="admin-card invoice-toolbar-card">
+  <form method="get" action="/admin/invoices" class="invoice-toolbar-form" id="invoice-list-filter" data-realtime="1">
     <?php if ($pagination['per_page'] !== pagination_default_per_page()): ?>
       <input type="hidden" name="per_page" value="<?= (int) $pagination['per_page'] ?>">
     <?php endif; ?>
-    <div class="admin-field clients-filter-field clients-filter-field--search">
+    <div class="admin-field invoice-toolbar-search">
       <label for="invoices-search">Search</label>
-      <input type="search" id="invoices-search" name="q" value="<?= e($search) ?>" placeholder="Number, client, or company…">
+      <input type="search" id="invoices-search" name="q" value="<?= e($search) ?>"
+        placeholder="Search by invoice #, client name, or company…"
+        autocomplete="off">
     </div>
-    <div class="admin-field">
+    <div class="admin-field invoice-toolbar-status">
       <label for="invoices-status">Status</label>
       <select id="invoices-status" name="status">
-        <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All</option>
+        <option value="all" <?= $status === 'all' ? 'selected' : '' ?>>All statuses</option>
         <?php foreach (invoice_status_options() as $opt): ?>
           <option value="<?= e($opt) ?>" <?= $status === $opt ? 'selected' : '' ?>><?= e(invoice_status_label($opt)) ?></option>
         <?php endforeach; ?>
       </select>
     </div>
-    <div class="clients-filter-actions">
-      <button type="submit" class="admin-btn admin-btn-secondary">Filter</button>
-      <?php if ($search !== '' || $status !== 'all'): ?>
+    <?php if ($search !== '' || $status !== 'all'): ?>
+      <div class="invoice-toolbar-clear">
         <a href="/admin/invoices" class="admin-btn admin-btn-secondary">Clear</a>
-      <?php endif; ?>
-    </div>
+      </div>
+    <?php endif; ?>
   </form>
+  <p class="admin-field-hint invoice-toolbar-hint" id="invoice-list-hint">
+    <?= number_format($total) ?> invoice<?= $total === 1 ? '' : 's' ?>
+    <?php if ($search !== ''): ?> matching “<?= e($search) ?>”<?php endif; ?>
+  </p>
 </div>
 
 <?php if ($serviceCount < 1): ?>
@@ -78,17 +83,24 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-card">
   <?php if (!$invoices): ?>
     <div class="admin-empty-state">
-      <h2 class="admin-empty-state-title">No invoices yet</h2>
-      <p class="admin-empty-state-text">Create an invoice by selecting a client and one or more services.</p>
-      <a href="/admin/invoice-edit" class="admin-btn admin-btn-primary">Create invoice</a>
+      <?php if ($search !== '' || $status !== 'all'): ?>
+        <h2 class="admin-empty-state-title">No matching invoices</h2>
+        <p class="admin-empty-state-text">Try a different client name, invoice number, or status.</p>
+        <a href="/admin/invoices" class="admin-btn admin-btn-secondary">Clear filters</a>
+      <?php else: ?>
+        <h2 class="admin-empty-state-title">No invoices yet</h2>
+        <p class="admin-empty-state-text">Create an invoice by selecting a client and one or more services.</p>
+        <a href="/admin/invoice-edit" class="admin-btn admin-btn-primary">Create invoice</a>
+      <?php endif; ?>
     </div>
   <?php else: ?>
     <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
     <div class="admin-table-wrap">
-      <table class="admin-table">
+      <table class="admin-table invoice-list-table">
         <thead>
           <tr>
             <th>Invoice</th>
+            <th>Client</th>
             <th>Bill to</th>
             <th>Date</th>
             <th>Due</th>
@@ -100,9 +112,11 @@ require __DIR__ . '/includes/layout-start.php';
         <tbody>
           <?php foreach ($invoices as $inv): ?>
             <?php
-              $billName = trim((string) ($inv['bill_to_company'] ?? '')) !== ''
-                ? (string) $inv['bill_to_company']
-                : (string) ($inv['bill_to_name'] ?? $inv['client_name'] ?? '—');
+              $clientName = trim((string) ($inv['client_name'] ?? ''));
+              $clientCompany = trim((string) ($inv['client_company'] ?? ''));
+              $billCompany = trim((string) ($inv['bill_to_company'] ?? ''));
+              $billPerson = trim((string) ($inv['bill_to_name'] ?? ''));
+              $billLabel = $billCompany !== '' ? $billCompany : ($billPerson !== '' ? $billPerson : '—');
             ?>
             <tr>
               <td>
@@ -110,17 +124,36 @@ require __DIR__ . '/includes/layout-start.php';
                   <strong>#<?= e((string) $inv['invoice_number']) ?></strong>
                 </a>
               </td>
-              <td><?= e($billName) ?></td>
+              <td>
+                <?php if ($clientName !== ''): ?>
+                  <div class="invoice-client-cell">
+                    <strong><?= e($clientName) ?></strong>
+                    <?php if ($clientCompany !== '' && strcasecmp($clientCompany, $clientName) !== 0): ?>
+                      <span class="admin-field-hint"><?= e($clientCompany) ?></span>
+                    <?php endif; ?>
+                  </div>
+                <?php else: ?>
+                  <span class="admin-field-hint">Manual</span>
+                <?php endif; ?>
+              </td>
+              <td>
+                <div class="invoice-client-cell">
+                  <span><?= e($billLabel) ?></span>
+                  <?php if ($billCompany !== '' && $billPerson !== '' && strcasecmp($billCompany, $billPerson) !== 0): ?>
+                    <span class="admin-field-hint"><?= e($billPerson) ?></span>
+                  <?php endif; ?>
+                </div>
+              </td>
               <td><?= e(invoice_format_date((string) ($inv['invoice_date'] ?? ''))) ?></td>
               <td><?= e(invoice_format_date((string) ($inv['due_date'] ?? ''))) ?></td>
-              <td><?= e(invoice_format_money($inv['total'] ?? 0)) ?></td>
+              <td><strong><?= e(invoice_format_money($inv['total'] ?? 0)) ?></strong></td>
               <td>
                 <?php
                   $st = (string) ($inv['status'] ?? 'draft');
                   $badge = match ($st) {
                       'paid' => 'admin-badge-success',
                       'sent' => 'admin-badge-info',
-                      'void' => '',
+                      'void' => 'admin-badge-muted',
                       default => '',
                   };
                 ?>
@@ -142,4 +175,5 @@ require __DIR__ . '/includes/layout-start.php';
     </div>
   <?php endif; ?>
 </div>
+<script src="/admin/js/invoice-list.js?v=1" defer></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

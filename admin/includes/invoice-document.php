@@ -29,8 +29,8 @@ $logoUrl = brand_logo_url();
         src="<?= e($logoUrl) ?>"
         alt="Verma Accounting"
         class="invoice-doc-logo"
-        width="220"
-        height="53">
+        width="300"
+        height="72">
     </div>
     <div class="invoice-doc-header-right">
       <h1 class="invoice-doc-title">INVOICE</h1>

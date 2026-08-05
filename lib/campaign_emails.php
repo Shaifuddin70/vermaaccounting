@@ -176,7 +176,10 @@ function campaign_send_test_email(array $draft): array
     [$emailSubject, $html, $text] = build_campaign_email($subject, $body, $client);
     $emailSubject = '[TEST] ' . $emailSubject;
 
-    if (!$mailer->send($testEmail, $emailSubject, $html, $text)) {
+    if (!$mailer->send($testEmail, $emailSubject, $html, $text, null, [
+        'kind' => 'campaign_test',
+        'campaign_id' => null,
+    ])) {
         return ['ok' => false, 'error' => $mailer->getLastError() ?: 'Test send failed.'];
     }
 
@@ -256,7 +259,12 @@ function process_campaign_batch(int $campaignId, int $limit = 0): array
         $client
       );
 
-      if ($mailer->send((string) $recipient['email'], $subject, $html, $text)) {
+      if ($mailer->send((string) $recipient['email'], $subject, $html, $text, null, [
+        'kind' => 'campaign',
+        'campaign_id' => $campaignId,
+        'recipient_id' => (int) ($recipient['id'] ?? 0),
+        'client_id' => !empty($recipient['client_id']) ? (int) $recipient['client_id'] : null,
+      ])) {
         $repo->markRecipientSent((int) $recipient['id']);
         $sent++;
       } else {
