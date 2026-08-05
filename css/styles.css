@@ -26,7 +26,6 @@
 
 .appointment-fab:hover {
   background: #0f2a6d;
-  transform: translateY(-2px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
 }
 
@@ -71,7 +70,6 @@
 
 .social-fab-toggle:hover {
   background: #d54e00;
-  transform: translateY(-2px);
   box-shadow: 0 12px 24px rgba(0, 0, 0, 0.22);
 }
 
@@ -236,7 +234,6 @@
 
 .scroll-up-btn:hover {
   background: #1e40af;
-  transform: translateY(-3px);
   box-shadow: 0 10px 24px rgba(30, 58, 138, 0.45);
 }
 
@@ -1385,7 +1382,6 @@ body.nav-open {
 .cta-button.primary:hover {
   background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
   border-color: #1e40af;
-  transform: translateY(-2px);
 }
 
 .cta-button.secondary {
@@ -1398,7 +1394,6 @@ body.nav-open {
 .cta-button.secondary:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: rgba(255, 255, 255, 0.8);
-  transform: translateY(-2px);
 }
 
 .cta-button i {
@@ -1555,7 +1550,6 @@ body.nav-open {
 .cta-button.orange:hover {
   background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
   border-color: #ea580c;
-  transform: translateY(-2px);
 }
 
 .common-section .cta-button {
@@ -1573,7 +1567,6 @@ body.nav-open {
 .cta-button:hover {
   background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
   border-color: #3159c3;
-  transform: translateY(-2px);
 }
 
 /* Services Section */
@@ -2452,7 +2445,6 @@ a:has(.contact-item) {
 
 .submit-btn:hover {
   background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-  transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
@@ -2514,7 +2506,6 @@ a:has(.contact-item) {
 .cta-button.primary:hover {
   background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
   border-color: #1e40af;
-  transform: translateY(-2px);
 }
 
 .cta-button.secondary {
@@ -2534,7 +2525,6 @@ a:has(.contact-item) {
 .cta-button.secondary:hover {
   background: #3b82f6;
   color: white;
-  transform: translateY(-2px);
 }
 
 .hero-features {
@@ -2987,7 +2977,6 @@ a:has(.contact-item) {
 }
 
 .stats-cta .cta-button:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(30, 58, 138, 0.4);
   color: white;
   text-decoration: none;
@@ -3312,7 +3301,6 @@ a:has(.contact-item) {
 .cta-section .cta-button.primary:hover {
   background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
   border-color: #1e40af;
-  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(59, 130, 246, 0.6);
 }
 
@@ -3531,7 +3519,6 @@ a:has(.contact-item) {
 }
 
 .submit-btn:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
 }
 
@@ -5433,13 +5420,11 @@ a .services-title:hover {
 }
 
 #my-form-button:hover {
-  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(30, 58, 138, 0.4);
   background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
 }
 
 #my-form-button:active {
-  transform: translateY(0);
 }
 
 #my-form-status {
@@ -5644,7 +5629,6 @@ a .services-title:hover {
 .appointment-button:hover {
   background: linear-gradient(135deg, #ff853e 0%, #f48641 100%);
   color: white;
-  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgb(244 133 65 / 47%);
 }
 
@@ -6989,7 +6973,6 @@ ul li::before {
 
 .resource-download-button:hover {
   background: linear-gradient(135deg, #ea580c 0%, #dc2626 100%);
-  transform: translateY(-2px);
   box-shadow: 0 8px 25px rgba(249, 115, 22, 0.4);
   color: white;
   text-decoration: none;

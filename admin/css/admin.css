@@ -491,11 +491,10 @@ body.admin-body {
   letter-spacing: 0.02em;
   cursor: pointer;
   box-shadow: var(--admin-shadow-primary);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .admin-btn:hover {
-  transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(249, 115, 22, 0.35);
   background: var(--admin-primary-hover);
   color: var(--admin-on-primary);
@@ -3198,7 +3197,7 @@ body.admin-body {
   text-decoration: none;
   cursor: pointer;
   border: none;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: box-shadow 0.15s ease, background 0.15s ease;
   font-family: inherit;
 }
 
@@ -3211,7 +3210,6 @@ body.admin-body {
 .md-btn-primary:hover {
   background: var(--admin-primary-hover);
   box-shadow: 0 6px 18px rgba(249, 115, 22, 0.35);
-  transform: translateY(-1px);
   color: var(--admin-on-primary);
 }
 
@@ -3226,7 +3224,6 @@ body.admin-body {
   background: var(--admin-secondary-container);
   border-color: #bfdbfe;
   color: var(--admin-secondary);
-  transform: translateY(-1px);
 }
 
 .md-btn-sm {
@@ -6953,5 +6950,190 @@ a.admin-pagination-num:hover {
   .email-template-image-preview {
     width: 100%;
     max-width: 280px;
+  }
+}
+
+/* Email Tracker */
+.email-tracker-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.email-tracker-card-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.85rem 1.25rem;
+  padding: 1.15rem 1.25rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #fff;
+}
+
+.email-tracker-card-top .admin-table-toolbar {
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  flex: 0 0 auto;
+  align-self: flex-end;
+  min-height: 2.75rem;
+}
+
+.email-tracker-card-top .admin-pagination-per-page {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 2.75rem;
+}
+
+.email-tracker-card-top .admin-pagination-per-page-select {
+  min-height: 2.35rem;
+  height: 2.35rem;
+  box-sizing: border-box;
+}
+
+.email-tracker-card-footer {
+  padding: 0.85rem 1.25rem 1.1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.email-tracker-empty {
+  margin: 0;
+  padding: 1.25rem;
+}
+
+.email-tracker-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  flex: 1 1 28rem;
+  min-width: 0;
+}
+
+.email-tracker-filters .admin-field {
+  margin: 0;
+  flex: 1 1 10rem;
+  min-width: 9rem;
+  max-width: 14rem;
+}
+
+.email-tracker-filters-actions {
+  flex: 0 0 auto;
+  max-width: none;
+}
+
+.email-tracker-filters-actions label {
+  visibility: hidden;
+  user-select: none;
+}
+
+.email-tracker-apply-btn {
+  width: auto;
+  min-height: 2.75rem;
+  height: 2.75rem;
+  padding: 0 1.15rem;
+  box-shadow: none;
+  white-space: nowrap;
+}
+
+.email-tracker-apply-btn:hover {
+  box-shadow: none;
+}
+
+.email-tracker-filters .admin-field select,
+.email-tracker-filters .admin-field input {
+  min-height: 2.75rem;
+  height: 2.75rem;
+  padding-top: 0;
+  padding-bottom: 0;
+  box-sizing: border-box;
+}
+
+.email-tracker-table-wrap {
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.email-tracker-table {
+  table-layout: fixed;
+  width: 100%;
+  min-width: 920px;
+  margin: 0;
+}
+
+.email-tracker-table--detail {
+  min-width: 760px;
+}
+
+.email-tracker-col-group { width: 28%; }
+.email-tracker-col-type { width: 12%; }
+.email-tracker-col-when { width: 20%; }
+.email-tracker-col-sent { width: 9%; }
+.email-tracker-col-opened { width: 9%; }
+.email-tracker-col-rate { width: 8%; }
+.email-tracker-col-action { width: 14%; }
+
+.email-tracker-col-recipient { width: 38%; }
+.email-tracker-table--detail .email-tracker-col-sent { width: 24%; }
+.email-tracker-table--detail .email-tracker-col-opened { width: 26%; }
+.email-tracker-col-count { width: 12%; }
+
+.email-tracker-cell-main {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.email-tracker-cell-main .admin-field-hint {
+  margin: 0.25rem 0 0;
+}
+
+.email-tracker-cell-nowrap {
+  white-space: nowrap;
+}
+
+.email-tracker-cell-num {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.email-tracker-th-action,
+.email-tracker-cell-action {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.email-tracker-cell-action .admin-btn {
+  min-height: 2rem;
+  padding: 0.35rem 0.85rem;
+}
+
+@media (max-width: 900px) {
+  .email-tracker-card-top {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .email-tracker-filters {
+    flex: 1 1 auto;
+  }
+
+  .email-tracker-filters .admin-field {
+    max-width: none;
+    flex: 1 1 100%;
+  }
+
+  .email-tracker-filters-actions,
+  .email-tracker-apply-btn {
+    width: 100%;
+  }
+
+  .email-tracker-card-top .admin-table-toolbar {
+    justify-content: flex-start;
+    min-height: 0;
   }
 }

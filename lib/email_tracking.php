@@ -214,14 +214,23 @@ function email_tracking_count(): int
 /**
  * @return array{tracked: int, opened: int, open_rate: float}
  */
-function email_tracking_overall_stats(): array
+function email_tracking_overall_stats(?int $days = null): array
 {
-    $row = Database::instance()->pdo()->query('
+    $pdo = Database::instance()->pdo();
+    $sql = '
         SELECT
             COUNT(*) AS tracked,
             SUM(CASE WHEN opened_at IS NOT NULL THEN 1 ELSE 0 END) AS opened
         FROM email_tracked_sends
-    ')->fetch() ?: [];
+    ';
+    $params = [];
+    if ($days !== null && $days > 0) {
+        $sql .= ' WHERE sent_at >= ?';
+        $params[] = gmdate('Y-m-d H:i:s', time() - ($days * 86400));
+    }
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute($params);
+    $row = $stmt->fetch() ?: [];
     $tracked = (int) ($row['tracked'] ?? 0);
     $opened = (int) ($row['opened'] ?? 0);
 
@@ -230,6 +239,290 @@ function email_tracking_overall_stats(): array
         'opened' => $opened,
         'open_rate' => $tracked > 0 ? round(($opened / $tracked) * 100, 1) : 0.0,
     ];
+}
+
+function email_tracking_sent_day_sql(string $alias = 's'): string
+{
+    $col = $alias . '.sent_at';
+    if (Database::instance()->driver() === 'sqlite') {
+        return 'DATE(' . $col . ')';
+    }
+
+    return 'DATE(' . $col . ')';
+}
+
+/**
+ * Build filter SQL fragments for tracker list/detail queries.
+ *
+ * @param array{days?: int|null, kind?: string, q?: string, opened?: string} $filters
+ * @return array{0: string, 1: list<mixed>} WHERE clause without leading WHERE, and params
+ */
+function email_tracking_filter_sql(array $filters, string $alias = 's'): array
+{
+    $where = [];
+    $params = [];
+    $days = isset($filters['days']) ? (int) $filters['days'] : 0;
+    if ($days > 0) {
+        $where[] = $alias . '.sent_at >= ?';
+        $params[] = gmdate('Y-m-d H:i:s', time() - ($days * 86400));
+    }
+    $kind = trim((string) ($filters['kind'] ?? ''));
+    if ($kind !== '' && $kind !== 'all') {
+        $where[] = $alias . '.kind = ?';
+        $params[] = $kind;
+    }
+    $opened = trim((string) ($filters['opened'] ?? ''));
+    if ($opened === 'yes') {
+        $where[] = $alias . '.opened_at IS NOT NULL';
+    } elseif ($opened === 'no') {
+        $where[] = $alias . '.opened_at IS NULL';
+    }
+    $q = trim((string) ($filters['q'] ?? ''));
+    if ($q !== '') {
+        $where[] = '(' . $alias . '.to_email LIKE ? OR ' . $alias . '.subject LIKE ?)';
+        $like = '%' . $q . '%';
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    return [$where === [] ? '1=1' : implode(' AND ', $where), $params];
+}
+
+/**
+ * Aggregated send batches for the tracker index (campaigns + other email types by day).
+ *
+ * @param array{days?: int|null, kind?: string} $filters
+ * @return list<array<string, mixed>>
+ */
+function email_tracking_batches(array $filters = [], int $limit = 20, int $offset = 0): array
+{
+    $limit = max(1, min(100, $limit));
+    $offset = max(0, $offset);
+    [$where, $params] = email_tracking_filter_sql($filters, 's');
+    $dayExpr = email_tracking_sent_day_sql('s');
+    $pdo = Database::instance()->pdo();
+
+    // One row per campaign, plus one row per non-campaign kind+day+subject.
+    $sql = "
+        SELECT * FROM (
+            SELECT
+                'campaign' AS batch_type,
+                s.campaign_id AS campaign_id,
+                s.kind AS kind,
+                COALESCE(MAX(c.name), MAX(s.subject), '') AS title,
+                MAX(s.subject) AS subject,
+                NULL AS send_day,
+                COUNT(*) AS tracked,
+                SUM(CASE WHEN s.opened_at IS NOT NULL THEN 1 ELSE 0 END) AS opened,
+                MIN(s.sent_at) AS first_sent,
+                MAX(s.sent_at) AS last_sent
+            FROM email_tracked_sends s
+            LEFT JOIN email_campaigns c ON c.id = s.campaign_id
+            WHERE s.campaign_id IS NOT NULL AND ({$where})
+            GROUP BY s.campaign_id, s.kind
+
+            UNION ALL
+
+            SELECT
+                'other' AS batch_type,
+                NULL AS campaign_id,
+                s.kind AS kind,
+                MAX(s.subject) AS title,
+                s.subject AS subject,
+                {$dayExpr} AS send_day,
+                COUNT(*) AS tracked,
+                SUM(CASE WHEN s.opened_at IS NOT NULL THEN 1 ELSE 0 END) AS opened,
+                MIN(s.sent_at) AS first_sent,
+                MAX(s.sent_at) AS last_sent
+            FROM email_tracked_sends s
+            WHERE s.campaign_id IS NULL AND ({$where})
+            GROUP BY s.kind, {$dayExpr}, s.subject
+        ) batches
+        ORDER BY last_sent DESC
+        LIMIT {$limit} OFFSET {$offset}";
+
+    // Params used twice (campaign branch + other branch).
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(array_merge($params, $params));
+
+    $rows = $stmt->fetchAll() ?: [];
+    foreach ($rows as &$row) {
+        $tracked = (int) ($row['tracked'] ?? 0);
+        $opened = (int) ($row['opened'] ?? 0);
+        $row['tracked'] = $tracked;
+        $row['opened'] = $opened;
+        $row['open_rate'] = $tracked > 0 ? round(($opened / $tracked) * 100, 1) : 0.0;
+    }
+    unset($row);
+
+    return $rows;
+}
+
+/**
+ * @param array{days?: int|null, kind?: string} $filters
+ */
+function email_tracking_batches_count(array $filters = []): int
+{
+    [$where, $params] = email_tracking_filter_sql($filters, 's');
+    $dayExpr = email_tracking_sent_day_sql('s');
+    $pdo = Database::instance()->pdo();
+    $sql = '
+        SELECT COUNT(*) FROM (
+            SELECT s.campaign_id AS grp
+            FROM email_tracked_sends s
+            WHERE s.campaign_id IS NOT NULL AND (' . $where . ')
+            GROUP BY s.campaign_id, s.kind
+
+            UNION ALL
+
+            SELECT 1 AS grp
+            FROM email_tracked_sends s
+            WHERE s.campaign_id IS NULL AND (' . $where . ')
+            GROUP BY s.kind, ' . $dayExpr . ', s.subject
+        ) batches
+    ';
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute(array_merge($params, $params));
+
+    return (int) $stmt->fetchColumn();
+}
+
+/**
+ * @param array{
+ *   campaign_id?: int,
+ *   kind?: string,
+ *   day?: string,
+ *   subject?: string,
+ *   opened?: string,
+ *   q?: string
+ * } $filters
+ * @return array{0: string, 1: list<mixed>}
+ */
+function email_tracking_batch_detail_filter_sql(array $filters): array
+{
+    $where = [];
+    $params = [];
+    $campaignId = (int) ($filters['campaign_id'] ?? 0);
+    if ($campaignId > 0) {
+        $where[] = 's.campaign_id = ?';
+        $params[] = $campaignId;
+    } else {
+        $where[] = 's.campaign_id IS NULL';
+        $kind = trim((string) ($filters['kind'] ?? ''));
+        if ($kind !== '') {
+            $where[] = 's.kind = ?';
+            $params[] = $kind;
+        }
+        $day = trim((string) ($filters['day'] ?? ''));
+        if ($day !== '' && preg_match('/^\d{4}-\d{2}-\d{2}$/', $day)) {
+            $where[] = email_tracking_sent_day_sql('s') . ' = ?';
+            $params[] = $day;
+        }
+        if (array_key_exists('subject', $filters)) {
+            $where[] = 's.subject = ?';
+            $params[] = (string) $filters['subject'];
+        }
+    }
+
+    $opened = trim((string) ($filters['opened'] ?? ''));
+    if ($opened === 'yes') {
+        $where[] = 's.opened_at IS NOT NULL';
+    } elseif ($opened === 'no') {
+        $where[] = 's.opened_at IS NULL';
+    }
+
+    $q = trim((string) ($filters['q'] ?? ''));
+    if ($q !== '') {
+        $where[] = '(s.to_email LIKE ? OR s.subject LIKE ?)';
+        $like = '%' . $q . '%';
+        $params[] = $like;
+        $params[] = $like;
+    }
+
+    return [$where === [] ? '1=1' : implode(' AND ', $where), $params];
+}
+
+/**
+ * @param array<string, mixed> $filters
+ * @return list<array<string, mixed>>
+ */
+function email_tracking_batch_sends(array $filters, int $limit = 50, int $offset = 0): array
+{
+    $limit = max(1, min(100, $limit));
+    $offset = max(0, $offset);
+    [$where, $params] = email_tracking_batch_detail_filter_sql($filters);
+    $stmt = Database::instance()->pdo()->prepare('
+        SELECT s.*
+        FROM email_tracked_sends s
+        WHERE ' . $where . '
+        ORDER BY s.sent_at DESC, s.id DESC
+        LIMIT ' . $limit . ' OFFSET ' . $offset
+    );
+    $stmt->execute($params);
+
+    return $stmt->fetchAll() ?: [];
+}
+
+/**
+ * @param array<string, mixed> $filters
+ */
+function email_tracking_batch_sends_count(array $filters): int
+{
+    [$where, $params] = email_tracking_batch_detail_filter_sql($filters);
+    $stmt = Database::instance()->pdo()->prepare('
+        SELECT COUNT(*) FROM email_tracked_sends s WHERE ' . $where
+    );
+    $stmt->execute($params);
+
+    return (int) $stmt->fetchColumn();
+}
+
+/**
+ * @param array<string, mixed> $filters
+ * @return array{tracked: int, opened: int, open_rate: float}
+ */
+function email_tracking_batch_stats(array $filters): array
+{
+    [$where, $params] = email_tracking_batch_detail_filter_sql([
+        'campaign_id' => $filters['campaign_id'] ?? null,
+        'kind' => $filters['kind'] ?? null,
+        'day' => $filters['day'] ?? null,
+        'subject' => $filters['subject'] ?? null,
+    ]);
+    $stmt = Database::instance()->pdo()->prepare('
+        SELECT
+            COUNT(*) AS tracked,
+            SUM(CASE WHEN s.opened_at IS NOT NULL THEN 1 ELSE 0 END) AS opened
+        FROM email_tracked_sends s
+        WHERE ' . $where
+    );
+    $stmt->execute($params);
+    $row = $stmt->fetch() ?: [];
+    $tracked = (int) ($row['tracked'] ?? 0);
+    $opened = (int) ($row['opened'] ?? 0);
+
+    return [
+        'tracked' => $tracked,
+        'opened' => $opened,
+        'open_rate' => $tracked > 0 ? round(($opened / $tracked) * 100, 1) : 0.0,
+    ];
+}
+
+/** @return list<string> */
+function email_tracking_distinct_kinds(): array
+{
+    $stmt = Database::instance()->pdo()->query('
+        SELECT DISTINCT kind FROM email_tracked_sends ORDER BY kind ASC
+    ');
+    $kinds = [];
+    foreach ($stmt->fetchAll() ?: [] as $row) {
+        $kind = trim((string) ($row['kind'] ?? ''));
+        if ($kind !== '') {
+            $kinds[] = $kind;
+        }
+    }
+
+    return $kinds;
 }
 
 function email_tracking_kind_label(string $kind): string
@@ -245,4 +538,20 @@ function email_tracking_kind_label(string $kind): string
         'test' => 'Test email',
         default => ucfirst(str_replace('_', ' ', $kind)),
     };
+}
+
+/**
+ * @param array<string, scalar|null> $params
+ */
+function email_tracker_url(array $params = []): string
+{
+    $clean = [];
+    foreach ($params as $key => $value) {
+        if ($value === null || $value === '' || $value === 'all' || $value === 0 || $value === '0') {
+            continue;
+        }
+        $clean[$key] = $value;
+    }
+
+    return '/admin/email-tracker' . ($clean !== [] ? '?' . http_build_query($clean) : '');
 }

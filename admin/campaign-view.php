@@ -211,6 +211,8 @@ require __DIR__ . '/includes/layout-start.php';
     <h2 class="admin-card-title">Opened by</h2>
     <p class="admin-field-hint" style="margin-top:0;">
       Based on the tracking pixel loaded by the recipient’s email app.
+      <a href="<?= e(email_tracker_url(['view' => 'batch', 'campaign_id' => $campaignId])) ?>">Open in Email Tracker</a>
+      for search and full recipient lists.
     </p>
     <div class="admin-table-wrap">
       <table class="admin-table">

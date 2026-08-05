@@ -771,7 +771,6 @@
   font-family: var(--verma-font);
   backdrop-filter: none;
   transition:
-    transform 0.18s ease,
     background 0.18s ease,
     color 0.18s ease;
 }
@@ -779,7 +778,6 @@
 .custom-form .cta-button.secondary:hover {
   background: rgba(30, 58, 138, 0.06) !important;
   color: var(--verma-navy) !important;
-  transform: translateY(-1px);
 }
 
 #custom-form-submit,
@@ -793,7 +791,6 @@
   font-weight: 600 !important;
   cursor: pointer;
   transition:
-    transform 0.18s ease,
     box-shadow 0.18s ease,
     background 0.18s ease;
   width: 100%;
@@ -807,14 +804,8 @@
 
 #custom-form-submit:hover,
 .custom-form .cta-button.primary:hover {
-  transform: translateY(-1px);
   box-shadow: 0 8px 22px rgba(30, 58, 138, 0.35);
   background: var(--verma-primary-hover) !important;
-}
-
-#custom-form-submit:active,
-.custom-form .cta-button.primary:active {
-  transform: translateY(0);
 }
 
 .custom-form-submit-icon {
