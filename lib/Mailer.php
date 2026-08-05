@@ -36,6 +36,34 @@ final class Mailer
 
     public function send(string $to, string $subject, string $htmlBody, ?string $textBody = null, ?string $replyTo = null): bool
     {
+        return $this->sendMessage($to, $subject, $htmlBody, $textBody, $replyTo, []);
+    }
+
+    /**
+     * @param list<array{filename: string, content: string, mime?: string}> $attachments
+     */
+    public function sendWithAttachments(
+        string $to,
+        string $subject,
+        string $htmlBody,
+        array $attachments,
+        ?string $textBody = null,
+        ?string $replyTo = null
+    ): bool {
+        return $this->sendMessage($to, $subject, $htmlBody, $textBody, $replyTo, $attachments);
+    }
+
+    /**
+     * @param list<array{filename: string, content: string, mime?: string}> $attachments
+     */
+    private function sendMessage(
+        string $to,
+        string $subject,
+        string $htmlBody,
+        ?string $textBody,
+        ?string $replyTo,
+        array $attachments
+    ): bool {
         $this->lastError = '';
         $to = trim($to);
         if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
@@ -48,10 +76,18 @@ final class Mailer
         }
 
         $textBody = $textBody ?? $this->htmlToText($htmlBody);
-        $boundary = 'va_' . bin2hex(random_bytes(12));
-        $headers = $this->buildHeaders($to, $boundary, $replyTo);
-        $body = $this->buildMultipartBody($boundary, $textBody, $htmlBody);
         $encodedSubject = $this->encodeHeader($subject);
+
+        if ($attachments !== []) {
+            $mixedBoundary = 'va_mixed_' . bin2hex(random_bytes(10));
+            $altBoundary = 'va_alt_' . bin2hex(random_bytes(10));
+            $headers = $this->buildHeaders($to, $mixedBoundary, $replyTo, true);
+            $body = $this->buildMixedBody($mixedBoundary, $altBoundary, $textBody, $htmlBody, $attachments);
+        } else {
+            $boundary = 'va_' . bin2hex(random_bytes(12));
+            $headers = $this->buildHeaders($to, $boundary, $replyTo, false);
+            $body = $this->buildMultipartBody($boundary, $textBody, $htmlBody);
+        }
 
         if ($this->transport === 'smtp') {
             return $this->sendViaSmtp($to, $encodedSubject, $headers, $body);
@@ -181,15 +217,18 @@ final class Mailer
         }
     }
 
-    private function buildHeaders(string $to, string $boundary, ?string $replyTo): string
+    private function buildHeaders(string $to, string $boundary, ?string $replyTo, bool $mixed = false): string
     {
+        $contentType = $mixed
+            ? 'multipart/mixed; boundary="' . $boundary . '"'
+            : 'multipart/alternative; boundary="' . $boundary . '"';
         $headers = [
             'Date: ' . gmdate('D, d M Y H:i:s') . ' +0000',
             'MIME-Version: 1.0',
             'From: ' . $this->formatAddress($this->fromEmail, $this->fromName),
             'To: ' . $to,
             'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $this->smtpEhloHost() . '>',
-            'Content-Type: multipart/alternative; boundary="' . $boundary . '"',
+            'Content-Type: ' . $contentType,
         ];
         if ($replyTo !== null && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
             $headers[] = 'Reply-To: ' . $replyTo;
@@ -208,6 +247,39 @@ final class Mailer
             . "Content-Transfer-Encoding: 8bit\r\n\r\n"
             . $htmlBody . "\r\n\r\n"
             . "--{$boundary}--";
+    }
+
+    /**
+     * @param list<array{filename: string, content: string, mime?: string}> $attachments
+     */
+    private function buildMixedBody(
+        string $mixedBoundary,
+        string $altBoundary,
+        string $textBody,
+        string $htmlBody,
+        array $attachments
+    ): string {
+        $body = "--{$mixedBoundary}\r\n"
+            . "Content-Type: multipart/alternative; boundary=\"{$altBoundary}\"\r\n\r\n"
+            . $this->buildMultipartBody($altBoundary, $textBody, $htmlBody) . "\r\n";
+
+        foreach ($attachments as $attachment) {
+            $filename = (string) ($attachment['filename'] ?? 'attachment.bin');
+            $filename = preg_replace('/[\r\n"\\\\]+/', '', $filename) ?: 'attachment.bin';
+            $mime = trim((string) ($attachment['mime'] ?? 'application/octet-stream'));
+            if ($mime === '') {
+                $mime = 'application/octet-stream';
+            }
+            $content = (string) ($attachment['content'] ?? '');
+            $body .= "--{$mixedBoundary}\r\n"
+                . "Content-Type: {$mime}; name=\"{$filename}\"\r\n"
+                . "Content-Transfer-Encoding: base64\r\n"
+                . "Content-Disposition: attachment; filename=\"{$filename}\"\r\n\r\n"
+                . chunk_split(base64_encode($content)) . "\r\n";
+        }
+
+        $body .= "--{$mixedBoundary}--";
+        return $body;
     }
 
     private function formatAddress(string $email, string $name): string

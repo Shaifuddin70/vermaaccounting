@@ -75,6 +75,11 @@ require_once __DIR__ . '/email_assets.php';
 require_once __DIR__ . '/UpliftAiClient.php';
 require_once __DIR__ . '/BlogRepository.php';
 require_once __DIR__ . '/blog_helpers.php';
+require_once __DIR__ . '/InvoiceServiceRepository.php';
+require_once __DIR__ . '/InvoiceRepository.php';
+require_once __DIR__ . '/invoice_helpers.php';
+require_once __DIR__ . '/InvoicePdf.php';
+require_once __DIR__ . '/invoice_emails.php';
 
 ensure_data_dirs();
 

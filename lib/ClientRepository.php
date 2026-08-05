@@ -230,6 +230,33 @@ final class ClientRepository
     }
 
     /**
+     * Lightweight client list for dropdowns (name + company).
+     *
+     * @return list<array{id: int, name: string, company: string, email: string}>
+     */
+    public function listForSelect(int $limit = 2000): array
+    {
+        $limit = max(1, min(5000, $limit));
+        $stmt = $this->db->query('
+            SELECT id, name, company, email
+            FROM clients
+            ORDER BY name ASC
+            LIMIT ' . $limit
+        );
+        $rows = $stmt->fetchAll();
+        $out = [];
+        foreach ($rows as $row) {
+            $out[] = [
+                'id' => (int) $row['id'],
+                'name' => (string) ($row['name'] ?? ''),
+                'company' => (string) ($row['company'] ?? ''),
+                'email' => (string) ($row['email'] ?? ''),
+            ];
+        }
+        return $out;
+    }
+
+    /**
      * @return list<array>
      */
     public function submissionsForClient(int $clientId, ?int $year = null, ?int $limit = null, ?int $offset = null): array

@@ -174,6 +174,7 @@ final class Database
         $this->ensureHolidaySchedulesTable();
         $this->ensureFileFoldersTable();
         $this->ensureBlogsTable();
+        $this->ensureInvoiceTables();
     }
 
     private function migrateSqlite(): void
@@ -253,6 +254,134 @@ final class Database
         $this->ensureHolidaySchedulesTable();
         $this->ensureFileFoldersTable();
         $this->ensureBlogsTable();
+        $this->ensureInvoiceTables();
+    }
+
+    private function ensureInvoiceTables(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS invoice_services (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    unit_price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    is_active TINYINT(1) NOT NULL DEFAULT 1,
+                    sort_order INT NOT NULL DEFAULT 0,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    KEY idx_invoice_services_active (is_active),
+                    KEY idx_invoice_services_sort (sort_order)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+                CREATE TABLE IF NOT EXISTS invoices (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    invoice_number VARCHAR(32) NOT NULL,
+                    client_id INT UNSIGNED DEFAULT NULL,
+                    bill_to_company VARCHAR(255) DEFAULT NULL,
+                    bill_to_name VARCHAR(255) DEFAULT NULL,
+                    bill_to_street VARCHAR(255) DEFAULT NULL,
+                    bill_to_city VARCHAR(128) DEFAULT NULL,
+                    bill_to_province VARCHAR(128) DEFAULT NULL,
+                    bill_to_postal VARCHAR(32) DEFAULT NULL,
+                    bill_to_country VARCHAR(128) DEFAULT NULL,
+                    invoice_date DATE NOT NULL,
+                    due_date DATE NOT NULL,
+                    currency VARCHAR(8) NOT NULL DEFAULT "CAD",
+                    discount_percent DECIMAL(8, 4) NOT NULL DEFAULT 0,
+                    subtotal DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    discount_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    total DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    notes TEXT,
+                    status ENUM("draft", "sent", "paid", "void") NOT NULL DEFAULT "draft",
+                    created_by_user_id INT UNSIGNED DEFAULT NULL,
+                    created_by_name VARCHAR(191) DEFAULT NULL,
+                    created_at DATETIME NOT NULL,
+                    updated_at DATETIME NOT NULL,
+                    UNIQUE KEY uk_invoices_number (invoice_number),
+                    KEY idx_invoices_client (client_id),
+                    KEY idx_invoices_status (status),
+                    KEY idx_invoices_date (invoice_date),
+                    CONSTRAINT fk_invoices_client
+                        FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+                CREATE TABLE IF NOT EXISTS invoice_items (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    invoice_id INT UNSIGNED NOT NULL,
+                    service_id INT UNSIGNED DEFAULT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    unit_price DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    quantity DECIMAL(12, 2) NOT NULL DEFAULT 1.00,
+                    amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    sort_order INT NOT NULL DEFAULT 0,
+                    KEY idx_invoice_items_invoice (invoice_id),
+                    CONSTRAINT fk_invoice_items_invoice
+                        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+                    CONSTRAINT fk_invoice_items_service
+                        FOREIGN KEY (service_id) REFERENCES invoice_services(id) ON DELETE SET NULL
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            ');
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS invoice_services (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                description TEXT,
+                unit_price REAL NOT NULL DEFAULT 0,
+                is_active INTEGER NOT NULL DEFAULT 1,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS invoices (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                invoice_number TEXT NOT NULL UNIQUE,
+                client_id INTEGER,
+                bill_to_company TEXT,
+                bill_to_name TEXT,
+                bill_to_street TEXT,
+                bill_to_city TEXT,
+                bill_to_province TEXT,
+                bill_to_postal TEXT,
+                bill_to_country TEXT,
+                invoice_date TEXT NOT NULL,
+                due_date TEXT NOT NULL,
+                currency TEXT NOT NULL DEFAULT "CAD",
+                discount_percent REAL NOT NULL DEFAULT 0,
+                subtotal REAL NOT NULL DEFAULT 0,
+                discount_amount REAL NOT NULL DEFAULT 0,
+                total REAL NOT NULL DEFAULT 0,
+                notes TEXT,
+                status TEXT NOT NULL DEFAULT "draft",
+                created_by_user_id INTEGER,
+                created_by_name TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE SET NULL
+            );
+
+            CREATE TABLE IF NOT EXISTS invoice_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                invoice_id INTEGER NOT NULL,
+                service_id INTEGER,
+                name TEXT NOT NULL,
+                description TEXT,
+                unit_price REAL NOT NULL DEFAULT 0,
+                quantity REAL NOT NULL DEFAULT 1,
+                amount REAL NOT NULL DEFAULT 0,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE,
+                FOREIGN KEY (service_id) REFERENCES invoice_services(id) ON DELETE SET NULL
+            );
+        ');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_invoice_services_active ON invoice_services(is_active)');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id)');
     }
 
     private function ensurePartnerRole(): void
