@@ -15,6 +15,24 @@ function birthday_email_default_html(): string
     ]);
 }
 
+/**
+ * Detect bodies mangled by the old banner-replace regex (logo/greeting removed, banner left).
+ */
+function birthday_email_body_is_truncated(string $body): bool
+{
+    $body = trim($body);
+    if ($body === '') {
+        return false;
+    }
+
+    $hasBanner = str_contains($body, 'email-holidays')
+        || str_contains($body, 'data-email-template-image');
+    $hasLogo = str_contains($body, 'verma-accounting-logo');
+    $hasGreeting = stripos($body, 'Dear') !== false && str_contains($body, '{client_name}');
+
+    return $hasBanner && (!$hasLogo || !$hasGreeting);
+}
+
 /** @return array{enabled: bool, send_time: string, subject: string, body_html: string} */
 function birthday_email_default_settings(): array
 {
@@ -41,11 +59,22 @@ function birthday_email_settings(): array
     $body = trim((string) ($stored['body_html'] ?? ''));
     $body = $body !== '' ? campaign_email_normalize_year_token($body) : $defaults['body_html'];
 
-    // Older saved templates may not include the banner — always keep birthday.jpg wired in.
-    $body = canada_holiday_email_apply_template_image(
-        $body,
-        canada_holiday_email_image_url_for_name('Birthday')
-    );
+    // Repair templates gutted by the old cross-tag banner replace bug.
+    if (birthday_email_body_is_truncated($body)) {
+        $body = $defaults['body_html'];
+        birthday_email_save_settings([
+            'enabled' => array_key_exists('enabled', $stored) ? !empty($stored['enabled']) : true,
+            'send_time' => $sendTime,
+            'subject' => $subject !== '' ? $subject : $defaults['subject'],
+            'body_html' => $body,
+        ]);
+    } else {
+        // Older saved templates may not include the banner — keep birthday.jpg wired in.
+        $body = canada_holiday_email_apply_template_image(
+            $body,
+            canada_holiday_email_image_url_for_name('Birthday')
+        );
+    }
 
     return [
         'enabled' => array_key_exists('enabled', $stored) ? !empty($stored['enabled']) : true,

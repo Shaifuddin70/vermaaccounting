@@ -26,11 +26,12 @@
   function applyBannerUrl(html, url) {
     var img = bannerImgTag(url);
     var source = String(html || '');
-    var marked = /<img\b[\s\S]*?\bdata-email-template-image\s*=\s*["']?1["']?[^>]*>/i;
+    // Only replace the banner <img> itself — never match from the logo tag across the body.
+    var marked = /<img\b(?=[^>]*\bdata-email-template-image\s*=\s*["']?1["']?)[^>]*>/i;
     if (marked.test(source)) {
       return source.replace(marked, img);
     }
-    var holidayImg = /<img\b[^>]*\/images\/email-holidays\/[^"'>\s]+[^>]*>/i;
+    var holidayImg = /<img\b(?=[^>]*\/images\/email-holidays\/)[^>]*>/i;
     if (holidayImg.test(source)) {
       return source.replace(holidayImg, img);
     }

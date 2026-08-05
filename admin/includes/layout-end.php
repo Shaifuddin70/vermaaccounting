@@ -18,7 +18,7 @@
   <script src="/admin/js/email-editor.js?v=8" defer></script>
   <?php endif; ?>
   <?php if (!empty($loadEmailTemplateImage)): ?>
-  <script src="/admin/js/email-template-image.js?v=4" defer></script>
+  <script src="/admin/js/email-template-image.js?v=5" defer></script>
   <?php endif; ?>
 </body>
 </html>

@@ -97,22 +97,15 @@ function canada_holiday_email_apply_template_image(string $html, string $imageUr
     $safeUrl = htmlspecialchars($imageUrl, ENT_QUOTES | ENT_HTML5, 'UTF-8');
     $imgTag = '<img src="' . $safeUrl . '" alt="" data-email-template-image="1" style="width:100%; max-width:520px; border-radius:10px; display:block;">';
 
-    if (preg_match('/<img\b[\s\S]*?\bdata-email-template-image\s*=\s*["\']?1["\']?[^>]*>/i', $html)) {
-        return (string) preg_replace(
-            '/<img\b[\s\S]*?\bdata-email-template-image\s*=\s*["\']?1["\']?[^>]*>/i',
-            $imgTag,
-            $html,
-            1
-        );
+    // Match only the banner <img> tag (not from the logo <img> across the document).
+    $bannerImgPattern = '/<img\b(?=[^>]*\bdata-email-template-image\s*=\s*["\']?1["\']?)[^>]*>/i';
+    if (preg_match($bannerImgPattern, $html)) {
+        return (string) preg_replace($bannerImgPattern, $imgTag, $html, 1);
     }
 
-    if (preg_match('/<img\b[^>]*\/images\/email-holidays\/[^"\'>\s]+[^>]*>/i', $html)) {
-        return (string) preg_replace(
-            '/<img\b[^>]*\/images\/email-holidays\/[^"\'>\s]+[^>]*>/i',
-            $imgTag,
-            $html,
-            1
-        );
+    $holidayImgPattern = '/<img\b(?=[^>]*\/images\/email-holidays\/)[^>]*>/i';
+    if (preg_match($holidayImgPattern, $html)) {
+        return (string) preg_replace($holidayImgPattern, $imgTag, $html, 1);
     }
 
     $block = canada_holiday_email_template_image_block($imageUrl);
