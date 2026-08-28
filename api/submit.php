@@ -121,6 +121,10 @@ foreach ($schema['fields'] as $field) {
     }
 }
 
+if ($slug === document_submission_form_slug()) {
+    $data['tax_service_type'] = trim((string) ($_POST['tax_service_type'] ?? ''));
+}
+
 $taxYear = null;
 $taxYearCfg = $schema['settings']['taxYear'] ?? [];
 if (!empty($taxYearCfg['enabled'])) {
@@ -135,14 +139,25 @@ if ($errors) {
     json_response(['error' => implode(' ', $errors), 'errors' => $errors], 422);
 }
 
+if ($slug === document_submission_form_slug()) {
+    document_submission_validate($data, $errors);
+    if ($errors) {
+        json_response(['error' => implode(' ', $errors), 'errors' => $errors], 422);
+    }
+}
+
 $submissionId = $repo->saveSubmission((int) $form['id'], $data, $filesMeta, $taxYear > 0 ? $taxYear : null);
 sync_submission_partners_from_data($submissionId, $schema, $data);
 
 $clientRepo = new ClientRepository();
-$clientRepo->linkFromSubmission([
-    'id' => $submissionId,
-    'data_json' => json_encode($data, JSON_UNESCAPED_UNICODE),
-], $schema);
+if ($slug === document_submission_form_slug()) {
+    document_submission_after_save($submissionId, $data);
+} else {
+    $clientRepo->linkFromSubmission([
+        'id' => $submissionId,
+        'data_json' => json_encode($data, JSON_UNESCAPED_UNICODE),
+    ], $schema);
+}
 
 send_submission_notification_emails(
     $form,

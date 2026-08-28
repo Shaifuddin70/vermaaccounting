@@ -176,6 +176,8 @@ final class Database
         $this->ensureBlogsTable();
         $this->ensureInvoiceTables();
         $this->ensureEmailTrackingTable();
+        $this->ensureContactForm();
+        $this->ensureDocumentSubmissionForm();
     }
 
     private function migrateSqlite(): void
@@ -257,6 +259,24 @@ final class Database
         $this->ensureBlogsTable();
         $this->ensureInvoiceTables();
         $this->ensureEmailTrackingTable();
+        $this->ensureContactForm();
+        $this->ensureDocumentSubmissionForm();
+    }
+
+    private function ensureDocumentSubmissionForm(): void
+    {
+        if (!function_exists('ensure_document_submission_form')) {
+            return;
+        }
+        ensure_document_submission_form();
+    }
+
+    private function ensureContactForm(): void
+    {
+        if (!function_exists('ensure_contact_form')) {
+            return;
+        }
+        ensure_contact_form();
     }
 
     private function ensureEmailTrackingTable(): void

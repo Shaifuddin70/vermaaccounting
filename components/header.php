@@ -101,7 +101,7 @@ if ($canonicalPath !== '/') {
   <script type="application/ld+json"><?= json_encode($homeFaqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
   <?php endif; endif; ?>
 
-  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=72" />
+  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=82" />
 </head>
 
 <body>
@@ -142,14 +142,20 @@ if ($canonicalPath !== '/') {
         <!-- Navigation Links -->
         <div class="verma-menu" id="vermaMenu">
           <div class="verma-menu-header">
-            <span class="verma-menu-title">Menu</span>
-            <button type="button" class="verma-menu-close" id="mobileMenuClose" aria-label="Close menu">
-              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-                <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"/>
-              </svg>
-            </button>
+            <a href="/" class="verma-menu-brand">
+              <img
+                src="<?= asset('images/verma-accounting-logo.png') ?>"
+                alt="Verma Accounting"
+                width="160"
+                height="40" />
+            </a>
           </div>
-          <a href="/" class="verma-link" data-page="home">Home</a>
+
+          <nav class="verma-menu-nav" aria-label="Site">
+          <a href="/" class="verma-link" data-page="home">
+            <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-home"></i></span>
+            <span class="verma-link-text">Home</span>
+          </a>
           <div class="verma-submenu">
             <a
               href="/services"
@@ -157,8 +163,9 @@ if ($canonicalPath !== '/') {
               data-page="services"
               aria-expanded="false"
               aria-haspopup="true">
-              Our Services
-              <span class="verma-arrow" aria-hidden="true">▼</span>
+              <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-briefcase"></i></span>
+              <span class="verma-link-text">Our Services</span>
+              <i class="fas fa-chevron-down verma-arrow" aria-hidden="true"></i>
             </a>
             <div class="verma-submenu-items">
               <a href="/services" class="verma-submenu-link verma-submenu-all d-lg-none">View All Services</a>
@@ -172,26 +179,36 @@ if ($canonicalPath !== '/') {
               <a href="https://owningottawa.com/" class="verma-submenu-link" target="_blank" rel="noopener">Real Estate</a>
             </div>
           </div>
-          <a href="/resources" class="verma-link" data-page="resources">Resources</a>
-          <a href="/blog" class="verma-link" data-page="blog">Blog</a>
-          <div class="verma-submenu">
-            <a
-              href="/about"
-              class="verma-link verma-toggle"
-              data-page="about"
-              aria-expanded="false"
-              aria-haspopup="true">
-              About Us
-              <span class="verma-arrow" aria-hidden="true">▼</span>
-            </a>
-            <div class="verma-submenu-items">
-              <a href="/about" class="verma-submenu-link verma-submenu-all d-lg-none">About Us</a>
-              <a href="/contact" class="verma-submenu-link">Contact Us</a>
-            </div>
-          </div>
+          <a href="/resources" class="verma-link" data-page="resources">
+            <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-book-open"></i></span>
+            <span class="verma-link-text">Resources</span>
+          </a>
+          <a href="/blog" class="verma-link" data-page="blog">
+            <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-newspaper"></i></span>
+            <span class="verma-link-text">Blog</span>
+          </a>
+          <a href="/about" class="verma-link" data-page="about">
+            <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-users"></i></span>
+            <span class="verma-link-text">About Us</span>
+          </a>
           <?php if ($siteCta['nav_label'] !== ''): ?>
-            <a href="<?= e($siteCta['url']) ?>" class="verma-link" data-page="form-cta"><?= e($siteCta['nav_label']) ?></a>
+            <a href="<?= e($siteCta['url']) ?>" class="verma-link" data-page="form-cta">
+              <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-file-alt"></i></span>
+              <span class="verma-link-text"><?= e($siteCta['nav_label']) ?></span>
+            </a>
           <?php endif; ?>
+          </nav>
+
+          <div class="verma-menu-footer">
+            <a href="tel:+16133186478" class="verma-menu-footer-link">
+              <i class="fas fa-phone" aria-hidden="true"></i>
+              +1 (613) 318-6478
+            </a>
+            <a href="mailto:info@vermaaccounting.ca" class="verma-menu-footer-link">
+              <i class="fas fa-envelope" aria-hidden="true"></i>
+              info@vermaaccounting.ca
+            </a>
+          </div>
         </div>
 
         <!-- Contact Information -->

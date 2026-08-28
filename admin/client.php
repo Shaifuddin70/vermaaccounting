@@ -58,12 +58,18 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1><?= e($client['name']) ?></h1>
   <div class="admin-header-actions">
+    <span class="client-id-badge">Client ID: <?= (int) $client['id'] ?></span>
     <a href="/admin/clients" class="admin-btn admin-btn-secondary">← All clients</a>
   </div>
 </div>
 
 <div class="admin-card client-profile-card">
   <div class="client-profile-grid">
+    <div>
+      <span class="submission-meta-label">Client ID</span>
+      <strong class="client-id-value"><?= (int) $client['id'] ?></strong>
+      <p class="admin-field-hint" style="margin:0.35rem 0 0;">Share this number for document uploads. Clients can also use their email on file.</p>
+    </div>
     <div>
       <span class="submission-meta-label">SIN</span>
       <strong><?= ($client['sin'] ?? '') !== '' ? e($client['sin']) : '—' ?></strong>

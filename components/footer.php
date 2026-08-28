@@ -129,6 +129,8 @@ if (!function_exists('asset')) {
    <i class="fas fa-chevron-up"></i>
  </button>
 
+ <?php include __DIR__ . '/engagement-modal.php'; ?>
+
  <script>
    (function() {
      const fab = document.getElementById('socialFab');
@@ -200,36 +202,70 @@ if (!function_exists('asset')) {
    })();
  </script>
  <script>
-   var form = document.getElementById("my-form");
+   (function () {
+     var form = document.getElementById('my-form');
+     if (!form) return;
 
-   async function handleSubmit(event) {
-     event.preventDefault();
-     var status = document.getElementById("my-form-status");
-     var data = new FormData(event.target);
-     fetch(event.target.action, {
-       method: form.method,
-       body: data,
-       headers: {
-         'Accept': 'application/json'
+     var status = document.getElementById('my-form-status');
+     var button = document.getElementById('my-form-button');
+
+     form.addEventListener('submit', function (event) {
+       event.preventDefault();
+       if (status) {
+         status.className = '';
+         status.textContent = '';
        }
-     }).then(response => {
-       if (response.ok) {
-         status.innerHTML = "Thanks for your submission!";
-         form.reset()
-       } else {
-         response.json().then(data => {
-           if (Object.hasOwn(data, 'errors')) {
-             status.innerHTML = data["errors"].map(error => error["message"]).join(", ")
-           } else {
-             status.innerHTML = "Oops! There was a problem submitting your form"
+       if (button) button.disabled = true;
+
+       fetch(form.action, {
+         method: form.method || 'POST',
+         body: new FormData(form),
+         headers: { Accept: 'application/json' },
+       })
+         .then(function (response) {
+           return response.json().then(function (data) {
+             return { ok: response.ok, data: data || {} };
+           }).catch(function () {
+             return { ok: response.ok, data: {} };
+           });
+         })
+         .then(function (result) {
+           if (result.ok && result.data.ok) {
+             if (status) {
+               status.className = 'success';
+               status.textContent = result.data.message || 'Thanks for your submission!';
+             }
+             form.reset();
+             return;
+           }
+
+           var message = 'Oops! There was a problem submitting your form';
+           if (result.data.error) {
+             message = String(result.data.error);
+           } else if (Array.isArray(result.data.errors) && result.data.errors.length) {
+             message = result.data.errors
+               .map(function (err) {
+                 return typeof err === 'string' ? err : (err && err.message) || '';
+               })
+               .filter(Boolean)
+               .join(' ');
+           }
+           if (status) {
+             status.className = 'error';
+             status.textContent = message || 'Oops! There was a problem submitting your form';
            }
          })
-       }
-     }).catch(error => {
-       status.innerHTML = "Oops! There was a problem submitting your form"
+         .catch(function () {
+           if (status) {
+             status.className = 'error';
+             status.textContent = 'Oops! There was a problem submitting your form';
+           }
+         })
+         .finally(function () {
+           if (button) button.disabled = false;
+         });
      });
-   }
-   form.addEventListener("submit", handleSubmit)
+   })();
  </script>
  <script>
    function toggleFAQ(button) {
@@ -506,7 +542,8 @@ if (!function_exists('asset')) {
    crossorigin="anonymous"></script>
 
  <!-- JavaScript -->
- <script src="<?= asset('components/js/navigation.js') ?>?v=68"></script>
+ <script src="<?= asset('components/js/navigation.js') ?>?v=70"></script>
+ <script src="<?= asset('components/js/engagement-modal.js') ?>?v=2"></script>
  <script src="https://elfsightcdn.com/platform.js" async></script>
  </body>
 

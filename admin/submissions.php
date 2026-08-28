@@ -15,12 +15,28 @@ $taxYearFilter = ($yearParam !== '' && $yearParam !== 'all') ? (int) $yearParam 
 if ($taxYearFilter !== null && $taxYearFilter < 1) {
     $taxYearFilter = null;
 }
- 
+
 $repo = new FormRepository();
+$partnerId = partner_user_id();
+$allForms = array_values(array_filter(
+    $repo->all(),
+    static fn (array $f): bool => !is_file_manager_form($f)
+));
+usort($allForms, static fn (array $a, array $b): int => strcasecmp((string) $a['title'], (string) $b['title']));
+$formSubmissionCounts = $repo->submissionCountsByFormId($partnerId);
+
+if ($formId < 1 && $allForms !== []) {
+    $formId = (int) $allForms[0]['id'];
+}
+
 $form = $repo->find($formId);
 
 if (!$form || is_file_manager_form($form)) {
-    header('Location: /admin/' . (Auth::userRole() === 'admin' ? 'forms' : 'reviewer-submissions'));
+    if ($allForms === []) {
+        header('Location: /admin/' . (Auth::userRole() === 'admin' ? 'forms' : 'reviewer-submissions'));
+        exit;
+    }
+    header('Location: /admin/submissions?form_id=' . (int) $allForms[0]['id']);
     exit;
 }
 
@@ -35,7 +51,6 @@ $yearOptions = $taxYearOn
     : [];
 rsort($yearOptions, SORT_NUMERIC);
 
-$partnerId = partner_user_id();
 $counts = $repo->submissionStatusCounts($formId, $taxYearFilter, $partnerId);
 $statusFilter = $tab === 'all' ? null : $tab;
 $page = pagination_page_from_request();
@@ -96,6 +111,21 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 </div>
 
+<?php if ($allForms !== []): ?>
+  <nav class="admin-tabs submissions-form-tabs" aria-label="Forms">
+    <?php foreach ($allForms as $formTab):
+      $tabFormId = (int) $formTab['id'];
+      $tabCount = (int) ($formSubmissionCounts[$tabFormId]['all'] ?? 0);
+    ?>
+      <a href="<?= e(submissions_list_url($tabFormId, 'all', $taxYearFilter, $taxYearOn, 1, $pagination['per_page'])) ?>"
+        class="admin-tab <?= $formId === $tabFormId ? 'is-active' : '' ?>">
+        <?= e((string) $formTab['title']) ?>
+        <span class="admin-tab-count"><?= number_format($tabCount) ?></span>
+      </a>
+    <?php endforeach; ?>
+  </nav>
+<?php endif; ?>
+
 <?php if ($taxYearOn): ?>
   <form method="get" action="/admin/submissions" class="submissions-year-filter">
     <input type="hidden" name="form_id" value="<?= $formId ?>">
@@ -117,7 +147,7 @@ require __DIR__ . '/includes/layout-start.php';
   </form>
 <?php endif; ?>
 
-<nav class="admin-tabs" aria-label="Filter submissions">
+<nav class="admin-tabs submissions-status-tabs" aria-label="Filter submissions">
   <a href="<?= e(submissions_list_url($formId, 'all', $taxYearFilter, $taxYearOn, 1, $pagination['per_page'])) ?>"
     class="admin-tab <?= $tab === 'all' ? 'is-active' : '' ?>">
     All

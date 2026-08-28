@@ -56,6 +56,10 @@ function seo_meta_for_path(string $path): array
             'title' => 'Contact Verma Accounting | Ontario Tax Accountants',
             'description' => 'Contact Verma Accounting for tax, bookkeeping, and payroll help across Ontario. Call +1 (613) 318-6478 or email info@vermaaccounting.ca.',
         ],
+        '/submit-documents' => [
+            'title' => 'Submit Tax Documents | Verma Accounting',
+            'description' => 'Securely upload personal or business tax documents to Verma Accounting using your customer ID reference number.',
+        ],
         '/about' => [
             'title' => 'About Verma Accounting | Ontario Tax Accountants',
             'description' => 'Learn about Verma Accounting: certified Ontario accountants with 10+ years helping individuals and businesses with tax, bookkeeping, and payroll.',

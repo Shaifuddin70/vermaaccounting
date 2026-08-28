@@ -73,6 +73,7 @@
         menu.classList.toggle("active", open);
         hamburger.classList.toggle("is-open", open);
         hamburger.setAttribute("aria-expanded", open ? "true" : "false");
+        hamburger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
         document.body.classList.toggle("nav-open", open);
         if (overlay) {
           overlay.classList.toggle("is-visible", open);
@@ -107,7 +108,7 @@
         });
       }
 
-      menu.querySelectorAll(".verma-link:not(.verma-toggle)").forEach(function (link) {
+      menu.querySelectorAll(".verma-link:not(.verma-toggle), .verma-menu-footer-link, .verma-menu-brand").forEach(function (link) {
         link.addEventListener("click", function () {
           if (isMobile()) closeMenu();
         });
@@ -137,7 +138,7 @@
 
   function highlightActiveLink() {
     var path = window.location.pathname.replace(/\/$/, "") || "/";
-    var aboutGroup = { "/about": true, "/contact": true, "/privacy": true };
+    var aboutGroup = { "/about": true, "/privacy": true };
 
     document.querySelectorAll(".verma-link").forEach(function (link) {
       link.classList.remove("active");

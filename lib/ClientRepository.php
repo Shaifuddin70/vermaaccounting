@@ -663,6 +663,12 @@ final class ClientRepository
         if ($search === '') {
             return ['', []];
         }
+        if (preg_match('/^\d+$/', $search)) {
+            return [
+                'WHERE (c.id = ? OR c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)',
+                [(int) $search, '%' . $search . '%', '%' . $search . '%', '%' . $search . '%', '%' . $search . '%', '%' . $search . '%'],
+            ];
+        }
         $like = '%' . $search . '%';
         return [
             'WHERE (c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)',

@@ -7,10 +7,30 @@ $taxYearOn = form_tax_year_enabled($schema) && $taxYearOptions !== [];
 $dataMatchOn = form_data_match_enabled($schema);
 $dataMatchIds = form_data_match_field_ids($schema);
 $dataMatchCfg = $schema['settings']['dataMatch'] ?? [];
+$documentSubmissionMode = !empty($documentSubmissionMode);
 ?>
 <div class="custom-form-app" id="custom-form-app"
   data-tax-year="<?= $taxYearOn ? '1' : '0' ?>"
-  data-data-match="<?= $dataMatchOn ? '1' : '0' ?>">
+  data-data-match="<?= $dataMatchOn ? '1' : '0' ?>"
+  data-document-submission="<?= $documentSubmissionMode ? '1' : '0' ?>">
+<?php if ($documentSubmissionMode): ?>
+  <div class="doc-service-step" id="doc-service-step">
+    <h2 class="doc-service-step-title">Which tax service is this for?</h2>
+    <p class="doc-service-step-prompt">Choose one to continue with your document upload.</p>
+    <div class="doc-service-options" role="group" aria-label="Tax service type">
+      <button type="button" class="doc-service-option" data-service-type="personal">
+        <span class="doc-service-option-icon" aria-hidden="true"><i class="fas fa-user"></i></span>
+        <span class="doc-service-option-label">Personal tax</span>
+        <span class="doc-service-option-desc">T1, personal slips, and individual filings</span>
+      </button>
+      <button type="button" class="doc-service-option" data-service-type="business">
+        <span class="doc-service-option-icon" aria-hidden="true"><i class="fas fa-building"></i></span>
+        <span class="doc-service-option-label">Business tax</span>
+        <span class="doc-service-option-desc">Corporate, GST/HST, payroll, and business records</span>
+      </button>
+    </div>
+  </div>
+<?php endif; ?>
 <?php if ($taxYearOn): ?>
   <div class="tax-year-step" id="tax-year-step">
     <h2 class="tax-year-step-title"><?= e($taxYearCfg['label']) ?></h2>
@@ -30,9 +50,16 @@ $dataMatchCfg = $schema['settings']['dataMatch'] ?? [];
   </div>
 <?php endif; ?>
 
-<form class="custom-form" id="custom-form" enctype="multipart/form-data" novalidate<?= $taxYearOn ? ' hidden' : '' ?>>
+<form class="custom-form" id="custom-form" enctype="multipart/form-data" novalidate<?= ($taxYearOn || $documentSubmissionMode) ? ' hidden' : '' ?>>
   <input type="hidden" name="form_slug" value="<?= e($form['slug']) ?>">
   <input type="hidden" name="upload_session" id="upload-session" value="">
+  <?php if ($documentSubmissionMode): ?>
+    <input type="hidden" name="tax_service_type" id="tax-service-type-input" value="">
+    <div class="doc-service-selected-bar" id="doc-service-selected-bar" hidden>
+      <span>Service type: <strong id="doc-service-selected-label"></strong></span>
+      <button type="button" class="doc-service-change-btn" id="doc-service-change-btn">Change</button>
+    </div>
+  <?php endif; ?>
   <?php if ($taxYearOn): ?>
     <input type="hidden" name="tax_year" id="tax-year-input" value="">
     <div class="tax-year-selected-bar" id="tax-year-selected-bar" hidden>

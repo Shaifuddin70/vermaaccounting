@@ -69,7 +69,7 @@ require __DIR__ . '/includes/layout-start.php';
     <?php endif; ?>
     <div class="admin-field clients-filter-field clients-filter-field--search">
       <label for="clients-search">Search</label>
-      <input type="search" id="clients-search" name="q" value="<?= e($search) ?>" placeholder="Name, SIN, email, phone, or company…">
+      <input type="search" id="clients-search" name="q" value="<?= e($search) ?>" placeholder="Client ID, name, SIN, email, phone, or company…">
     </div>
     <div class="clients-filter-actions">
       <button type="submit" class="admin-btn admin-btn-secondary">Search</button>
@@ -101,6 +101,7 @@ require __DIR__ . '/includes/layout-start.php';
     <table class="admin-table clients-table">
       <thead>
         <tr>
+          <th>Client ID</th>
           <th>Name</th>
           <th>SIN</th>
           <th>Email</th>
@@ -114,6 +115,7 @@ require __DIR__ . '/includes/layout-start.php';
       <tbody>
         <?php foreach ($clients as $client): ?>
           <tr>
+            <td class="clients-col-id"><?= (int) $client['id'] ?></td>
             <td>
               <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="clients-name-link">
                 <strong><?= e($client['name']) ?></strong>

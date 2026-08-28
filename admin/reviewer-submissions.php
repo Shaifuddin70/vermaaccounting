@@ -43,6 +43,12 @@ $allForms = array_values(array_filter(
 ));
 usort($allForms, static fn(array $a, array $b): int => strcasecmp((string) $a['title'], (string) $b['title']));
 
+$formSubmissionCounts = $repo->submissionCountsByFormId($scopePartnerId);
+$allFormsSubmissionTotal = 0;
+foreach ($allForms as $formRow) {
+    $allFormsSubmissionTotal += (int) ($formSubmissionCounts[(int) $formRow['id']]['all'] ?? 0);
+}
+
 $partners = $showPartnerFilter ? $userRepo->activePartners() : [];
 
 $filters = [
@@ -135,25 +141,36 @@ require __DIR__ . '/includes/layout-start.php';
   <h1><?= e($pageTitle) ?></h1>
 </div>
 
+<?php if ($allForms !== []): ?>
+  <nav class="admin-tabs submissions-form-tabs" aria-label="Forms">
+    <a href="<?= e(rs_list_url($tab, 0, $partnerFilterId, $dateFrom, $dateTo, $search, 1, $pagination['per_page'])) ?>"
+      class="admin-tab <?= $formId === 0 ? 'is-active' : '' ?>">
+      All forms
+      <span class="admin-tab-count"><?= number_format($allFormsSubmissionTotal) ?></span>
+    </a>
+    <?php foreach ($allForms as $formTab):
+      $tabFormId = (int) $formTab['id'];
+      $tabCount = (int) ($formSubmissionCounts[$tabFormId]['all'] ?? 0);
+    ?>
+      <a href="<?= e(rs_list_url($tab, $tabFormId, $partnerFilterId, $dateFrom, $dateTo, $search, 1, $pagination['per_page'])) ?>"
+        class="admin-tab <?= $formId === $tabFormId ? 'is-active' : '' ?>">
+        <?= e((string) $formTab['title']) ?>
+        <span class="admin-tab-count"><?= number_format($tabCount) ?></span>
+      </a>
+    <?php endforeach; ?>
+  </nav>
+<?php endif; ?>
+
 <div class="rs-page">
   <div class="admin-card rs-filters-card">
     <form method="get" action="/admin/reviewer-submissions" class="rs-filter-form" id="rs-filter-form">
       <input type="hidden" name="tab" value="<?= e($tab) ?>">
+      <?php if ($formId > 0): ?>
+        <input type="hidden" name="form_id" value="<?= $formId ?>">
+      <?php endif; ?>
       <?php if ($pagination['per_page'] !== pagination_default_per_page()): ?>
         <input type="hidden" name="per_page" value="<?= (int) $pagination['per_page'] ?>">
       <?php endif; ?>
-
-      <div class="admin-field rs-filter-field">
-        <label for="rs-form">Form</label>
-        <select name="form_id" id="rs-form" onchange="this.form.submit()">
-          <option value="">All forms</option>
-          <?php foreach ($allForms as $form): ?>
-            <option value="<?= (int) $form['id'] ?>" <?= $formId === (int) $form['id'] ? 'selected' : '' ?>>
-              <?= e((string) $form['title']) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
 
       <?php if ($showPartnerFilter): ?>
         <div class="admin-field rs-filter-field">

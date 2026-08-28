@@ -759,6 +759,24 @@ body {
   stroke-dashoffset: -32.42;
 }
 
+.verma-link-icon {
+  display: none;
+}
+
+.verma-menu-footer {
+  display: none;
+}
+
+.verma-menu-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: nowrap;
+  gap: 1.25rem;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .nav-overlay {
   display: none;
 }
@@ -796,13 +814,15 @@ body.nav-open {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.45);
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
     transition:
-      opacity 0.3s ease,
-      visibility 0.3s ease;
+      opacity 0.32s ease,
+      visibility 0.32s ease;
     z-index: 1001;
   }
 
@@ -816,21 +836,21 @@ body.nav-open {
     position: fixed;
     top: 0;
     right: 0;
-    width: min(100%, 360px);
+    width: min(100%, 380px);
     height: 100%;
     height: 100dvh;
-    background: #fff;
+    max-height: 100dvh;
+    background: #f8fafc;
     flex-direction: column;
     justify-content: flex-start;
     align-items: stretch;
     gap: 0;
-    padding: 0 0 2rem;
+    padding: 0;
     transform: translateX(105%);
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1002;
-    box-shadow: -8px 0 28px rgba(15, 23, 42, 0.18);
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
+    box-shadow: -12px 0 40px rgba(15, 23, 42, 0.22);
+    overflow: hidden;
     overscroll-behavior: contain;
   }
 
@@ -842,85 +862,142 @@ body.nav-open {
   .verma-menu-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.85rem 1.25rem;
-    min-height: 56px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-    background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
-    color: #fff;
-    position: sticky;
-    top: 0;
-    z-index: 2;
+    justify-content: flex-start;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    padding-top: calc(0.85rem + env(safe-area-inset-top, 0px));
+    min-height: 64px;
+    border-bottom: 1px solid #e2e8f0;
+    background: #fff;
+    flex-shrink: 0;
   }
 
-  .verma-menu-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    line-height: 1;
+  /* Keep animated hamburger visible above drawer — it becomes the close control */
+  body.nav-open .hamburger {
+    z-index: 1004;
   }
 
-  .verma-menu-close {
-    appearance: none;
-    border: 0;
-    background: transparent;
-    color: #fff;
-    width: 40px;
-    height: 40px;
-    margin: 0;
-    padding: 0;
-    border-radius: 8px;
-    cursor: pointer;
+  .verma-menu-brand {
     display: inline-flex;
     align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background-color 0.2s ease;
+    min-width: 0;
+    text-decoration: none;
   }
 
-  .verma-menu-close svg {
+  .verma-menu-brand img {
     display: block;
+    width: auto;
+    height: 42px;
+    max-width: 100%;
+    object-fit: contain;
   }
 
-  .verma-menu-close:hover,
-  .verma-menu-close:focus-visible {
-    background: rgba(255, 255, 255, 0.18);
-    outline: none;
+  .verma-menu-nav {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0%;
+    align-items: stretch;
+    justify-content: flex-start;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0;
+    touch-action: pan-y;
   }
 
-  /* Hide header hamburger while drawer is open — close lives in the panel */
-  body.nav-open .hamburger {
-    opacity: 0;
-    pointer-events: none;
+  .verma-menu-footer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.85rem 1rem;
+    padding-bottom: calc(0.85rem + env(safe-area-inset-bottom, 0px));
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+    flex-shrink: 0;
+    margin-top: auto;
+  }
+
+  .verma-menu-footer-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    color: #475569;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 0.35rem 0;
+    transition: color 0.2s ease;
+  }
+
+  .verma-menu-footer-link i {
+    width: 1.1rem;
+    color: #f97316;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .verma-menu-footer-link:hover {
+    color: #1e3a8a;
   }
 
   .verma-menu > .verma-link,
-  .verma-menu > .verma-submenu > .verma-toggle {
+  .verma-menu-nav > .verma-link,
+  .verma-menu-nav > .verma-submenu > .verma-toggle {
     width: 100%;
-    padding: 1rem 1.25rem;
-    font-size: 1.05rem;
+    padding: 0.95rem 1rem;
+    font-size: 1rem;
     font-weight: 600;
-    color: #1e3a8a;
+    color: #1e293b;
     border-bottom: 1px solid #eef2f7;
     margin: 0;
     border-radius: 0;
     transform: none;
+    gap: 0.75rem;
     transition:
       background-color 0.2s ease,
       color 0.2s ease;
   }
 
-  .verma-menu > .verma-link:hover,
-  .verma-menu > .verma-submenu > .verma-toggle:hover {
+  .verma-link-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 10px;
+    background: rgba(30, 58, 138, 0.08);
+    color: #1e3a8a;
+    flex-shrink: 0;
+    font-size: 0.85rem;
+  }
+
+  .verma-link-text {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .verma-menu-nav > .verma-link:hover,
+  .verma-menu-nav > .verma-submenu > .verma-toggle:hover {
     background: rgba(249, 115, 22, 0.08);
     color: #ea580c;
     transform: none;
   }
 
-  .verma-menu > .verma-link.active {
+  .verma-menu-nav > .verma-link:hover .verma-link-icon,
+  .verma-menu-nav > .verma-submenu > .verma-toggle:hover .verma-link-icon {
+    background: rgba(249, 115, 22, 0.14);
+    color: #ea580c;
+  }
+
+  .verma-menu-nav > .verma-link.active {
     color: #ea580c;
     background: rgba(249, 115, 22, 0.06);
+  }
+
+  .verma-menu-nav > .verma-link.active .verma-link-icon {
+    background: rgba(249, 115, 22, 0.14);
+    color: #ea580c;
   }
 
   .verma-submenu {
@@ -933,37 +1010,37 @@ body.nav-open {
     visibility: visible;
     transform: none;
     box-shadow: none;
-    background: #f8fafc;
+    background: #fff;
     margin: 0;
     border-radius: 0;
     padding: 0;
-    display: block;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    display: none;
+    max-height: none;
+    overflow: visible;
     min-width: 0;
+    border-bottom: 1px solid #eef2f7;
   }
 
   .verma-submenu.active .verma-submenu-items {
-    max-height: 480px;
+    display: block;
   }
 
   .verma-submenu-link {
-    padding: 0.85rem 1.25rem 0.85rem 1.75rem;
-    font-size: 0.98rem;
+    padding: 0.85rem 1rem 0.85rem 3.75rem;
+    font-size: 0.95rem;
     font-weight: 500;
-    color: #475569;
-    border-bottom: 1px solid #eef2f7;
+    color: #64748b;
+    border-bottom: 1px solid #f1f5f9;
     border-left: 3px solid transparent;
     transform: none;
   }
 
   .verma-submenu-link:hover {
-    background: rgba(249, 115, 22, 0.1);
+    background: rgba(249, 115, 22, 0.08);
     color: #ea580c;
     border-left-color: #f97316;
     transform: none;
-    padding-left: 1.75rem;
+    padding-left: 3.75rem;
   }
 
   .verma-submenu-link::before {
@@ -972,12 +1049,15 @@ body.nav-open {
 
   .verma-arrow {
     transition: transform 0.3s ease;
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     margin-left: auto;
+    color: #94a3b8;
+    flex-shrink: 0;
   }
 
   .verma-submenu.active .verma-arrow {
     transform: rotate(180deg);
+    color: #ea580c;
   }
 
   .verma-contact {
@@ -999,15 +1079,15 @@ body.nav-open {
     max-width: none;
   }
 
-  .verma-menu > .verma-link,
-  .verma-menu > .verma-submenu > .verma-toggle {
+  .verma-menu-nav > .verma-link,
+  .verma-menu-nav > .verma-submenu > .verma-toggle {
     font-size: 1rem;
-    padding: 0.95rem 1.1rem;
+    padding: 0.9rem 1rem;
   }
 
   .verma-submenu-link {
-    padding: 0.75rem 1.1rem 0.75rem 1.5rem;
-    font-size: 0.95rem;
+    padding: 0.8rem 1rem 0.8rem 3.5rem;
+    font-size: 0.92rem;
   }
 
   .verma-contact {
@@ -5318,8 +5398,17 @@ a .services-title:hover {
   color: #1e3a8a;
   font-size: 1.8rem;
   font-weight: 700;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.5rem;
   text-align: center;
+}
+
+.contact-form-lead {
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.5;
+  text-align: center;
+  margin: 0 auto 1.5rem;
+  max-width: 28rem;
 }
 
 #my-form {
@@ -5330,6 +5419,11 @@ a .services-title:hover {
   border: 1px solid #e2e8f0;
   max-width: 500px;
   margin: 0 auto;
+}
+
+#my-form.my-form--labeled {
+  display: grid;
+  gap: 0.85rem;
 }
 
 @media (max-width: 768px) {
@@ -5343,12 +5437,13 @@ a .services-title:hover {
   color: #374151;
   font-weight: 600;
   font-size: 0.95rem;
-  margin-bottom: 0.5rem;
-  margin-top: 1rem;
+  margin: 0;
 }
 
-#my-form label:first-child {
-  margin-top: 0;
+#my-form .inquiry-optional {
+  font-weight: 500;
+  color: #94a3b8;
+  font-size: 0.85rem;
 }
 
 #my-form input,
@@ -5361,9 +5456,15 @@ a .services-title:hover {
   font-size: 1rem;
   color: #374151;
   background: #fbfafa;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
   box-sizing: border-box;
   margin-bottom: 1rem;
+}
+
+#my-form.my-form--labeled input,
+#my-form.my-form--labeled textarea,
+#my-form.my-form--labeled select {
+  margin-bottom: 0;
 }
 
 #my-form select {
@@ -5413,9 +5514,9 @@ a .services-title:hover {
   font-size: 1.1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
-  margin-top: 1.5rem;
+  margin-top: 0.75rem;
   box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
 }
 
@@ -5428,7 +5529,8 @@ a .services-title:hover {
 }
 
 #my-form-status {
-  margin-top: 1rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0;
   padding: 0.75rem;
   border-radius: 8px;
   font-weight: 500;
@@ -8053,5 +8155,550 @@ ul li::before {
 @media (max-width: 640px) {
   .contact-nap-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Contact page (redesign) */
+.contact-page-main {
+  background: #f8fafc;
+}
+
+.contact-hero {
+  background: linear-gradient(135deg, #0f1f4d 0%, #1e3a8a 55%, #2563eb 100%);
+  color: #fff;
+  padding: 4.5rem 0 4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.contact-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(249, 115, 22, 0.18), transparent 42%),
+    radial-gradient(circle at 10% 80%, rgba(255, 255, 255, 0.08), transparent 40%);
+  pointer-events: none;
+}
+
+.contact-hero-inner {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.contact-hero-badge {
+  display: inline-block;
+  padding: 0.35rem 0.85rem;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+}
+
+.contact-hero h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+.contact-hero p {
+  margin: 0 auto 1.75rem;
+  max-width: 38rem;
+  font-size: 1.08rem;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.contact-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
+.contact-hero-actions .cta-button {
+  min-width: 12rem;
+  justify-content: center;
+}
+
+.contact-hero-actions .cta-button.secondary {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  color: #fff;
+  box-shadow: none;
+}
+
+.contact-hero-actions .cta-button.secondary:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.55);
+  color: #fff;
+}
+
+.contact-page {
+  padding: 3rem 0 4.5rem;
+}
+
+.contact-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.contact-page-form-card,
+.contact-page-aside-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.07);
+}
+
+.contact-page-form-card {
+  padding: 2rem;
+}
+
+.contact-page-form-header h2 {
+  margin: 0 0 0.45rem;
+  color: #0f1f4d;
+  font-size: 1.65rem;
+  font-weight: 700;
+}
+
+.contact-page-form-card .contact-form-lead {
+  margin: 0 0 1.35rem;
+  text-align: left;
+  max-width: none;
+  color: #64748b;
+}
+
+.contact-page-form-card #my-form {
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+.contact-page-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.contact-page-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.contact-page-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-page-info-item:hover {
+  border-color: rgba(249, 115, 22, 0.35);
+  box-shadow: 0 8px 24px rgba(249, 115, 22, 0.1);
+}
+
+.contact-page-info-item--static {
+  cursor: default;
+}
+
+.contact-page-info-item--static:hover {
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+.contact-page-info-icon {
+  flex-shrink: 0;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ff7f35 0%, #f26612 100%);
+  color: #fff;
+  font-size: 1rem;
+}
+
+.contact-page-info-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.contact-page-info-body strong {
+  color: #0f1f4d;
+  font-size: 0.92rem;
+}
+
+.contact-page-info-body span {
+  color: #1e293b;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.contact-page-info-body small {
+  color: #64748b;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.contact-page-aside-card {
+  padding: 1.35rem 1.25rem;
+}
+
+.contact-page-aside-card h3 {
+  margin: 0 0 0.45rem;
+  color: #0f1f4d;
+  font-size: 1.1rem;
+}
+
+.contact-page-aside-card p {
+  margin: 0 0 1rem;
+  color: #64748b;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.contact-page-aside-card .cta-button {
+  width: 100%;
+  justify-content: center;
+}
+
+.contact-page-map {
+  margin-top: 2rem;
+}
+
+.contact-page-map-header {
+  margin-bottom: 1rem;
+}
+
+.contact-page-map-header h2 {
+  margin: 0 0 0.35rem;
+  color: #0f1f4d;
+  font-size: 1.45rem;
+}
+
+.contact-page-map-header p {
+  margin: 0;
+  color: #64748b;
+}
+
+@media (max-width: 991px) {
+  .contact-page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .contact-hero {
+    padding: 3.5rem 0 3rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .contact-page-form-card {
+    padding: 1.35rem;
+  }
+
+  .contact-hero-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .contact-hero-actions .cta-button {
+    width: 100%;
+    min-width: 0;
+  }
+}
+
+/* Engagement modal (Call / Contact prompt) */
+.verma-engagement-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.28s ease, visibility 0.28s ease;
+}
+
+.verma-engagement-modal.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.verma-engagement-modal[hidden] {
+  display: none !important;
+}
+
+.verma-engagement-modal:not([hidden]) {
+  display: flex;
+}
+
+body.verma-engagement-modal-open {
+  overflow: hidden;
+}
+
+.verma-engagement-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(3px);
+}
+
+.verma-engagement-modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 420px);
+  background: #fff;
+  border-radius: 20px;
+  padding: 2rem 1.75rem 1.5rem;
+  text-align: center;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  transform: translateY(18px) scale(0.97);
+  transition: transform 0.28s ease;
+}
+
+.verma-engagement-modal.is-visible .verma-engagement-modal__panel {
+  transform: translateY(0) scale(1);
+}
+
+.verma-engagement-modal__close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.verma-engagement-modal__close:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.verma-engagement-modal__icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ff7f35 0%, #f26612 100%);
+  color: #fff;
+  font-size: 1.35rem;
+  box-shadow: 0 10px 24px rgba(249, 115, 22, 0.28);
+}
+
+.verma-engagement-modal__title {
+  margin: 0 0 0.65rem;
+  color: #0f1f4d;
+  font-size: 1.45rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.verma-engagement-modal__text {
+  margin: 0 0 1.35rem;
+  color: #64748b;
+  font-size: 0.98rem;
+  line-height: 1.55;
+}
+
+.verma-engagement-modal__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.verma-engagement-modal__actions .verma-engagement-modal__btn,
+.verma-engagement-modal__actions a.verma-engagement-modal__btn,
+.verma-engagement-modal__actions button.verma-engagement-modal__btn {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  justify-content: center;
+  align-items: center;
+  min-height: 2.85rem;
+  font-family: inherit;
+}
+
+.verma-engagement-modal__actions .cta-button.secondary {
+  background: #fff;
+  color: #1e3a8a;
+  border: 2px solid #1e3a8a;
+}
+
+.verma-engagement-modal__actions .cta-button.secondary:hover {
+  background: #eff6ff;
+  color: #1e3a8a;
+  border-color: #1e3a8a;
+}
+
+button.verma-engagement-modal__btn {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.verma-engagement-modal__later {
+  margin-top: 0.85rem;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.verma-engagement-modal__later:hover {
+  color: #334155;
+}
+
+.verma-engagement-modal__handle {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .verma-engagement-modal {
+    align-items: flex-end;
+    justify-content: stretch;
+    padding: 0;
+  }
+
+  .verma-engagement-modal__backdrop {
+    backdrop-filter: none;
+  }
+
+  .verma-engagement-modal__panel {
+    width: 100%;
+    max-width: none;
+    max-height: min(92dvh, 34rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 1.25rem 1.25rem 0 0;
+    padding: 0.35rem 1.15rem calc(1.15rem + env(safe-area-inset-bottom, 0px));
+    transform: translateY(100%);
+    box-shadow: 0 -8px 40px rgba(15, 23, 42, 0.18);
+  }
+
+  .verma-engagement-modal.is-visible .verma-engagement-modal__panel {
+    transform: translateY(0);
+  }
+
+  .verma-engagement-modal__handle {
+    display: block;
+    width: 2.75rem;
+    height: 0.3rem;
+    margin: 0.55rem auto 0.85rem;
+    border-radius: 999px;
+    background: #cbd5e1;
+    flex-shrink: 0;
+  }
+
+  .verma-engagement-modal__icon {
+    width: 2.85rem;
+    height: 2.85rem;
+    margin-bottom: 0.75rem;
+    font-size: 1.15rem;
+  }
+
+  .verma-engagement-modal__title {
+    font-size: 1.22rem;
+    line-height: 1.3;
+    padding: 0 1.5rem;
+  }
+
+  .verma-engagement-modal__text {
+    font-size: 0.92rem;
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    padding: 0 0.15rem;
+  }
+
+  .verma-engagement-modal__actions {
+    gap: 0.65rem;
+  }
+
+  .verma-engagement-modal__actions .verma-engagement-modal__btn,
+  .verma-engagement-modal__actions a.verma-engagement-modal__btn,
+  .verma-engagement-modal__actions button.verma-engagement-modal__btn {
+    min-height: 3rem;
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+    font-size: 1rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .verma-engagement-modal__close {
+    top: 0.55rem;
+    right: 0.55rem;
+    width: 2.35rem;
+    height: 2.35rem;
+    font-size: 1.45rem;
+  }
+
+  .verma-engagement-modal__later {
+    margin-top: 0.75rem;
+    min-height: 2.75rem;
+    touch-action: manipulation;
+  }
+}
+
+@media (max-width: 380px) {
+  .verma-engagement-modal__title {
+    font-size: 1.12rem;
+  }
+
+  .verma-engagement-modal__text {
+    font-size: 0.88rem;
+  }
+
+  .verma-engagement-modal__panel {
+    padding-left: 1rem;
+    padding-right: 1rem;
   }
 }

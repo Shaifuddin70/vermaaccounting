@@ -446,18 +446,7 @@
         </div>
         <div class="col-lg-6">
           <h3>We are One Message Away!</h3>
-          <form id="my-form" action="https://formspree.io/f/xeopqjjr" method="POST">
-
-            <input type="text" name="name" placeholder="Name" required />
-
-            <input type="text" name="phone" placeholder="Phone" required />
-
-            <input type="email" name="email" placeholder="Email" required />
-
-            <textarea name="message" rows="4" placeholder="Message" required></textarea>
-            <button id="my-form-button">Submit</button>
-            <p id="my-form-status"></p>
-          </form>
+          <?php $includeService = false; include __DIR__ . '/components/site-inquiry-form.php'; ?>
         </div>
       </div>
     </div>

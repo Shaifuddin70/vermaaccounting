@@ -5416,6 +5416,42 @@ body.fm-open {
   white-space: nowrap;
 }
 
+.clients-col-id,
+.client-id-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--admin-secondary);
+  white-space: nowrap;
+}
+
+.client-id-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  background: var(--admin-secondary-container, #eff6ff);
+  border: 1px solid #bfdbfe;
+  color: var(--admin-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.submissions-form-tabs {
+  margin-bottom: 0.75rem;
+}
+
+.submissions-form-tabs + .rs-page .rs-tabs,
+.submissions-form-tabs + .submissions-year-filter + .submissions-status-tabs {
+  margin-top: 0;
+}
+
+.submissions-status-tabs {
+  margin-top: 0;
+}
+
 .clients-col-num {
   text-align: center;
   font-weight: 600;

@@ -81,6 +81,8 @@ require_once __DIR__ . '/InvoiceRepository.php';
 require_once __DIR__ . '/invoice_helpers.php';
 require_once __DIR__ . '/InvoicePdf.php';
 require_once __DIR__ . '/invoice_emails.php';
+require_once __DIR__ . '/contact_form.php';
+require_once __DIR__ . '/document_submission_form.php';
 
 ensure_data_dirs();
 

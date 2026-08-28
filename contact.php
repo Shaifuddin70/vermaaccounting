@@ -1,196 +1,112 @@
 <?php include 'components/header.php'; ?>
 
-<!-- Main Content -->
-<main class="main-content">
-  <!-- Page Header -->
-  <section class="page-header">
+<main class="main-content contact-page-main">
+  <section class="contact-hero">
     <div class="container">
-      <h1>Contact Verma Accounting</h1>
-      <p>Ontario tax and accounting support by phone, email, or the form below. Serving Nepean, Ottawa, and clients across Canada.</p>
-    </div>
-    <a class="appointment-button" href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"> <i class="fas fa-calendar-alt"></i>Book an Appointment</a>
-  </section>
-  <section class="cta-appointment-section">
-    <div class="container">
-      <div class="cta-appointment-content">
-        <div class="cta-text justify-content-center">
-          <span class="cta-prefix">Looking for help with</span>
-          <span id="typing-text">Payroll?</span>
+      <div class="contact-hero-inner">
+        <span class="contact-hero-badge">We’re here to help</span>
+        <h1>Contact Verma Accounting</h1>
+        <p>
+          Ontario tax and accounting support by phone, email, or the form below.
+          Serving Nepean, Ottawa, and clients across Canada.
+        </p>
+        <div class="contact-hero-actions">
+          <a href="tel:+16133186478" class="cta-button primary">
+            <i class="fas fa-phone" aria-hidden="true"></i>
+            +1 (613) 318-6478
+          </a>
+          <a
+            href=""
+            class="cta-button secondary"
+            onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;">
+            <i class="fas fa-calendar-alt" aria-hidden="true"></i>
+            Book an appointment
+          </a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Local contact / NAP -->
-  <section class="common-section contact-nap-section">
+  <section class="contact-page">
     <div class="container">
-      <div class="section-header-modern">
-        <h2>Visit, call, or book online</h2>
-        <p>Clear contact details for Verma Accounting &amp; Financial Services in Ontario.</p>
-      </div>
-      <div class="contact-nap-grid">
-        <div class="contact-nap-card">
-          <h3>Phone</h3>
-          <p>
-            <a href="tel:+16133186478">+1 (613) 318-6478</a>
-          </p>
-          <p class="contact-nap-note">Call or WhatsApp for a free consultation.</p>
+      <div class="contact-page-grid">
+        <div class="contact-page-form-card">
+          <div class="contact-page-form-header">
+            <h2>Send us a message</h2>
+            <p class="contact-form-lead">Tell us what you need — we typically reply within one business day.</p>
+          </div>
+          <?php $includeService = true; $withLabels = true; include __DIR__ . '/components/site-inquiry-form.php'; ?>
         </div>
-        <div class="contact-nap-card">
-          <h3>Email</h3>
-          <p>
-            <a href="mailto:info@vermaaccounting.ca">info@vermaaccounting.ca</a>
-          </p>
-          <p class="contact-nap-note">We typically reply within one business day.</p>
-        </div>
-        <div class="contact-nap-card">
-          <h3>Location</h3>
-          <p>
-            <strong>Verma Accounting &amp; Financial Services</strong><br>
-            Les Emmerson Drive<br>
-            Nepean, ON K2J 7L6<br>
-            Serving clients across Ontario and Canada
-          </p>
-        </div>
-        <div class="contact-nap-card">
-          <h3>Business hours</h3>
-          <p>Monday – Sunday<br>9:00 AM – 6:00 PM (Eastern Time)</p>
-          <p class="contact-nap-note">Remote appointments available province-wide.</p>
-        </div>
-      </div>
-      <div class="contact-map-wrap">
-        <iframe
-          title="Verma Accounting — Les Emmerson Drive, Nepean, ON"
-          src="https://maps.google.com/maps?q=Les%20Emmerson%20Drive%2C%20Nepean%2C%20ON%20K2J%207L6&z=15&output=embed"
-          loading="lazy"
-          referrerpolicy="no-referrer-when-downgrade"
-          allowfullscreen></iframe>
-      </div>
-    </div>
-  </section>
 
-  <!-- Contact Form Section -->
-  <section class="contact-form-section">
-    <div class="container">
-      <div class="row align-items-center">
-        <div class="col-lg-6 order-lg-last mb-5 mb-lg-0">
+        <aside class="contact-page-aside">
+          <div class="contact-page-info-list">
+            <a href="tel:+16133186478" class="contact-page-info-item">
+              <span class="contact-page-info-icon" aria-hidden="true"><i class="fas fa-phone"></i></span>
+              <span class="contact-page-info-body">
+                <strong>Phone</strong>
+                <span>+1 (613) 318-6478</span>
+                <small>Call or WhatsApp for a free consultation</small>
+              </span>
+            </a>
 
-          <h3>We are One Message Away!</h3>
-          <form id="my-form" action="https://formspree.io/f/xldadjdq" method="POST">
+            <a href="mailto:info@vermaaccounting.ca" class="contact-page-info-item">
+              <span class="contact-page-info-icon" aria-hidden="true"><i class="fas fa-envelope"></i></span>
+              <span class="contact-page-info-body">
+                <strong>Email</strong>
+                <span>info@vermaaccounting.ca</span>
+                <small>We reply within one business day</small>
+              </span>
+            </a>
 
-            <input type="text" name="name" placeholder="Name" required />
+            <div class="contact-page-info-item contact-page-info-item--static">
+              <span class="contact-page-info-icon" aria-hidden="true"><i class="fas fa-map-marker-alt"></i></span>
+              <span class="contact-page-info-body">
+                <strong>Location</strong>
+                <span>Les Emmerson Drive, Nepean, ON K2J 7L6</span>
+                <small>Serving Ontario and Canada-wide</small>
+              </span>
+            </div>
 
-            <input type="text" name="phone" placeholder="Phone" required />
-
-            <input type="email" name="email" placeholder="Email" required />
-
-            <select name="service" id="service-select" required>
-              <option value="">Select a Service</option>
-              <option value="Bookkeeping">Bookkeeping</option>
-              <option value="Financial Accounting">Financial Accounting</option>
-              <option value="Payroll">Payroll</option>
-              <option value="Personal Tax Preparation">Personal Tax Preparation</option>
-              <option value="Corporate Tax Services">Corporate Tax Services</option>
-              <option value="Business Registration">Business Registration</option>
-              <option value="Other">Other</option>
-            </select>
-
-            <textarea name="message" rows="4" placeholder="Message" required></textarea>
-            <button id="my-form-button">Submit</button>
-            <p id="my-form-status"></p>
-          </form>
-        </div>
-        <div class="col-lg-6">
-          <div class="contact-form-content scroll-animate-left">
-            <h2>Get In Touch</h2>
-            <p class="contact-description">
-              We're here to help with all your tax and accounting needs across Ontario.
-              Contact us today for a consultation by phone, email, or the form.
-            </p>
-            <div class="contact-info">
-              <a href="tel:+16133186478">
-                <div class="contact-item">
-                  <i class="fas fa-phone"></i>
-                  <div>
-                    <h4>Phone</h4>
-                    +1 (613) 318-6478
-                  </div>
-                </div>
-              </a>
-              <a href="mailto:info@vermaaccounting.ca">
-                <div class="contact-item">
-                  <i class="fas fa-envelope"></i>
-                  <div>
-                    <h4>Email</h4>
-                    info@vermaaccounting.ca
-                  </div>
-                </div>
-              </a>
-              <a href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;">
-                <div class="contact-item">
-                  <i class="fas fa-calendar-alt"></i>
-                  <div>
-                    <h4>Book an Appointment</h4>
-                    <span>Schedule a meeting with us</span>
-                  </div>
-                </div>
-              </a>
-              <div class="contact-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <div>
-                  <h4>Service area</h4>
-                  <span>Les Emmerson Drive, Nepean, ON K2J 7L6 · Ottawa · Canada-wide</span>
-                </div>
-              </div>
-              <div class="contact-item">
-                <i class="fas fa-clock"></i>
-                <div>
-                  <h4>Business Hours</h4>
-                  <span>Mon - Sun: 9:00 AM - 6:00 PM</span>
-                </div>
-              </div>
+            <div class="contact-page-info-item contact-page-info-item--static">
+              <span class="contact-page-info-icon" aria-hidden="true"><i class="fas fa-clock"></i></span>
+              <span class="contact-page-info-body">
+                <strong>Business hours</strong>
+                <span>Monday – Sunday, 9:00 AM – 6:00 PM ET</span>
+                <small>Remote appointments available province-wide</small>
+              </span>
             </div>
           </div>
-        </div>
 
+          <div class="contact-page-aside-card">
+            <h3>Prefer to talk first?</h3>
+            <p>Schedule a free 30-minute consultation and we’ll walk through your questions.</p>
+            <a
+              href=""
+              class="cta-button orange"
+              onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;">
+              <i class="fas fa-calendar-check" aria-hidden="true"></i>
+              Book on Calendly
+            </a>
+          </div>
+        </aside>
+      </div>
+
+      <div class="contact-page-map">
+        <div class="contact-page-map-header">
+          <h2>Find us</h2>
+          <p>Verma Accounting &amp; Financial Services — Les Emmerson Drive, Nepean, ON</p>
+        </div>
+        <div class="contact-map-wrap">
+          <iframe
+            title="Verma Accounting — Les Emmerson Drive, Nepean, ON"
+            src="https://maps.google.com/maps?q=Les%20Emmerson%20Drive%2C%20Nepean%2C%20ON%20K2J%207L6&z=15&output=embed"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen></iframe>
+        </div>
       </div>
     </div>
   </section>
 </main>
 
 <?php include 'components/footer.php'; ?>
-
-<script>
-  // Scroll Animation System
-  const observerOptions = {
-    threshold: 0.1,
-    rootMargin: '0px 0px -50px 0px'
-  };
-
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('animate-in');
-        // Stop observing once animated
-        observer.unobserve(entry.target);
-      }
-    });
-  }, observerOptions);
-
-  // Initialize scroll animations when DOM is loaded
-  document.addEventListener('DOMContentLoaded', function() {
-    // Observe all elements with scroll animation classes
-    const animatedElements = document.querySelectorAll('.scroll-animate, .scroll-animate-left, .scroll-animate-right, .scroll-animate-scale');
-    animatedElements.forEach(el => {
-      observer.observe(el);
-    });
-
-    // Add stagger effect to business hours cards
-    const hoursCards = document.querySelectorAll('.hours-card');
-    hoursCards.forEach((card, index) => {
-      if (index > 0) {
-        card.classList.add(`scroll-animate-delay-${Math.min(index, 5)}`);
-      }
-    });
-  });
-</script>
