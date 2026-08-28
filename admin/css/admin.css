@@ -39,6 +39,11 @@
 
   /* Shared height: sidebar logo row + page top bar */
   --admin-bar-height: calc(1.25rem + 38px + 1rem);
+
+  /* Table spacing inside cards */
+  --admin-table-inset: 1.25rem;
+  --admin-table-cell-x: 1rem;
+  --admin-table-cell-y: 0.85rem;
 }
 
 * { box-sizing: border-box; }
@@ -437,10 +442,11 @@ body.admin-body {
   padding: 1.25rem;
 }
 
-/* Full-bleed tables: keep outer padding off the card, but pad titles/copy. */
+/* Full-bleed table cards: zero outer padding; inset content separately */
 .admin-card:has(> .admin-table),
 .admin-card:has(> table.admin-table),
-.admin-card:has(> .admin-table-toolbar) {
+.admin-card:has(> .admin-table-toolbar),
+.admin-card:has(> .admin-table-wrap) {
   padding: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -448,7 +454,8 @@ body.admin-body {
 
 .admin-card:has(> .admin-table) > .admin-card-title,
 .admin-card:has(> table.admin-table) > .admin-card-title,
-.admin-card:has(> .admin-table-toolbar) > .admin-card-title {
+.admin-card:has(> .admin-table-toolbar) > .admin-card-title,
+.admin-card:has(> .admin-table-wrap) > .admin-card-title {
   padding: 1.25rem 1.25rem 0.75rem;
   margin: 0;
 }
@@ -460,20 +467,62 @@ body.admin-body {
 .admin-card:has(> .admin-table) > .admin-note,
 .admin-card:has(> table.admin-table) > .admin-note,
 .admin-card:has(> .admin-table) > ul,
-.admin-card:has(> table.admin-table) > ul {
-  margin-left: 1.25rem;
-  margin-right: 1.25rem;
+.admin-card:has(> table.admin-table) > ul,
+.admin-card:has(> .admin-table-wrap) > p,
+.admin-card:has(> .admin-table-wrap) > .admin-field-hint,
+.admin-card:has(> .admin-table-wrap) > .admin-note,
+.admin-card:has(> .admin-table-wrap) > ul,
+.admin-card:has(> .admin-table-wrap) > .clients-import-guide-intro {
+  margin-left: var(--admin-table-inset);
+  margin-right: var(--admin-table-inset);
 }
 
 .admin-card:has(> .admin-table) > p:first-child,
-.admin-card:has(> table.admin-table) > p:first-child {
+.admin-card:has(> table.admin-table) > p:first-child,
+.admin-card:has(> .admin-table-wrap) > p:first-child {
   margin-top: 1.25rem;
 }
 
 .admin-card > .admin-table-wrap {
-  margin: 0.85rem 0 1rem;
+  padding: 0 var(--admin-table-inset) 1.25rem;
+  margin: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+.admin-card > .admin-table-toolbar {
+  padding: 0.85rem var(--admin-table-inset);
+  border-bottom: 1px solid var(--admin-border);
+  background: #fff;
+}
+
+.admin-card > .admin-table-toolbar + .admin-table-wrap {
+  padding-top: 0;
+}
+
+.admin-card > .admin-table-wrap:first-child {
+  padding-top: 0.85rem;
+}
+
+.admin-card > .admin-table-wrap:has(+ .admin-pagination-bar--nav) {
+  padding-bottom: 0;
+}
+
+.admin-card > .admin-pagination-bar--nav {
+  margin-top: 0;
+  padding: 0.85rem var(--admin-table-inset) 1.15rem;
+  border-top: 1px solid var(--admin-border);
+  background: var(--admin-surface-variant);
+}
+
+.admin-card > .admin-pagination-bar--nav:has(.admin-pagination-info--solo) {
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.admin-card > .admin-table:has(+ .admin-pagination-bar--nav) tbody tr:last-child td,
+.admin-card > table.admin-table:has(+ .admin-pagination-bar--nav) tbody tr:last-child td {
+  padding-bottom: var(--admin-table-cell-y);
 }
 
 .admin-btn {
@@ -595,10 +644,53 @@ body.admin-body {
 .admin-table th,
 .admin-table td {
   text-align: left;
-  padding: 0.85rem 1rem;
+  padding: var(--admin-table-cell-y) var(--admin-table-cell-x);
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
   font-size: 0.9rem;
+}
+
+.admin-card > .admin-table th:first-child,
+.admin-card > .admin-table td:first-child,
+.admin-card > table.admin-table th:first-child,
+.admin-card > table.admin-table td:first-child {
+  padding-left: var(--admin-table-inset);
+}
+
+.admin-card > .admin-table th:last-child,
+.admin-card > .admin-table td:last-child,
+.admin-card > table.admin-table th:last-child,
+.admin-card > table.admin-table td:last-child {
+  padding-right: var(--admin-table-inset);
+}
+
+.admin-card > .admin-table thead th,
+.admin-card > table.admin-table thead th {
+  padding-top: 0.95rem;
+}
+
+.admin-card > .admin-table tbody tr:last-child td,
+.admin-card > table.admin-table tbody tr:last-child td {
+  padding-bottom: 1.1rem;
+}
+
+.admin-card > .admin-table-wrap .admin-table th:first-child,
+.admin-card > .admin-table-wrap .admin-table td:first-child {
+  padding-left: var(--admin-table-cell-x);
+}
+
+.admin-card > .admin-table-wrap .admin-table th:last-child,
+.admin-card > .admin-table-wrap .admin-table td:last-child {
+  padding-right: var(--admin-table-cell-x);
+}
+
+.admin-table-empty-cell {
+  padding: 0 !important;
+  border-bottom: none !important;
+}
+
+.admin-table-empty-cell .admin-empty-state {
+  padding: 2.75rem var(--admin-table-inset);
 }
 
 .admin-table tbody tr:last-child td {
@@ -1060,7 +1152,8 @@ body.admin-body {
 
 .admin-grid-2 > .admin-card:has(> .admin-table),
 .admin-grid-2 > .admin-card:has(> table.admin-table),
-.admin-grid-2 > .admin-card:has(> .admin-table-toolbar) {
+.admin-grid-2 > .admin-card:has(> .admin-table-toolbar),
+.admin-grid-2 > .admin-card:has(> .admin-table-wrap) {
   padding: 0;
 }
 
@@ -1570,7 +1663,11 @@ body.admin-body {
 }
 
 .campaigns-list-card {
-  padding-top: 0.25rem;
+  padding: 0;
+}
+
+.campaigns-list-card .admin-table-wrap {
+  padding-bottom: 1.25rem;
 }
 
 .campaigns-list-card .admin-table-wrap {
@@ -3272,7 +3369,7 @@ body.admin-body {
 
 .md-dash-card .admin-table-wrap,
 .md-dash-card .md-empty {
-  padding: 0 1.15rem 1.15rem;
+  padding: 0 var(--admin-table-inset) 1.25rem;
 }
 
 .md-attention-list,
@@ -3856,6 +3953,7 @@ body.admin-body {
 /* Table */
 .md-table-wrap {
   overflow-x: auto;
+  padding: 0 var(--admin-table-inset) 1.25rem;
 }
 
 .md-table {
@@ -4198,12 +4296,12 @@ a.md-form-slug:hover { color: var(--admin-primary); }
 }
 
 .rs-card {
-  padding: 0.25rem 0 0;
+  padding: 0;
   overflow: hidden;
 }
 
 .rs-card .admin-table-wrap {
-  padding: 0 0.25rem;
+  padding: 0 var(--admin-table-inset) 1.25rem;
 }
 
 .rs-card .admin-empty-state {
@@ -5481,9 +5579,17 @@ body.fm-open {
 }
 
 .clients-pagination,
-.files-pagination,
-.admin-pagination-bar--nav {
+.files-pagination {
   margin-top: 0.75rem;
+}
+
+.admin-card + .admin-pagination-bar--nav {
+  margin-top: 0.75rem;
+  padding: 0.85rem var(--admin-table-inset);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: var(--admin-elevation-1);
 }
 
 .admin-table-toolbar {
@@ -5657,6 +5763,7 @@ a.admin-pagination-num:hover {
 .admin-pagination-info {
   font-size: 0.875rem;
   color: var(--admin-muted);
+  white-space: nowrap;
 }
 
 .admin-pagination-info--solo {
@@ -5680,7 +5787,8 @@ a.admin-pagination-num:hover {
 }
 
 .clients-import-guide-card .admin-table-wrap {
-  margin: 0 0 1rem;
+  margin: 0 var(--admin-table-inset) 1.25rem;
+  padding: 0;
   border: 1px solid var(--admin-border);
   border-radius: 10px;
   overflow: hidden;
@@ -5766,21 +5874,13 @@ a.admin-pagination-num:hover {
   display: none;
 }
 
-
-.admin-card:has(> .admin-table),
-.admin-card:has(> table.admin-table) {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
-.admin-table-wrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  margin: 0 -0.25rem;
-  padding: 0 0.25rem;
-}
-
 @media (max-width: 900px) {
+  :root {
+    --admin-table-inset: 1rem;
+    --admin-table-cell-x: 0.75rem;
+    --admin-table-cell-y: 0.65rem;
+  }
+
   .admin-page-topbar {
     margin: 0 -1rem;
     padding: max(0.5rem, env(safe-area-inset-top)) 1rem 0.65rem;
@@ -6070,8 +6170,17 @@ a.admin-pagination-num:hover {
 
   .admin-table th,
   .admin-table td {
-    padding: 0.65rem 0.75rem;
     font-size: 0.85rem;
+  }
+
+  .admin-card > .admin-table-wrap .admin-table th:first-child,
+  .admin-card > .admin-table-wrap .admin-table td:first-child {
+    padding-left: var(--admin-table-cell-x);
+  }
+
+  .admin-card > .admin-table-wrap .admin-table th:last-child,
+  .admin-card > .admin-table-wrap .admin-table td:last-child {
+    padding-right: var(--admin-table-cell-x);
   }
 
   .admin-table-actions {
@@ -7040,7 +7149,7 @@ a.admin-pagination-num:hover {
 
 .email-tracker-empty {
   margin: 0;
-  padding: 1.25rem;
+  padding: 1.25rem var(--admin-table-inset);
 }
 
 .email-tracker-filters {
@@ -7093,7 +7202,7 @@ a.admin-pagination-num:hover {
 
 .email-tracker-table-wrap {
   margin: 0;
-  padding: 0;
+  padding: 0 var(--admin-table-inset) 1.25rem;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }

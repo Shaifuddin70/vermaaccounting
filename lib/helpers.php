@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/error_handling.php';
+verma_configure_error_handling();
+
 function e(?string $value): string
 {
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
@@ -264,13 +267,106 @@ function brand_logo_email_html(): string
 
 function app_environment(): string
 {
-    $env = app_config()['environment'] ?? 'production';
-    return in_array($env, ['local', 'production'], true) ? $env : 'production';
+    static $resolved = null;
+    if ($resolved !== null) {
+        return $resolved;
+    }
+
+    if (function_exists('app_config')) {
+        $env = app_config()['environment'] ?? 'production';
+    } else {
+        require_once __DIR__ . '/config_env.php';
+        $env = verma_resolve_environment('auto');
+    }
+
+    $resolved = in_array($env, ['local', 'production'], true) ? $env : 'production';
+
+    return $resolved;
 }
 
 function app_is_local(): bool
 {
     return app_environment() === 'local';
+}
+
+function app_public_error_message(string $fallback = 'Something went wrong. Please try again.'): string
+{
+    return app_is_local() ? $fallback : verma_public_error_message();
+}
+
+function app_safe_error_message(Throwable|string|null $error, string $fallback = 'Something went wrong. Please try again.'): string
+{
+    if ($error instanceof Throwable) {
+        error_log($error->getMessage() . ' in ' . $error->getFile() . ':' . $error->getLine());
+    } elseif (is_string($error) && $error !== '') {
+        error_log($error);
+    }
+
+    if (app_is_local()) {
+        if ($error instanceof Throwable) {
+            return $error->getMessage();
+        }
+
+        return (string) $error;
+    }
+
+    return $fallback;
+}
+
+function app_database_connection_error(PDOException $e): string
+{
+    $hint = $e->getMessage();
+
+    if (!app_is_local()) {
+        return verma_public_error_message();
+    }
+
+    $msg = 'Database connection failed. Check database settings in config.local.php.';
+    if (str_contains($hint, '2002') || str_contains($hint, 'Connection refused')) {
+        $msg .= ' (Cannot reach MySQL — use MAMP MySQL port 8889, not web port 8888.)';
+    } elseif (str_contains($hint, '1049')) {
+        $msg .= ' (Database does not exist — create verma_forms in phpMyAdmin.)';
+    } elseif (str_contains($hint, '1045')) {
+        $msg .= ' (Wrong username or password.)';
+    } elseif (str_contains($hint, '2013') || str_contains($hint, 'handshake')) {
+        $env = app_environment();
+        $msg .= ' (Cron may be using the wrong environment — current: ' . $env . '. On hosting, use VERMA_ENV=production in the cron command.)';
+    }
+
+    return $msg . ' [' . $hint . ']';
+}
+
+function app_strip_html_comments(string $html): string
+{
+    if (app_is_local()) {
+        return $html;
+    }
+
+    return preg_replace('/<!--(?!\s*\[if).*?-->/s', '', $html) ?? $html;
+}
+
+function app_begin_output_filter(): void
+{
+    if (app_is_local() || !empty($GLOBALS['app_output_filter_active'])) {
+        return;
+    }
+
+    ob_start(static function (string $buffer): string {
+        return app_strip_html_comments($buffer);
+    });
+    $GLOBALS['app_output_filter_active'] = true;
+}
+
+function app_end_output_filter(): void
+{
+    if (app_is_local() || empty($GLOBALS['app_output_filter_active'])) {
+        return;
+    }
+
+    if (ob_get_level() > 0) {
+        ob_end_flush();
+    }
+    $GLOBALS['app_output_filter_active'] = false;
 }
 
 function field_types(): array

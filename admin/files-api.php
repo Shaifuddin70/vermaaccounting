@@ -109,7 +109,7 @@ if ($action === 'create_folder') {
     try {
         $folderId = $folderRepo->create($parentId, $name);
     } catch (RuntimeException $e) {
-        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+        json_response(['ok' => false, 'error' => app_safe_error_message($e)], 422);
     }
 
     $folder = $folderRepo->find($folderId);
@@ -139,7 +139,7 @@ if ($action === 'rename_folder') {
     try {
         $folder = $folderRepo->rename($folderId, $name);
     } catch (RuntimeException $e) {
-        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+        json_response(['ok' => false, 'error' => app_safe_error_message($e)], 422);
     }
     if (!$folder) {
         json_response(['ok' => false, 'error' => 'Folder not found.'], 404);
@@ -171,7 +171,7 @@ if ($action === 'delete_folder') {
     try {
         $folderRepo->delete($folderId);
     } catch (RuntimeException $e) {
-        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+        json_response(['ok' => false, 'error' => app_safe_error_message($e)], 422);
     }
 
     ActivityLog::record('folder.deleted', 'folder', $folderId, [
@@ -193,7 +193,7 @@ if ($action === 'move_files') {
     try {
         $moved = $uploadRepo->moveFilesToFolder($rawIds, $folderId);
     } catch (RuntimeException $e) {
-        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+        json_response(['ok' => false, 'error' => app_safe_error_message($e)], 422);
     }
 
     ActivityLog::record('file.moved', 'folder', $folderId, ['count' => $moved]);
@@ -210,7 +210,7 @@ if ($action === 'move_folder') {
     try {
         $folder = $folderRepo->move($folderId, $parentId);
     } catch (RuntimeException $e) {
-        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+        json_response(['ok' => false, 'error' => app_safe_error_message($e)], 422);
     }
     if (!$folder) {
         json_response(['ok' => false, 'error' => 'Folder not found.'], 404);
@@ -298,7 +298,7 @@ if ($action === 'upload') {
                 $errors[] = ($fileUpload['name'] ?: 'File') . ' could not be uploaded.';
             }
         } catch (RuntimeException $e) {
-            $errors[] = ($fileUpload['name'] ?: 'File') . ': ' . $e->getMessage();
+            $errors[] = ($fileUpload['name'] ?: 'File') . ': ' . app_safe_error_message($e, 'Upload failed.');
         }
     }
 

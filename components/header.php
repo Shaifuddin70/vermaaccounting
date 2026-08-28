@@ -3,6 +3,7 @@ if (!function_exists('asset')) {
   require_once __DIR__ . '/../lib/helpers.php';
 }
 require_once __DIR__ . '/../lib/seo.php';
+app_begin_output_filter();
 
 $siteCta = site_cta_resolve();
 

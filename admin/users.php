@@ -72,7 +72,7 @@ require __DIR__ . '/includes/layout-start.php';
     <tbody id="users-tbody">
       <?php if (!$users): ?>
         <tr id="empty-row">
-          <td colspan="6" style="padding:0;">
+          <td colspan="6" class="admin-table-empty-cell">
             <div class="admin-empty-state">
               <span class="admin-empty-state-icon" aria-hidden="true">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
@@ -133,13 +133,14 @@ require __DIR__ . '/includes/layout-start.php';
       <?php endif; ?>
     </tbody>
   </table>
+  <?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
 </div>
 
-<?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
-
+<?php if (app_is_local()): ?>
 <p class="admin-note">
   The super-admin account configured in <code>config.local.php</code> always has full access and is not listed here.
 </p>
+<?php endif; ?>
 
 <!-- ======================== USER MODAL ======================== -->
 <div id="user-modal" class="umodal-backdrop" aria-modal="true" role="dialog" aria-labelledby="umodal-title" aria-hidden="true">

@@ -36,7 +36,7 @@ require __DIR__ . '/includes/layout-start.php';
     <form method="post" action="/admin/blog-action" style="display:inline;">
       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
       <button type="submit" name="action" value="sync" class="admin-btn admin-btn-primary"
-        <?= $client->isConfigured() ? '' : 'disabled title="Add uplift_ai.api_token in config.local.php"' ?>>
+        <?= $client->isConfigured() ? '' : 'disabled title="' . e(app_is_local() ? 'Add uplift_ai.api_token in config.local.php' : 'Uplift AI is not configured.') . '"' ?>>
         Sync from Uplift AI
       </button>
     </form>

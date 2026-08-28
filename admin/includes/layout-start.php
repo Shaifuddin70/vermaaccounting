@@ -8,6 +8,9 @@ $adminToastMessages = array_merge(
     admin_pull_toast_messages(),
     $adminToastMessages ?? []
 );
+if (function_exists('app_begin_output_filter')) {
+    app_begin_output_filter();
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -19,7 +22,7 @@ $adminToastMessages = array_merge(
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/css/admin.css?v=85">
+  <link rel="stylesheet" href="/admin/css/admin.css?v=87">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.css">
 </head>
 <body class="admin-body">

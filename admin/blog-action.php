@@ -68,7 +68,7 @@ try {
 
     $_SESSION['flash_error'] = 'Unknown action.';
 } catch (Throwable $e) {
-    $_SESSION['flash_error'] = $e->getMessage();
+    $_SESSION['flash_error'] = app_safe_error_message($e, 'Could not complete the blog action.');
 }
 
 header('Location: /admin/blogs');

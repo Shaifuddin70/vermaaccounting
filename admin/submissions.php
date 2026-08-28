@@ -246,9 +246,8 @@ require __DIR__ . '/includes/layout-start.php';
         <?php endforeach; ?>
       </tbody>
     </table>
+    <?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
   <?php endif; ?>
 </div>
-
-<?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
 
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

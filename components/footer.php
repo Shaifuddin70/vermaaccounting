@@ -545,6 +545,7 @@ if (!function_exists('asset')) {
  <script src="<?= asset('components/js/navigation.js') ?>?v=70"></script>
  <script src="<?= asset('components/js/engagement-modal.js') ?>?v=2"></script>
  <script src="https://elfsightcdn.com/platform.js" async></script>
+<?php app_end_output_filter(); ?>
  </body>
 
  </html>

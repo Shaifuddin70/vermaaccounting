@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/error_handling.php';
+verma_configure_error_handling();
+
 const PROJECT_ROOT = __DIR__ . '/..';
 const DATA_DIR = PROJECT_ROOT . '/data';
 const UPLOADS_DIR = DATA_DIR . '/uploads';
@@ -89,20 +92,9 @@ ensure_data_dirs();
 try {
     Database::instance()->migrate();
 } catch (PDOException $e) {
-    $hint = $e->getMessage();
-    $msg = 'Database connection failed. Check database settings in config.local.php.';
-    if (str_contains($hint, '2002') || str_contains($hint, 'Connection refused')) {
-        $msg .= ' (Cannot reach MySQL — use MAMP MySQL port 8889, not web port 8888.)';
-    } elseif (str_contains($hint, '1049')) {
-        $msg .= ' (Database does not exist — create verma_forms in phpMyAdmin.)';
-    } elseif (str_contains($hint, '1045')) {
-        $msg .= ' (Wrong username or password.)';
-    } elseif (str_contains($hint, '2013') || str_contains($hint, 'handshake')) {
-        $env = function_exists('app_environment') ? app_environment() : 'unknown';
-        $msg .= ' (Cron may be using the wrong environment — current: ' . $env . '. On hosting, use VERMA_ENV=production in the cron command.)';
-    }
+    $msg = app_database_connection_error($e);
     if (PHP_SAPI === 'cli') {
-        fwrite(STDERR, $msg . ' [' . $hint . ']' . PHP_EOL);
+        fwrite(STDERR, $msg . PHP_EOL);
         exit(1);
     }
     http_response_code(500);

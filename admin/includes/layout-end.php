@@ -20,5 +20,6 @@
   <?php if (!empty($loadEmailTemplateImage)): ?>
   <script src="/admin/js/email-template-image.js?v=5" defer></script>
   <?php endif; ?>
+<?php app_end_output_filter(); ?>
 </body>
 </html>

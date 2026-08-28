@@ -28,7 +28,7 @@ if ($action === 'upload_template_image') {
     try {
         $asset = canada_holiday_email_image_upload($name, $_FILES['image']);
     } catch (RuntimeException $e) {
-        json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+        json_response(['ok' => false, 'error' => app_safe_error_message($e)], 422);
     }
 
     ActivityLog::record('email_template_image.uploaded', 'email_template_image', 0, [
@@ -56,7 +56,7 @@ if (empty($_FILES['image'])) {
 try {
     $asset = email_asset_upload($_FILES['image']);
 } catch (RuntimeException $e) {
-    json_response(['ok' => false, 'error' => $e->getMessage()], 422);
+    json_response(['ok' => false, 'error' => app_safe_error_message($e)], 422);
 }
 
 ActivityLog::record('email_asset.uploaded', 'email_asset', 0, [

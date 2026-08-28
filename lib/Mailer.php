@@ -113,7 +113,9 @@ final class Mailer
         $params = '-f ' . escapeshellarg($this->fromEmail);
         $ok = @mail($to, $subject, $body, $headers, $params);
         if (!$ok) {
-            $this->lastError = 'PHP mail() failed. On shared hosting this usually only works when the site runs on the server, not from local MAMP.';
+            $this->lastError = app_is_local()
+                ? 'PHP mail() failed. On shared hosting this usually only works when the site runs on the server, not from local MAMP.'
+                : 'Email could not be sent. Please try again later.';
         }
         return $ok;
     }
@@ -133,9 +135,10 @@ final class Mailer
         $remote = $encryption === 'ssl' ? 'ssl://' . $host : $host;
         $socket = @fsockopen($remote, $port, $errno, $errstr, 20);
         if (!$socket) {
-            $this->lastError = 'Could not connect to SMTP server ' . $host . ':' . $port . ' — ' . $errstr
+            $detail = 'Could not connect to SMTP server ' . $host . ':' . $port . ' — ' . $errstr
                 . '. Add a DNS A record for mail.yourdomain.ca or use the server hostname from hosting.';
-            error_log('Mailer SMTP connect failed: ' . $this->lastError);
+            $this->lastError = app_safe_error_message($detail, 'Could not connect to the mail server. Please try again later.');
+            error_log('Mailer SMTP connect failed: ' . $detail);
             return false;
         }
 
@@ -173,8 +176,8 @@ final class Mailer
             fclose($socket);
             return true;
         } catch (Throwable $e) {
-            $this->lastError = $e->getMessage();
-            error_log('Mailer SMTP error: ' . $this->lastError);
+            $this->lastError = app_safe_error_message($e, 'Email could not be sent. Please try again later.');
+            error_log('Mailer SMTP error: ' . $e->getMessage());
             fclose($socket);
             return false;
         }

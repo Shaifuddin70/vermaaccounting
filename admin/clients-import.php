@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         ]);
                     }
                 } catch (Throwable $e) {
-                    $errors[] = $e->getMessage();
+                    $errors[] = app_safe_error_message($e, 'Could not import this client.');
                 }
             }
         }

@@ -75,7 +75,7 @@ try {
         }
     }
 } catch (Throwable $e) {
-    $_SESSION['profile_errors'] = [$e->getMessage()];
+    $_SESSION['profile_errors'] = [app_safe_error_message($e, 'Could not save your profile.')];
     $_SESSION['profile_old'] = compact('name', 'email');
     header('Location: /admin/profile');
     exit;
