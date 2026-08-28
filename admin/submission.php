@@ -36,6 +36,7 @@ require __DIR__ . '/includes/layout-start.php';
   <h1>Submission #<?= $submissionId ?></h1>
   <div class="admin-header-actions">
     <?php if (!$editMode && Auth::userRole() === 'admin'): ?>
+      <a href="<?= e(invoice_edit_url_from_submission($submissionId, $formId)) ?>" class="admin-btn admin-btn-secondary">Create invoice</a>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>&edit=1" class="admin-btn admin-btn-primary">Edit</a>
     <?php else: ?>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>

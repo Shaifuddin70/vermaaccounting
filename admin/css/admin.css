@@ -6216,6 +6216,10 @@ a.admin-pagination-num:hover {
   font-size: 0.92rem;
 }
 
+.invoice-totals-row[hidden] {
+  display: none !important;
+}
+
 .invoice-totals-row--total {
   margin-top: 0.35rem;
   padding-top: 0.55rem;

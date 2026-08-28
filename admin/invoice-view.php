@@ -19,20 +19,14 @@ $items = $repo->itemsForInvoice($id);
 $company = invoice_company_settings();
 $billLines = invoice_bill_to_lines($invoice);
 $currency = (string) ($invoice['currency'] ?? 'CAD');
-$discountPercent = (float) ($invoice['discount_percent'] ?? 0);
+$discountState = invoice_discount_state($invoice);
 $subtotal = (float) ($invoice['subtotal'] ?? 0);
-$discountAmount = (float) ($invoice['discount_amount'] ?? 0);
 $total = (float) ($invoice['total'] ?? 0);
 $status = (string) ($invoice['status'] ?? 'draft');
 $csrf = Auth::csrfToken();
 $print = isset($_GET['print']);
 $mail = mail_config();
 $mailEnabled = !empty($mail['enabled']);
-
-$discountLabel = rtrim(rtrim(number_format($discountPercent, 4, '.', ''), '0'), '.');
-if ($discountLabel === '') {
-    $discountLabel = '0';
-}
 
 $sendOld = $_SESSION['invoice_send_old'] ?? [];
 unset($_SESSION['invoice_send_old']);

@@ -84,7 +84,11 @@ final class InvoiceRepository
     public function create(array $data, array $items): int
     {
         $now = now_iso();
-        $totals = invoice_calculate_totals($items, (float) ($data['discount_percent'] ?? 0));
+        $totals = invoice_calculate_totals(
+            $items,
+            (float) ($data['discount_percent'] ?? 0),
+            (float) ($data['discount_flat'] ?? 0)
+        );
 
         $this->db->beginTransaction();
         try {
@@ -93,11 +97,12 @@ final class InvoiceRepository
                     invoice_number, client_id,
                     bill_to_company, bill_to_name, bill_to_street, bill_to_city,
                     bill_to_province, bill_to_postal, bill_to_country,
-                    invoice_date, due_date, currency, discount_percent,
+                    invoice_date, due_date, currency, discount_percent, discount_flat,
+                    discount_percent_label, discount_flat_label,
                     subtotal, discount_amount, total, notes, status,
                     created_by_user_id, created_by_name, created_at, updated_at
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
             ');
             $stmt->execute([
@@ -114,6 +119,9 @@ final class InvoiceRepository
                 (string) ($data['due_date'] ?? date('Y-m-d')),
                 (string) ($data['currency'] ?? 'CAD'),
                 invoice_percent((float) ($data['discount_percent'] ?? 0)),
+                invoice_money(max(0, (float) ($data['discount_flat'] ?? 0))),
+                invoice_sanitize_discount_label((string) ($data['discount_percent_label'] ?? '')) ?: null,
+                invoice_sanitize_discount_label((string) ($data['discount_flat_label'] ?? '')) ?: null,
                 $totals['subtotal'],
                 $totals['discount_amount'],
                 $totals['total'],
@@ -140,7 +148,11 @@ final class InvoiceRepository
      */
     public function update(int $id, array $data, array $items): void
     {
-        $totals = invoice_calculate_totals($items, (float) ($data['discount_percent'] ?? 0));
+        $totals = invoice_calculate_totals(
+            $items,
+            (float) ($data['discount_percent'] ?? 0),
+            (float) ($data['discount_flat'] ?? 0)
+        );
 
         $this->db->beginTransaction();
         try {
@@ -159,6 +171,9 @@ final class InvoiceRepository
                     due_date = ?,
                     currency = ?,
                     discount_percent = ?,
+                    discount_flat = ?,
+                    discount_percent_label = ?,
+                    discount_flat_label = ?,
                     subtotal = ?,
                     discount_amount = ?,
                     total = ?,
@@ -181,6 +196,9 @@ final class InvoiceRepository
                 (string) ($data['due_date'] ?? date('Y-m-d')),
                 (string) ($data['currency'] ?? 'CAD'),
                 invoice_percent((float) ($data['discount_percent'] ?? 0)),
+                invoice_money(max(0, (float) ($data['discount_flat'] ?? 0))),
+                invoice_sanitize_discount_label((string) ($data['discount_percent_label'] ?? '')) ?: null,
+                invoice_sanitize_discount_label((string) ($data['discount_flat_label'] ?? '')) ?: null,
                 $totals['subtotal'],
                 $totals['discount_amount'],
                 $totals['total'],

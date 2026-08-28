@@ -219,6 +219,9 @@ require __DIR__ . '/includes/layout-start.php';
             <?php endforeach; ?>
             <td class="admin-table-actions">
               <a href="/admin/submission?id=<?= (int) $sub['id'] ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
+              <?php if (Auth::userRole() === 'admin'): ?>
+                <a href="<?= e(invoice_edit_url_from_submission((int) $sub['id'], $formId)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Invoice</a>
+              <?php endif; ?>
               <?php if ($status === 'pending'): ?>
                 <form method="post" action="/admin/submission-status" class="inline-form">
                   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">

@@ -292,6 +292,9 @@ require __DIR__ . '/includes/layout-start.php';
                 </td>
                 <td class="admin-table-actions">
                   <a href="/admin/submission?id=<?= $sid ?>&form_id=<?= $fid ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
+                  <?php if ($role === 'admin'): ?>
+                    <a href="<?= e(invoice_edit_url_from_submission($sid, $fid)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Invoice</a>
+                  <?php endif; ?>
                   <?php if ($status === 'pending' && $role !== 'partner'): ?>
                     <form method="post" action="/admin/submission-status" class="inline-form">
                       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">

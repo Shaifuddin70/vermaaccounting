@@ -410,6 +410,24 @@ final class ClientRepository
         $stmt->execute([$clientId, $submissionId]);
     }
 
+    public function findBySubmissionId(int $submissionId): ?array
+    {
+        if ($submissionId < 1) {
+            return null;
+        }
+        $stmt = $this->db->prepare('
+            SELECT c.*
+            FROM client_submissions cs
+            INNER JOIN clients c ON c.id = cs.client_id
+            WHERE cs.submission_id = ?
+            ORDER BY cs.client_id ASC
+            LIMIT 1
+        ');
+        $stmt->execute([$submissionId]);
+        $row = $stmt->fetch();
+        return $row ?: null;
+    }
+
     public function linkFromSubmission(array $submission, array $schema): void
     {
         $submissionId = (int) ($submission['id'] ?? 0);

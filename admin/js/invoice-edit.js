@@ -14,6 +14,9 @@
   var clientSelectedMeta = document.getElementById('client-selected-meta');
   var clientClear = document.getElementById('client-clear');
   var discountInput = document.getElementById('discount-percent');
+  var discountFlatInput = document.getElementById('discount-flat');
+  var discountPercentLabelInput = document.getElementById('discount-percent-label');
+  var discountFlatLabelInput = document.getElementById('discount-flat-label');
   var linesBody = document.getElementById('invoice-lines-body');
   var linesEmpty = document.getElementById('invoice-lines-empty');
   var lineTemplate = document.getElementById('invoice-line-template');
@@ -21,6 +24,36 @@
   var serviceAddBtn = document.getElementById('service-add-btn');
   var customAddBtn = document.getElementById('custom-add-btn');
   var activeIndex = -1;
+
+  function parseDiscountNumber(input) {
+    if (!input) return 0;
+    var raw = String(input.value || '').trim();
+    if (raw === '' || raw === '-' || raw === '.') return 0;
+    var n = parseFloat(raw);
+    return isFinite(n) && n >= 0 ? n : 0;
+  }
+
+  function normalizeDiscountField(input, maxValue) {
+    if (!input) return;
+    var raw = String(input.value || '').trim();
+    if (raw === '' || raw === '-' || raw === '.') {
+      input.value = '0';
+      return;
+    }
+    var n = parseFloat(raw);
+    if (!isFinite(n) || n < 0) {
+      input.value = '0';
+      return;
+    }
+    if (typeof maxValue === 'number') {
+      n = Math.min(maxValue, n);
+    }
+    if (Math.abs(n) < 0.0000001) {
+      input.value = '0';
+      return;
+    }
+    input.value = String(n);
+  }
 
   function money(n) {
     var v = Math.round((Number(n) || 0) * 100) / 100;
@@ -64,26 +97,48 @@
     });
 
     subtotal = Math.round(subtotal * 100) / 100;
-    var discountPct = Math.max(0, Math.min(100, parseFloat(discountInput && discountInput.value) || 0));
-    var discountAmt = Math.round(subtotal * (discountPct / 100) * 100) / 100;
-    var total = Math.round(Math.max(0, subtotal - discountAmt) * 100) / 100;
+    var discountPct = Math.max(0, Math.min(100, parseDiscountNumber(discountInput)));
+    var discountFlat = parseDiscountNumber(discountFlatInput);
+    var percentAmt = discountPct > 0 ? Math.round(subtotal * (discountPct / 100) * 100) / 100 : 0;
+    var remaining = Math.round(Math.max(0, subtotal - percentAmt) * 100) / 100;
+    var flatAmt = discountFlat > 0 ? Math.round(Math.min(discountFlat, remaining) * 100) / 100 : 0;
+    var totalDiscount = Math.round((percentAmt + flatAmt) * 100) / 100;
+    var total = Math.round(Math.max(0, subtotal - totalDiscount) * 100) / 100;
 
     var elSub = document.getElementById('preview-subtotal');
-    var elDisc = document.getElementById('preview-discount');
     var elTotal = document.getElementById('preview-total');
-    var discRow = document.getElementById('preview-discount-row');
-    var discLabel = document.getElementById('preview-discount-label');
+    var percentRow = document.getElementById('preview-discount-percent-row');
+    var percentLabelEl = document.getElementById('preview-discount-percent-label');
+    var elPercent = document.getElementById('preview-discount-percent');
+    var flatRow = document.getElementById('preview-discount-flat-row');
+    var flatLabelEl = document.getElementById('preview-discount-flat-label');
+    var elFlat = document.getElementById('preview-discount-flat');
+    var customPercentLabel = discountPercentLabelInput ? String(discountPercentLabelInput.value || '').trim() : '';
+    var customFlatLabel = discountFlatLabelInput ? String(discountFlatLabelInput.value || '').trim() : '';
 
     if (elSub) elSub.textContent = money(subtotal);
     if (elTotal) elTotal.textContent = money(total);
-    if (discRow) {
-      if (discountPct > 0) {
-        discRow.hidden = false;
-        if (discLabel) discLabel.textContent = discountPct + '% Discount';
-        if (elDisc) elDisc.textContent = '(' + money(discountAmt) + ')';
-      } else {
-        discRow.hidden = true;
+    if (percentRow) {
+      var showPercent = discountPct > 0 && percentAmt > 0;
+      if (percentLabelEl) {
+        percentLabelEl.textContent = customPercentLabel !== ''
+          ? customPercentLabel
+          : (discountPct + '% discount');
       }
+      if (elPercent) {
+        elPercent.textContent = showPercent ? '(' + money(percentAmt) + ')' : '$0.00';
+      }
+      percentRow.hidden = !showPercent;
+    }
+    if (flatRow) {
+      var showFlat = flatAmt > 0;
+      if (flatLabelEl) {
+        flatLabelEl.textContent = customFlatLabel !== '' ? customFlatLabel : 'Flat discount';
+      }
+      if (elFlat) {
+        elFlat.textContent = showFlat ? '(' + money(flatAmt) + ')' : '$0.00';
+      }
+      flatRow.hidden = !showFlat;
     }
     syncEmptyState();
   }
@@ -275,11 +330,24 @@
     if (
       e.target.classList.contains('invoice-calc-input') ||
       e.target.classList.contains('invoice-line-name') ||
-      e.target === discountInput
+      e.target === discountInput ||
+      e.target === discountFlatInput ||
+      e.target === discountPercentLabelInput ||
+      e.target === discountFlatLabelInput
     ) {
       recalc();
     }
   });
+
+  form.addEventListener('blur', function (e) {
+    if (e.target === discountInput) {
+      normalizeDiscountField(discountInput, 100);
+      recalc();
+    } else if (e.target === discountFlatInput) {
+      normalizeDiscountField(discountFlatInput);
+      recalc();
+    }
+  }, true);
 
   form.addEventListener('click', function (e) {
     var btn = e.target.closest('.invoice-line-remove');
@@ -289,5 +357,7 @@
     recalc();
   });
 
+  normalizeDiscountField(discountInput, 100);
+  normalizeDiscountField(discountFlatInput);
   recalc();
 })();

@@ -175,6 +175,8 @@ final class Database
         $this->ensureFileFoldersTable();
         $this->ensureBlogsTable();
         $this->ensureInvoiceTables();
+        $this->ensureInvoiceDiscountFlatColumn();
+        $this->ensureInvoiceDiscountLabelColumns();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -258,6 +260,8 @@ final class Database
         $this->ensureFileFoldersTable();
         $this->ensureBlogsTable();
         $this->ensureInvoiceTables();
+        $this->ensureInvoiceDiscountFlatColumn();
+        $this->ensureInvoiceDiscountLabelColumns();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -367,6 +371,9 @@ final class Database
                     due_date DATE NOT NULL,
                     currency VARCHAR(8) NOT NULL DEFAULT "CAD",
                     discount_percent DECIMAL(8, 4) NOT NULL DEFAULT 0,
+                    discount_flat DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    discount_percent_label VARCHAR(191) DEFAULT NULL,
+                    discount_flat_label VARCHAR(191) DEFAULT NULL,
                     subtotal DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     discount_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     total DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
@@ -431,6 +438,9 @@ final class Database
                 due_date TEXT NOT NULL,
                 currency TEXT NOT NULL DEFAULT "CAD",
                 discount_percent REAL NOT NULL DEFAULT 0,
+                discount_flat REAL NOT NULL DEFAULT 0,
+                discount_percent_label TEXT,
+                discount_flat_label TEXT,
                 subtotal REAL NOT NULL DEFAULT 0,
                 discount_amount REAL NOT NULL DEFAULT 0,
                 total REAL NOT NULL DEFAULT 0,
@@ -460,6 +470,36 @@ final class Database
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_invoice_services_active ON invoice_services(is_active)');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status)');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_invoice_items_invoice ON invoice_items(invoice_id)');
+    }
+
+    private function ensureInvoiceDiscountFlatColumn(): void
+    {
+        if ($this->columnExists('invoices', 'discount_flat')) {
+            return;
+        }
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('ALTER TABLE invoices ADD COLUMN discount_flat DECIMAL(12, 2) NOT NULL DEFAULT 0.00 AFTER discount_percent');
+            return;
+        }
+        $this->pdo->exec('ALTER TABLE invoices ADD COLUMN discount_flat REAL NOT NULL DEFAULT 0');
+    }
+
+    private function ensureInvoiceDiscountLabelColumns(): void
+    {
+        if (!$this->columnExists('invoices', 'discount_percent_label')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN discount_percent_label VARCHAR(191) DEFAULT NULL AFTER discount_flat');
+            } else {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN discount_percent_label TEXT');
+            }
+        }
+        if (!$this->columnExists('invoices', 'discount_flat_label')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN discount_flat_label VARCHAR(191) DEFAULT NULL AFTER discount_percent_label');
+            } else {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN discount_flat_label TEXT');
+            }
+        }
     }
 
     private function ensurePartnerRole(): void

@@ -51,6 +51,13 @@ unset($li);
 
 $clients = $clientRepo->listForSelect();
 
+$submissionPrefill = null;
+$prefillSubmissionId = isset($_GET['submission_id']) ? (int) $_GET['submission_id'] : 0;
+$prefillFormId = isset($_GET['form_id']) ? (int) $_GET['form_id'] : 0;
+if (!$editId && $old === [] && $prefillSubmissionId > 0 && $prefillFormId > 0) {
+    $submissionPrefill = invoice_prefill_from_submission($prefillSubmissionId, $prefillFormId);
+}
+
 $invoiceNumber = (string) ($old['invoice_number'] ?? $invoice['invoice_number'] ?? $invoiceRepo->nextInvoiceNumber());
 $clientId = (string) ($old['client_id'] ?? ($invoice['client_id'] ?? ''));
 $billToCompany = (string) ($old['bill_to_company'] ?? $invoice['bill_to_company'] ?? '');
@@ -62,12 +69,52 @@ $billToPostal = (string) ($old['bill_to_postal'] ?? $invoice['bill_to_postal'] ?
 $billToCountry = (string) ($old['bill_to_country'] ?? $invoice['bill_to_country'] ?? 'Canada');
 $invoiceDate = (string) ($old['invoice_date'] ?? $invoice['invoice_date'] ?? date('Y-m-d'));
 $dueDate = (string) ($old['due_date'] ?? $invoice['due_date'] ?? date('Y-m-d'));
-$discountPercent = (string) ($old['discount_percent'] ?? ($invoice ? rtrim(rtrim(number_format((float) $invoice['discount_percent'], 4, '.', ''), '0'), '.') : '0'));
+$discountPercent = (string) ($old['discount_percent'] ?? ($invoice
+    ? invoice_format_discount_percent_input((float) ($invoice['discount_percent'] ?? 0))
+    : '0'));
 if ($discountPercent === '') {
     $discountPercent = '0';
 }
+$discountFlat = (string) ($old['discount_flat'] ?? ($invoice
+    ? invoice_format_discount_flat_input((float) ($invoice['discount_flat'] ?? 0))
+    : '0'));
+if ($discountFlat === '') {
+    $discountFlat = '0';
+}
+$discountPercentLabel = (string) ($old['discount_percent_label'] ?? ($invoice ? (string) ($invoice['discount_percent_label'] ?? '') : ''));
+$discountFlatLabel = (string) ($old['discount_flat_label'] ?? ($invoice ? (string) ($invoice['discount_flat_label'] ?? '') : ''));
 $status = (string) ($old['status'] ?? $invoice['status'] ?? 'draft');
 $notes = (string) ($old['notes'] ?? $invoice['notes'] ?? invoice_default_notes());
+
+if ($submissionPrefill !== null && $old === []) {
+    if (!empty($submissionPrefill['client_id'])) {
+        $clientId = (string) $submissionPrefill['client_id'];
+    }
+    if (($submissionPrefill['bill_to_company'] ?? '') !== '') {
+        $billToCompany = (string) $submissionPrefill['bill_to_company'];
+    }
+    if (($submissionPrefill['bill_to_name'] ?? '') !== '') {
+        $billToName = (string) $submissionPrefill['bill_to_name'];
+    }
+    if (($submissionPrefill['bill_to_street'] ?? '') !== '') {
+        $billToStreet = (string) $submissionPrefill['bill_to_street'];
+    }
+    if (($submissionPrefill['bill_to_city'] ?? '') !== '') {
+        $billToCity = (string) $submissionPrefill['bill_to_city'];
+    }
+    if (($submissionPrefill['bill_to_province'] ?? '') !== '') {
+        $billToProvince = (string) $submissionPrefill['bill_to_province'];
+    }
+    if (($submissionPrefill['bill_to_postal'] ?? '') !== '') {
+        $billToPostal = (string) $submissionPrefill['bill_to_postal'];
+    }
+    if (($submissionPrefill['bill_to_country'] ?? '') !== '') {
+        $billToCountry = (string) $submissionPrefill['bill_to_country'];
+    }
+    if (($submissionPrefill['notes'] ?? '') !== '') {
+        $notes = (string) $submissionPrefill['notes'];
+    }
+}
 
 $clientsList = [];
 foreach ($clients as $c) {
@@ -129,6 +176,16 @@ require __DIR__ . '/includes/layout-start.php';
         <li><?= e($err) ?></li>
       <?php endforeach; ?>
     </ul>
+  </div>
+<?php endif; ?>
+
+<?php if ($submissionPrefill): ?>
+  <div class="admin-alert admin-alert-info">
+    Prefilled from
+    <a href="/admin/submission?id=<?= (int) $submissionPrefill['submission_id'] ?>&form_id=<?= (int) $submissionPrefill['form_id'] ?>">
+      submission #<?= (int) $submissionPrefill['submission_id'] ?>
+    </a>
+    (<?= e((string) ($submissionPrefill['form_title'] ?? '')) ?>). Review bill-to details and add line items before saving.
   </div>
 <?php endif; ?>
 
@@ -306,11 +363,28 @@ require __DIR__ . '/includes/layout-start.php';
         <h2 class="invoice-summary-title">Totals</h2>
         <div class="admin-field">
           <label for="discount-percent">Discount %</label>
-          <input type="number" id="discount-percent" name="discount_percent" min="0" max="100" step="0.01" value="<?= e($discountPercent) ?>">
+          <input type="number" id="discount-percent" name="discount_percent" min="0" max="100" step="0.01" inputmode="decimal" autocomplete="off" value="<?= e($discountPercent) ?>">
+        </div>
+        <div class="admin-field">
+          <label for="discount-percent-label">Discount name (%)</label>
+          <input type="text" id="discount-percent-label" name="discount_percent_label" maxlength="120"
+            value="<?= e($discountPercentLabel) ?>" placeholder="e.g. Member discount">
+          <small class="admin-field-hint">Optional label shown on the invoice for the percent discount.</small>
+        </div>
+        <div class="admin-field">
+          <label for="discount-flat">Discount amount ($)</label>
+          <input type="number" id="discount-flat" name="discount_flat" min="0" step="0.01" inputmode="decimal" autocomplete="off" value="<?= e($discountFlat) ?>">
+        </div>
+        <div class="admin-field">
+          <label for="discount-flat-label">Discount name ($)</label>
+          <input type="text" id="discount-flat-label" name="discount_flat_label" maxlength="120"
+            value="<?= e($discountFlatLabel) ?>" placeholder="e.g. Courtesy credit">
+          <small class="admin-field-hint">Optional label shown on the invoice for the dollar discount.</small>
         </div>
         <div class="invoice-totals-preview" id="invoice-totals-preview" aria-live="polite">
           <div class="invoice-totals-row"><span>Subtotal</span><strong id="preview-subtotal">$0.00</strong></div>
-          <div class="invoice-totals-row" id="preview-discount-row" hidden><span id="preview-discount-label">Discount</span><strong id="preview-discount">$0.00</strong></div>
+          <div class="invoice-totals-row" id="preview-discount-percent-row" hidden><span id="preview-discount-percent-label">Discount</span><strong id="preview-discount-percent">$0.00</strong></div>
+          <div class="invoice-totals-row" id="preview-discount-flat-row" hidden><span id="preview-discount-flat-label">Flat discount</span><strong id="preview-discount-flat">$0.00</strong></div>
           <div class="invoice-totals-row invoice-totals-row--total"><span>Total</span><strong id="preview-total">$0.00</strong></div>
         </div>
         <div class="invoice-summary-actions">
@@ -348,5 +422,5 @@ require __DIR__ . '/includes/layout-start.php';
 window.INVOICE_CLIENTS = <?= json_encode($clientsList, JSON_UNESCAPED_UNICODE) ?>;
 window.INVOICE_SERVICES = <?= json_encode($servicesList, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/admin/js/invoice-edit.js?v=3" defer></script>
+<script src="/admin/js/invoice-edit.js?v=7" defer></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

@@ -4,11 +4,9 @@
 /** @var array $company */
 /** @var list<string> $billLines */
 /** @var string $currency */
-/** @var float $discountPercent */
+/** @var array $discountState */
 /** @var float $subtotal */
-/** @var float $discountAmount */
 /** @var float $total */
-/** @var string $discountLabel */
 
 $notesText = trim((string) ($invoice['notes'] ?? ''));
 $thankYou = 'Thank you for choosing our service!';
@@ -119,10 +117,16 @@ $logoUrl = brand_logo_url();
           <th>Subtotal:</th>
           <td><?= e(invoice_format_money($subtotal)) ?></td>
         </tr>
-        <?php if ($discountPercent > 0 || $discountAmount > 0): ?>
+        <?php if ($discountState['percent'] > 0 && $discountState['percent_amount'] > 0): ?>
           <tr>
-            <th><?= e($discountLabel) ?>% Discount:</th>
-            <td>(<?= e(invoice_format_money($discountAmount)) ?>)</td>
+            <th><?= e($discountState['percent_label']) ?>:</th>
+            <td>(<?= e(invoice_format_money($discountState['percent_amount'])) ?>)</td>
+          </tr>
+        <?php endif; ?>
+        <?php if ($discountState['flat_amount'] > 0): ?>
+          <tr>
+            <th><?= e($discountState['flat_label']) ?>:</th>
+            <td>(<?= e(invoice_format_money($discountState['flat_amount'])) ?>)</td>
           </tr>
         <?php endif; ?>
         <tr class="invoice-doc-totals-total">

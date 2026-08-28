@@ -31,7 +31,10 @@ $clientIdRaw = trim((string) ($_POST['client_id'] ?? ''));
 $clientId = $clientIdRaw !== '' ? (int) $clientIdRaw : null;
 $invoiceDate = trim((string) ($_POST['invoice_date'] ?? ''));
 $dueDate = trim((string) ($_POST['due_date'] ?? ''));
-$discountPercent = (float) ($_POST['discount_percent'] ?? 0);
+$discountPercent = invoice_parse_discount_percent_input($_POST['discount_percent'] ?? 0);
+$discountFlat = invoice_parse_discount_flat_input($_POST['discount_flat'] ?? 0);
+$discountPercentLabel = invoice_sanitize_discount_label((string) ($_POST['discount_percent_label'] ?? ''));
+$discountFlatLabel = invoice_sanitize_discount_label((string) ($_POST['discount_flat_label'] ?? ''));
 $status = trim((string) ($_POST['status'] ?? 'draft'));
 $notes = trim((string) ($_POST['notes'] ?? ''));
 
@@ -54,6 +57,9 @@ if (!in_array($status, invoice_status_options(), true)) {
 }
 if ($discountPercent < 0 || $discountPercent > 100) {
     $errors[] = 'Discount must be between 0 and 100%.';
+}
+if ($discountFlat < 0) {
+    $errors[] = 'Flat discount cannot be negative.';
 }
 if ($items === []) {
     $errors[] = 'Select at least one service or add a custom line item.';
@@ -95,6 +101,9 @@ $data = [
     'due_date' => $dueDate,
     'currency' => 'CAD',
     'discount_percent' => $discountPercent,
+    'discount_flat' => $discountFlat,
+    'discount_percent_label' => $discountPercentLabel,
+    'discount_flat_label' => $discountFlatLabel,
     'notes' => $notes,
     'status' => $status,
 ];

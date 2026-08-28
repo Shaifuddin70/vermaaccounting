@@ -17,27 +17,29 @@ final class InvoicePdf extends FPDF
     private array $company;
     /** @var list<string> */
     private array $billLines;
-    private string $discountLabel;
+    /** @var array{percent: float, flat: float, percent_amount: float, flat_amount: float, total_discount: float} */
+    private array $discountState;
 
     /**
      * @param array<string, mixed> $invoice
      * @param list<array<string, mixed>> $items
      * @param array<string, string> $company
      * @param list<string> $billLines
+     * @param array{percent: float, flat: float, percent_amount: float, flat_amount: float, total_discount: float} $discountState
      */
     public function __construct(
         array $invoice,
         array $items,
         array $company,
         array $billLines,
-        string $discountLabel
+        array $discountState
     ) {
         parent::__construct('P', 'mm', 'Letter');
         $this->invoice = $invoice;
         $this->items = $items;
         $this->company = $company;
         $this->billLines = $billLines;
-        $this->discountLabel = $discountLabel;
+        $this->discountState = $discountState;
         $this->SetMargins(16, 14, 16);
         $this->SetAutoPageBreak(true, 18);
         $this->AliasNbPages();
@@ -221,8 +223,6 @@ final class InvoicePdf extends FPDF
         $y = $this->GetY();
         $currency = (string) ($this->invoice['currency'] ?? 'CAD');
         $subtotal = invoice_format_money($this->invoice['subtotal'] ?? 0);
-        $discountAmount = (float) ($this->invoice['discount_amount'] ?? 0);
-        $discountPercent = (float) ($this->invoice['discount_percent'] ?? 0);
         $total = invoice_format_money($this->invoice['total'] ?? 0);
 
         $notesText = trim((string) ($this->invoice['notes'] ?? ''));
@@ -250,11 +250,19 @@ final class InvoicePdf extends FPDF
         $totalsX = 118;
         $this->SetY($y);
         $this->drawTotalRow($totalsX, 'Subtotal:', $subtotal, false);
-        if ($discountPercent > 0 || $discountAmount > 0) {
+        if ($this->discountState['percent'] > 0 && $this->discountState['percent_amount'] > 0) {
             $this->drawTotalRow(
                 $totalsX,
-                $this->discountLabel . '% Discount:',
-                '(' . invoice_format_money($discountAmount) . ')',
+                $this->discountState['percent_label'] . ':',
+                '(' . invoice_format_money($this->discountState['percent_amount']) . ')',
+                false
+            );
+        }
+        if ($this->discountState['flat_amount'] > 0) {
+            $this->drawTotalRow(
+                $totalsX,
+                $this->discountState['flat_label'] . ':',
+                '(' . invoice_format_money($this->discountState['flat_amount']) . ')',
                 false
             );
         }
@@ -315,13 +323,9 @@ function invoice_build_pdf(array $invoice, array $items): array
 {
     $company = invoice_company_settings();
     $billLines = invoice_bill_to_lines($invoice);
-    $discountPercent = (float) ($invoice['discount_percent'] ?? 0);
-    $discountLabel = rtrim(rtrim(number_format($discountPercent, 4, '.', ''), '0'), '.');
-    if ($discountLabel === '') {
-        $discountLabel = '0';
-    }
+    $discountState = invoice_discount_state($invoice);
 
-    $pdf = new InvoicePdf($invoice, $items, $company, $billLines, $discountLabel);
+    $pdf = new InvoicePdf($invoice, $items, $company, $billLines, $discountState);
     $bytes = $pdf->build();
     $number = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) ($invoice['invoice_number'] ?? 'invoice')) ?: 'invoice';
     $date = preg_replace('/[^0-9-]+/', '', (string) ($invoice['invoice_date'] ?? '')) ?: date('Y-m-d');
