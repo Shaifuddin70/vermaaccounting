@@ -173,6 +173,7 @@ require __DIR__ . '/includes/layout-start.php';
         </tbody>
       </table>
     </div>
+    <?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
   <?php endif; ?>
 </div>
 <script src="/admin/js/invoice-list.js?v=1" defer></script>

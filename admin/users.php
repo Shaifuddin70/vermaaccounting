@@ -58,6 +58,7 @@ require __DIR__ . '/includes/layout-start.php';
   <?php if ($userTotal > 0): ?>
     <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
   <?php endif; ?>
+  <div class="admin-table-scroll">
   <table class="admin-table" id="users-table">
     <thead>
       <tr>
@@ -133,7 +134,10 @@ require __DIR__ . '/includes/layout-start.php';
       <?php endif; ?>
     </tbody>
   </table>
-  <?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
+  </div>
+  <?php if ($userTotal > 0): ?>
+    <?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
+  <?php endif; ?>
 </div>
 
 <?php if (app_is_local()): ?>

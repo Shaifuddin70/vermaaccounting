@@ -446,10 +446,10 @@ body.admin-body {
 .admin-card:has(> .admin-table),
 .admin-card:has(> table.admin-table),
 .admin-card:has(> .admin-table-toolbar),
-.admin-card:has(> .admin-table-wrap) {
+.admin-card:has(> .admin-table-wrap),
+.admin-card:has(> .admin-pagination-bar--nav) {
   padding: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
 
 .admin-card:has(> .admin-table) > .admin-card-title,
@@ -496,15 +496,21 @@ body.admin-body {
   background: #fff;
 }
 
-.admin-card > .admin-table-toolbar + .admin-table-wrap {
+.admin-card > .admin-table-toolbar + .admin-table-wrap,
+.admin-card > .admin-table-toolbar + .admin-table-scroll {
   padding-top: 0;
 }
 
-.admin-card > .admin-table-wrap:first-child {
+.admin-card > .admin-table-wrap:first-child,
+.admin-card > .admin-table-scroll:first-child {
   padding-top: 0.85rem;
 }
 
 .admin-card > .admin-table-wrap:has(+ .admin-pagination-bar--nav) {
+  padding-bottom: 0;
+}
+
+.admin-card > .admin-table-scroll:has(+ .admin-pagination-bar--nav) {
   padding-bottom: 0;
 }
 
@@ -513,6 +519,11 @@ body.admin-body {
   padding: 0.85rem var(--admin-table-inset) 1.15rem;
   border-top: 1px solid var(--admin-border);
   background: var(--admin-surface-variant);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .admin-card > .admin-pagination-bar--nav:has(.admin-pagination-info--solo) {
@@ -520,8 +531,8 @@ body.admin-body {
   justify-content: flex-end;
 }
 
-.admin-card > .admin-table:has(+ .admin-pagination-bar--nav) tbody tr:last-child td,
-.admin-card > table.admin-table:has(+ .admin-pagination-bar--nav) tbody tr:last-child td {
+.admin-card > .admin-table-wrap:has(+ .admin-pagination-bar--nav) tbody tr:last-child td,
+.admin-card > .admin-table-scroll:has(+ .admin-pagination-bar--nav) tbody tr:last-child td {
   padding-bottom: var(--admin-table-cell-y);
 }
 
@@ -675,13 +686,28 @@ body.admin-body {
 }
 
 .admin-card > .admin-table-wrap .admin-table th:first-child,
-.admin-card > .admin-table-wrap .admin-table td:first-child {
+.admin-card > .admin-table-wrap .admin-table td:first-child,
+.admin-card > .admin-table-scroll .admin-table th:first-child,
+.admin-card > .admin-table-scroll .admin-table td:first-child {
   padding-left: var(--admin-table-cell-x);
 }
 
 .admin-card > .admin-table-wrap .admin-table th:last-child,
-.admin-card > .admin-table-wrap .admin-table td:last-child {
+.admin-card > .admin-table-wrap .admin-table td:last-child,
+.admin-card > .admin-table-scroll .admin-table th:last-child,
+.admin-card > .admin-table-scroll .admin-table td:last-child {
   padding-right: var(--admin-table-cell-x);
+}
+
+.admin-card > .admin-table-scroll {
+  padding: 0 var(--admin-table-inset) 1.25rem;
+  margin: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.admin-card > .admin-table-toolbar + .admin-table-scroll {
+  padding-top: 0;
 }
 
 .admin-table-empty-cell {

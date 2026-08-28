@@ -107,6 +107,7 @@ require __DIR__ . '/includes/layout-start.php';
     </div>
   <?php else: ?>
     <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
+    <div class="admin-table-scroll">
     <table class="admin-table activity-table">
       <thead>
         <tr>
@@ -185,6 +186,7 @@ require __DIR__ . '/includes/layout-start.php';
         <?php endforeach; ?>
       </tbody>
     </table>
+    </div>
     <?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
   <?php endif; ?>
 </div>
