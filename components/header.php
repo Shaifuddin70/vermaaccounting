@@ -102,7 +102,7 @@ if ($canonicalPath !== '/') {
   <script type="application/ld+json"><?= json_encode($homeFaqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
   <?php endif; endif; ?>
 
-  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=82" />
+  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=83" />
 </head>
 
 <body>

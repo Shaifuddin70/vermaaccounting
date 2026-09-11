@@ -52,6 +52,7 @@ $documentSubmissionMode = !empty($documentSubmissionMode);
 
 <form class="custom-form" id="custom-form" enctype="multipart/form-data" novalidate<?= ($taxYearOn || $documentSubmissionMode) ? ' hidden' : '' ?>>
   <input type="hidden" name="form_slug" value="<?= e($form['slug']) ?>">
+  <?= form_spam_guard_fields_html() ?>
   <input type="hidden" name="upload_session" id="upload-session" value="">
   <?php if ($documentSubmissionMode): ?>
     <input type="hidden" name="tax_service_type" id="tax-service-type-input" value="">

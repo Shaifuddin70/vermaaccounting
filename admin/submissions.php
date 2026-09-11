@@ -104,6 +104,14 @@ require __DIR__ . '/includes/layout-start.php';
       <a href="/admin/export-csv?<?= e($exportQs) ?>" class="admin-btn admin-btn-secondary">Export CSV</a>
     <?php endif; ?>
     <?php if (Auth::userRole() === 'admin'): ?>
+      <?php if ($counts['all'] > 0): ?>
+        <form method="post" action="/admin/form-action" class="inline-form"
+          onsubmit="return confirm('Delete ALL <?= (int) $counts['all'] ?> submissions for this form? This cannot be undone.');">
+          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+          <input type="hidden" name="form_id" value="<?= $formId ?>">
+          <button type="submit" name="action" value="purge_submissions" class="admin-btn admin-btn-danger">Delete all submissions</button>
+        </form>
+      <?php endif; ?>
       <a href="/admin/form-builder?id=<?= $formId ?>" class="admin-btn admin-btn-secondary">← Edit form</a>
     <?php else: ?>
       <a href="/admin/reviewer-submissions" class="admin-btn admin-btn-secondary">← All forms</a>
@@ -222,6 +230,14 @@ require __DIR__ . '/includes/layout-start.php';
               <a href="/admin/submission?id=<?= (int) $sub['id'] ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
               <?php if (Auth::userRole() === 'admin'): ?>
                 <a href="<?= e(invoice_edit_url_from_submission((int) $sub['id'], $formId)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Invoice</a>
+                <form method="post" action="/admin/submission-delete" class="inline-form"
+                  onsubmit="return confirm('Delete submission #<?= (int) $sub['id'] ?>? This cannot be undone.');">
+                  <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                  <input type="hidden" name="submission_id" value="<?= (int) $sub['id'] ?>">
+                  <input type="hidden" name="form_id" value="<?= $formId ?>">
+                  <input type="hidden" name="redirect" value="<?= e(submissions_list_url($formId, $tab, $taxYearFilter, $taxYearOn, $pagination['page'], $pagination['per_page'])) ?>">
+                  <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Delete</button>
+                </form>
               <?php endif; ?>
               <?php if ($status === 'pending'): ?>
                 <form method="post" action="/admin/submission-status" class="inline-form">

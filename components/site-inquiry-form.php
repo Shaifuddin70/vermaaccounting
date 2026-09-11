@@ -15,6 +15,8 @@ $schemaFields = null;
 try {
     if (!class_exists('FormRepository', false)) {
         require_once __DIR__ . '/../lib/bootstrap.php';
+    } elseif (!function_exists('form_spam_guard_fields_html')) {
+        require_once __DIR__ . '/../lib/form_spam_guard.php';
     }
     if (function_exists('ensure_contact_form')) {
         ensure_contact_form();
@@ -96,6 +98,7 @@ $renderInquiryField = static function (array $field, bool $withLabels): void {
 ?>
 <form id="my-form" class="<?= $withLabels ? 'my-form--labeled' : '' ?>" action="/api/submit" method="POST">
   <input type="hidden" name="form_slug" value="contact">
+  <?= form_spam_guard_fields_html() ?>
 
   <?php if (is_array($schemaFields) && $schemaFields !== []): ?>
     <?php foreach ($schemaFields as $field): ?>

@@ -34,7 +34,7 @@ if ($embed) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/custom-form.css?v=17">
+  <link rel="stylesheet" href="/css/custom-form.css?v=18">
 </head>
 <body class="form-embed-body">
   <div class="form-embed-header">
@@ -66,7 +66,7 @@ foreach ($schema['fields'] as $f) {
 }
 include __DIR__ . '/components/header.php';
 ?>
-<link rel="stylesheet" href="/css/custom-form.css?v=17">
+<link rel="stylesheet" href="/css/custom-form.css?v=18">
 <main class="main-content vf-page">
   <div class="vf-container">
     <div class="vf-layout">

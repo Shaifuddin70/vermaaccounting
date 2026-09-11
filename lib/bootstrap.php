@@ -32,7 +32,7 @@ function app_config(): array
 
 function ensure_data_dirs(): void
 {
-    foreach ([DATA_DIR, UPLOADS_DIR, DATA_DIR . '/forms', UPLOADS_DIR . '/staging', UPLOADS_DIR . '/avatars', EMAIL_ASSETS_DIR] as $dir) {
+    foreach ([DATA_DIR, UPLOADS_DIR, DATA_DIR . '/forms', DATA_DIR . '/rate-limits', UPLOADS_DIR . '/staging', UPLOADS_DIR . '/avatars', EMAIL_ASSETS_DIR] as $dir) {
         if (!is_dir($dir)) {
             mkdir($dir, 0755, true);
         }
@@ -86,6 +86,7 @@ require_once __DIR__ . '/InvoicePdf.php';
 require_once __DIR__ . '/invoice_emails.php';
 require_once __DIR__ . '/contact_form.php';
 require_once __DIR__ . '/document_submission_form.php';
+require_once __DIR__ . '/form_spam_guard.php';
 
 ensure_data_dirs();
 

@@ -139,6 +139,22 @@ require __DIR__ . '/includes/layout-start.php';
 
 <div class="admin-header">
   <h1><?= e($pageTitle) ?></h1>
+  <?php if ($role === 'admin' && $formId > 0): ?>
+    <?php $purgeCount = (int) ($formSubmissionCounts[$formId]['all'] ?? 0); ?>
+    <?php if ($purgeCount > 0): ?>
+      <div class="admin-header-actions">
+        <form method="post" action="/admin/form-action" class="inline-form"
+          onsubmit="return confirm('Delete ALL <?= $purgeCount ?> submissions for this form? This cannot be undone.');">
+          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+          <input type="hidden" name="form_id" value="<?= $formId ?>">
+          <input type="hidden" name="redirect" value="<?= e(rs_list_url($tab, $formId, $partnerFilterId, $dateFrom, $dateTo, $search, 1, $pagination['per_page'])) ?>">
+          <button type="submit" name="action" value="purge_submissions" class="admin-btn admin-btn-danger">
+            Delete all for this form (<?= number_format($purgeCount) ?>)
+          </button>
+        </form>
+      </div>
+    <?php endif; ?>
+  <?php endif; ?>
 </div>
 
 <?php if ($allForms !== []): ?>
@@ -294,6 +310,14 @@ require __DIR__ . '/includes/layout-start.php';
                   <a href="/admin/submission?id=<?= $sid ?>&form_id=<?= $fid ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
                   <?php if ($role === 'admin'): ?>
                     <a href="<?= e(invoice_edit_url_from_submission($sid, $fid)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Invoice</a>
+                    <form method="post" action="/admin/submission-delete" class="inline-form"
+                      onsubmit="return confirm('Delete submission #<?= $sid ?>? This cannot be undone.');">
+                      <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                      <input type="hidden" name="submission_id" value="<?= $sid ?>">
+                      <input type="hidden" name="form_id" value="<?= $fid ?>">
+                      <input type="hidden" name="redirect" value="<?= e(rs_list_url($tab, $formId, $partnerFilterId, $dateFrom, $dateTo, $search, $pagination['page'], $pagination['per_page'])) ?>">
+                      <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Delete</button>
+                    </form>
                   <?php endif; ?>
                   <?php if ($status === 'pending' && $role !== 'partner'): ?>
                     <form method="post" action="/admin/submission-status" class="inline-form">

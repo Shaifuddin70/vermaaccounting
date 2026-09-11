@@ -21,7 +21,7 @@ $seoDescription = 'Securely upload personal or business tax documents to Verma A
 
 include __DIR__ . '/components/header.php';
 ?>
-<link rel="stylesheet" href="/css/custom-form.css?v=18">
+<link rel="stylesheet" href="/css/custom-form.css?v=19">
 <main class="main-content vf-page doc-submit-page">
   <div class="vf-container">
     <div class="vf-layout">

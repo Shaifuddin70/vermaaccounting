@@ -51,6 +51,26 @@ if ($action === 'delete') {
     exit;
 }
 
+if ($action === 'purge_submissions') {
+    $result = $repo->deleteAllSubmissionsForForm($formId);
+    ActivityLog::record('submissions.purged', 'form', $formId, [
+        'slug' => (string) ($form['slug'] ?? ''),
+        'deleted' => $result['deleted'],
+        'files_removed' => $result['files_removed'],
+        'via' => 'admin',
+    ]);
+    $_SESSION['flash_success'] = $result['deleted'] > 0
+        ? 'Deleted ' . number_format($result['deleted']) . ' submission' . ($result['deleted'] === 1 ? '' : 's') . ' for this form.'
+        : 'No submissions to delete.';
+    $back = trim((string) ($_POST['redirect'] ?? ''));
+    if ($back !== '' && str_starts_with($back, '/admin/')) {
+        header('Location: ' . $back);
+        exit;
+    }
+    header('Location: /admin/submissions?form_id=' . $formId);
+    exit;
+}
+
 $_SESSION['flash_error'] = 'Unknown action.';
 header('Location: /admin/forms');
 exit;

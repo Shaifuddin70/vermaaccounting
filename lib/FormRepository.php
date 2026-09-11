@@ -183,6 +183,78 @@ final class FormRepository
         return $stmt->execute([$id]);
     }
 
+    /**
+     * Delete all submissions (and uploaded files) for a form. Does not delete the form itself.
+     *
+     * @return array{deleted: int, files_removed: int}
+     */
+    public function deleteAllSubmissionsForForm(int $formId): array
+    {
+        $formId = (int) $formId;
+        if ($formId < 1) {
+            return ['deleted' => 0, 'files_removed' => 0];
+        }
+
+        $filesRemoved = 0;
+        foreach ($this->filesForForm($formId) as $file) {
+            $path = UPLOADS_DIR . '/' . ($file['stored_name'] ?? '');
+            if ($path !== UPLOADS_DIR . '/' && is_file($path)) {
+                if (@unlink($path)) {
+                    $filesRemoved++;
+                }
+            }
+        }
+
+        $countStmt = $this->db->prepare('SELECT COUNT(*) FROM submissions WHERE form_id = ?');
+        $countStmt->execute([$formId]);
+        $deleted = (int) $countStmt->fetchColumn();
+
+        $stmt = $this->db->prepare('DELETE FROM submissions WHERE form_id = ?');
+        $stmt->execute([$formId]);
+
+        return ['deleted' => $deleted, 'files_removed' => $filesRemoved];
+    }
+
+    /**
+     * Delete submissions for a form created on or after a datetime (inclusive).
+     * $sinceIso should be Y-m-d H:i:s or ISO-ish string MySQL accepts.
+     *
+     * @return array{deleted: int, files_removed: int}
+     */
+    public function deleteSubmissionsForFormSince(int $formId, string $sinceIso): array
+    {
+        $formId = (int) $formId;
+        if ($formId < 1 || trim($sinceIso) === '') {
+            return ['deleted' => 0, 'files_removed' => 0];
+        }
+
+        $filesStmt = $this->db->prepare('
+            SELECT sf.stored_name
+            FROM submission_files sf
+            INNER JOIN submissions s ON s.id = sf.submission_id
+            WHERE s.form_id = ? AND s.created_at >= ?
+        ');
+        $filesStmt->execute([$formId, $sinceIso]);
+        $filesRemoved = 0;
+        foreach ($filesStmt->fetchAll() as $file) {
+            $path = UPLOADS_DIR . '/' . ($file['stored_name'] ?? '');
+            if ($path !== UPLOADS_DIR . '/' && is_file($path)) {
+                if (@unlink($path)) {
+                    $filesRemoved++;
+                }
+            }
+        }
+
+        $countStmt = $this->db->prepare('SELECT COUNT(*) FROM submissions WHERE form_id = ? AND created_at >= ?');
+        $countStmt->execute([$formId, $sinceIso]);
+        $deleted = (int) $countStmt->fetchColumn();
+
+        $stmt = $this->db->prepare('DELETE FROM submissions WHERE form_id = ? AND created_at >= ?');
+        $stmt->execute([$formId, $sinceIso]);
+
+        return ['deleted' => $deleted, 'files_removed' => $filesRemoved];
+    }
+
     public function decodeSchema(array $form): array
     {
         $schema = json_decode($form['schema_json'] ?? '{}', true);
@@ -682,6 +754,34 @@ final class FormRepository
         }
         $stmt = $this->db->prepare('UPDATE submissions SET status = ?, updated_at = ? WHERE id = ?');
         return $stmt->execute([$status, now_iso(), $submissionId]);
+    }
+
+    /**
+     * Delete one submission and its uploaded files.
+     *
+     * @return array{ok: bool, files_removed: int}
+     */
+    public function deleteSubmission(int $submissionId): array
+    {
+        $submissionId = (int) $submissionId;
+        if ($submissionId < 1) {
+            return ['ok' => false, 'files_removed' => 0];
+        }
+
+        $filesRemoved = 0;
+        foreach ($this->filesForSubmission($submissionId) as $file) {
+            $path = UPLOADS_DIR . '/' . ($file['stored_name'] ?? '');
+            if ($path !== UPLOADS_DIR . '/' && is_file($path)) {
+                if (@unlink($path)) {
+                    $filesRemoved++;
+                }
+            }
+        }
+
+        $stmt = $this->db->prepare('DELETE FROM submissions WHERE id = ?');
+        $ok = $stmt->execute([$submissionId]);
+
+        return ['ok' => $ok && $stmt->rowCount() > 0, 'files_removed' => $filesRemoved];
     }
 
     public function updateSubmissionData(int $submissionId, array $data): bool

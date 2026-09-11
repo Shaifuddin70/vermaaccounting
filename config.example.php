@@ -76,6 +76,13 @@ return [
             'subject' => 'We received your submission — {form_title}',
         ],
     ],
+
+    // Public form anti-spam (honeypot + timing + IP rate limit)
+    'form_spam' => [
+        'per_ip_limit' => 5,
+        'per_ip_window' => 3600,
+        'min_seconds' => 2,
+    ],
 ];
 
 /*

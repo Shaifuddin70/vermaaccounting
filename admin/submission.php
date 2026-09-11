@@ -38,6 +38,14 @@ require __DIR__ . '/includes/layout-start.php';
     <?php if (!$editMode && Auth::userRole() === 'admin'): ?>
       <a href="<?= e(invoice_edit_url_from_submission($submissionId, $formId)) ?>" class="admin-btn admin-btn-secondary">Create invoice</a>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>&edit=1" class="admin-btn admin-btn-primary">Edit</a>
+      <form method="post" action="/admin/submission-delete" class="inline-form"
+        onsubmit="return confirm('Delete submission #<?= $submissionId ?>? This cannot be undone.');">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+        <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
+        <input type="hidden" name="form_id" value="<?= $formId ?>">
+        <input type="hidden" name="redirect" value="/admin/submissions?form_id=<?= $formId ?>">
+        <button type="submit" class="admin-btn admin-btn-danger">Delete</button>
+      </form>
     <?php else: ?>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
     <?php endif; ?>

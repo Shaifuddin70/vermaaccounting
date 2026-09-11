@@ -5528,6 +5528,18 @@ a .services-title:hover {
 #my-form-button:active {
 }
 
+/* Hidden anti-spam fields — keep out of layout and assistive focus */
+.form-spam-guard {
+  position: absolute !important;
+  left: -10000px !important;
+  top: auto !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 #my-form-status {
   margin-top: 0.25rem;
   margin-bottom: 0;
