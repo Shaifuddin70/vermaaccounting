@@ -7,15 +7,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_response(['error' => 'Method not allowed'], 405);
 }
 
-$spamReason = form_spam_reject_reason($_POST);
-if ($spamReason !== null) {
-    // Generic response — do not reveal which check failed to bots.
-    json_response(['error' => $spamReason], 429);
-}
-
 $slug = trim($_POST['form_slug'] ?? '');
 if ($slug === '') {
     json_response(['error' => 'Missing form'], 400);
+}
+
+$spamReason = form_spam_reject_reason($_POST, $slug);
+if ($spamReason !== null) {
+    // Generic response — do not reveal which check failed to bots.
+    json_response(['error' => $spamReason], 429);
 }
 
 $repo = new FormRepository();
@@ -145,6 +145,12 @@ if ($errors) {
     json_response(['error' => implode(' ', $errors), 'errors' => $errors], 422);
 }
 
+$contentSpam = form_spam_content_reject_reason(array_merge($_POST, $data), $slug);
+if ($contentSpam !== null) {
+    error_log('Form spam blocked (post-validate content) from ' . form_spam_client_ip() . ': ' . $contentSpam);
+    json_response(['error' => 'Unable to submit right now. Please try again later.'], 429);
+}
+
 if ($slug === document_submission_form_slug()) {
     document_submission_validate($data, $errors);
     if ($errors) {
@@ -153,7 +159,7 @@ if ($slug === document_submission_form_slug()) {
 }
 
 $submissionId = $repo->saveSubmission((int) $form['id'], $data, $filesMeta, $taxYear > 0 ? $taxYear : null);
-form_spam_record_ip_hit();
+form_spam_record_hit($slug);
 sync_submission_partners_from_data($submissionId, $schema, $data);
 
 $clientRepo = new ClientRepository();
