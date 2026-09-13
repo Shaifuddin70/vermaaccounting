@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('forms.manage');
 
 $repo = new FormRepository();
 $formId = isset($_GET['id']) ? (int) $_GET['id'] : 0;

@@ -7,6 +7,12 @@ function campaign_batch_size(): int
     return 25;
 }
 
+/** Pause between campaign sends (microseconds) to reduce spam-filter bulk signals. */
+function campaign_send_throttle_us(): int
+{
+    return 350000;
+}
+
 function campaign_schedule_timezone(): DateTimeZone
 {
     return app_timezone();
@@ -104,19 +110,32 @@ function build_campaign_email(string $subject, string $body, array $client): arr
 {
     $subject = campaign_email_replace_tokens($subject, $client);
     $bodyHtml = campaign_email_body_html($body, $client);
+    $clientId = (int) ($client['id'] ?? $client['client_id'] ?? 0);
+    $email = strtolower(trim((string) ($client['email'] ?? '')));
+    $unsubUrl = ($clientId > 0 && $email !== '')
+        ? email_unsubscribe_url($clientId, $email)
+        : null;
+    $footerHtml = email_unsubscribe_footer_html($unsubUrl);
+    $footerText = email_unsubscribe_footer_text($unsubUrl);
+
     if (campaign_email_is_full_document($bodyHtml)) {
         $html = $bodyHtml;
+        if (preg_match('/<\/body>/i', $html)) {
+            $html = (string) preg_replace('/<\/body>/i', $footerHtml . '</body>', $html, 1);
+        } else {
+            $html .= $footerHtml;
+        }
     } else {
         $html = submission_email_layout(
             $subject,
-            $bodyHtml,
-            'You received this message from Verma Accounting. Reply to this email if you have questions.'
+            $bodyHtml . $footerHtml,
+            'You received this message from Verma Accounting.'
         );
     }
 
     $plainBody = campaign_email_replace_tokens($body, $client);
     $plainBody = html_entity_decode(strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $plainBody)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    $text = $subject . "\n\n" . trim($plainBody) . "\n\n— Verma Accounting";
+    $text = $subject . "\n\n" . trim($plainBody) . "\n\n— Verma Accounting" . $footerText;
 
     return [$subject, $html, $text];
 }
@@ -234,21 +253,34 @@ function process_campaign_batch(int $campaignId, int $limit = 0): array
     $recipients = $repo->pendingRecipients($campaignId, $limit);
     $sent = 0;
     $failed = 0;
+    $clientRepo = new ClientRepository();
 
-    foreach ($recipients as $recipient) {
+    foreach ($recipients as $index => $recipient) {
+      $clientId = !empty($recipient['client_id']) ? (int) $recipient['client_id'] : 0;
+      if ($clientId > 0 && $clientRepo->isEmailUnsubscribed($clientId)) {
+        $repo->markRecipientFailed((int) $recipient['id'], 'Recipient unsubscribed.');
+        $failed++;
+        continue;
+      }
+
       $client = [
+        'id' => $clientId,
+        'client_id' => $clientId,
         'client_name' => (string) ($recipient['client_name'] ?? ''),
         'email' => (string) ($recipient['email'] ?? ''),
         'sin' => '',
         'company' => '',
       ];
-      if (!empty($recipient['client_id'])) {
-        $clientRow = (new ClientRepository())->find((int) $recipient['client_id']);
+      if ($clientId > 0) {
+        $clientRow = $clientRepo->find($clientId);
         if ($clientRow) {
           $client['sin'] = (string) ($clientRow['sin'] ?? '');
           $client['company'] = (string) ($clientRow['company'] ?? '');
           if ($client['client_name'] === '') {
             $client['client_name'] = (string) ($clientRow['name'] ?? '');
+          }
+          if ($client['email'] === '') {
+            $client['email'] = (string) ($clientRow['email'] ?? '');
           }
         }
       }
@@ -259,17 +291,33 @@ function process_campaign_batch(int $campaignId, int $limit = 0): array
         $client
       );
 
-      if ($mailer->send((string) $recipient['email'], $subject, $html, $text, null, [
+      $unsubParts = email_unsubscribe_header_parts(
+        $clientId > 0 ? $clientId : null,
+        (string) $client['email']
+      );
+      $tracking = [
         'kind' => 'campaign',
         'campaign_id' => $campaignId,
         'recipient_id' => (int) ($recipient['id'] ?? 0),
-        'client_id' => !empty($recipient['client_id']) ? (int) $recipient['client_id'] : null,
-      ])) {
+        'client_id' => $clientId > 0 ? $clientId : null,
+      ];
+      if (!empty($unsubParts['url'])) {
+        $tracking['list_unsubscribe_url'] = $unsubParts['url'];
+      }
+      if (!empty($unsubParts['mailto'])) {
+        $tracking['list_unsubscribe_mailto'] = $unsubParts['mailto'];
+      }
+
+      if ($mailer->send((string) $recipient['email'], $subject, $html, $text, null, $tracking)) {
         $repo->markRecipientSent((int) $recipient['id']);
         $sent++;
       } else {
         $repo->markRecipientFailed((int) $recipient['id'], $mailer->getLastError() ?: 'Send failed.');
         $failed++;
+      }
+
+      if ($index < count($recipients) - 1) {
+        usleep(campaign_send_throttle_us());
       }
     }
 

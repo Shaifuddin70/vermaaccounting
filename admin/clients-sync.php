@@ -3,7 +3,12 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('clients.manage');
+if (partner_user_id() !== null) {
+    $_SESSION['flash_error'] = 'Partners cannot sync all clients.';
+    header('Location: /admin/clients');
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /admin/clients');

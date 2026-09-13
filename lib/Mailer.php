@@ -87,17 +87,22 @@ final class Mailer
             ]));
         }
 
+        if ($replyTo === null && function_exists('email_default_reply_to')) {
+            $replyTo = email_default_reply_to();
+        }
+
         $textBody = $textBody ?? $this->htmlToText($htmlBody);
         $encodedSubject = $this->encodeHeader($subject);
+        $extraHeaders = $this->listUnsubscribeHeaders($trackingMeta);
 
         if ($attachments !== []) {
             $mixedBoundary = 'va_mixed_' . bin2hex(random_bytes(10));
             $altBoundary = 'va_alt_' . bin2hex(random_bytes(10));
-            $headers = $this->buildHeaders($to, $mixedBoundary, $replyTo, true);
+            $headers = $this->buildHeaders($to, $mixedBoundary, $replyTo, true, $extraHeaders);
             $body = $this->buildMixedBody($mixedBoundary, $altBoundary, $textBody, $htmlBody, $attachments);
         } else {
             $boundary = 'va_' . bin2hex(random_bytes(12));
-            $headers = $this->buildHeaders($to, $boundary, $replyTo, false);
+            $headers = $this->buildHeaders($to, $boundary, $replyTo, false, $extraHeaders);
             $body = $this->buildMultipartBody($boundary, $textBody, $htmlBody);
         }
 
@@ -197,16 +202,55 @@ final class Mailer
         fwrite($socket, ".\r\n");
     }
 
-    private function smtpEhloHost(): string
+    /** Domain used for Message-ID and SMTP EHLO (prefer From address domain). */
+    private function mailDomain(): string
     {
+        if (str_contains($this->fromEmail, '@')) {
+            $domain = strtolower(substr($this->fromEmail, (int) strpos($this->fromEmail, '@') + 1));
+            $domain = preg_replace('/[^a-z0-9.-]/i', '', $domain) ?? '';
+            if ($domain !== '' && str_contains($domain, '.')) {
+                return $domain;
+            }
+        }
         $host = trim((string) ($this->smtp['host'] ?? ''));
         if ($host !== '' && !filter_var($host, FILTER_VALIDATE_IP)) {
             return $host;
         }
-        if (str_contains($this->fromEmail, '@')) {
-            return substr($this->fromEmail, strpos($this->fromEmail, '@') + 1);
-        }
         return 'localhost';
+    }
+
+    private function smtpEhloHost(): string
+    {
+        return $this->mailDomain();
+    }
+
+    /**
+     * @param array<string, mixed> $meta
+     * @return list<string>
+     */
+    private function listUnsubscribeHeaders(array $meta): array
+    {
+        $parts = [];
+        $url = trim((string) ($meta['list_unsubscribe_url'] ?? ''));
+        $mailto = trim((string) ($meta['list_unsubscribe_mailto'] ?? ''));
+        if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)) {
+            $parts[] = '<' . $url . '>';
+        }
+        if ($mailto !== '') {
+            if (str_starts_with(strtolower($mailto), 'mailto:')) {
+                $parts[] = '<' . $mailto . '>';
+            } elseif (filter_var($mailto, FILTER_VALIDATE_EMAIL)) {
+                $parts[] = '<mailto:' . $mailto . '>';
+            }
+        }
+        if ($parts === []) {
+            return [];
+        }
+        $headers = ['List-Unsubscribe: ' . implode(', ', $parts)];
+        if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL)) {
+            $headers[] = 'List-Unsubscribe-Post: List-Unsubscribe=One-Click';
+        }
+        return $headers;
     }
 
     /** @param resource $socket */
@@ -232,8 +276,16 @@ final class Mailer
         }
     }
 
-    private function buildHeaders(string $to, string $boundary, ?string $replyTo, bool $mixed = false): string
-    {
+    /**
+     * @param list<string> $extraHeaders
+     */
+    private function buildHeaders(
+        string $to,
+        string $boundary,
+        ?string $replyTo,
+        bool $mixed = false,
+        array $extraHeaders = []
+    ): string {
         $contentType = $mixed
             ? 'multipart/mixed; boundary="' . $boundary . '"'
             : 'multipart/alternative; boundary="' . $boundary . '"';
@@ -242,11 +294,17 @@ final class Mailer
             'MIME-Version: 1.0',
             'From: ' . $this->formatAddress($this->fromEmail, $this->fromName),
             'To: ' . $to,
-            'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $this->smtpEhloHost() . '>',
+            'Message-ID: <' . bin2hex(random_bytes(16)) . '@' . $this->mailDomain() . '>',
             'Content-Type: ' . $contentType,
         ];
         if ($replyTo !== null && filter_var($replyTo, FILTER_VALIDATE_EMAIL)) {
             $headers[] = 'Reply-To: ' . $replyTo;
+        }
+        foreach ($extraHeaders as $header) {
+            $header = trim(str_replace(["\r", "\n"], '', $header));
+            if ($header !== '') {
+                $headers[] = $header;
+            }
         }
         return implode("\r\n", $headers);
     }

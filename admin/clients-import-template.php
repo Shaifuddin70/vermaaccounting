@@ -3,7 +3,13 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('clients.manage');
+
+if (partner_user_id() !== null) {
+    $_SESSION['flash_error'] = 'This area is only available to admins.';
+    header('Location: /admin/');
+    exit;
+}
 
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="client-import-template.csv"');

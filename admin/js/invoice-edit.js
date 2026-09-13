@@ -17,6 +17,10 @@
   var discountFlatInput = document.getElementById('discount-flat');
   var discountPercentLabelInput = document.getElementById('discount-percent-label');
   var discountFlatLabelInput = document.getElementById('discount-flat-label');
+  var advanceInput = document.getElementById('advance-amount');
+  var dueAdjustmentInput = document.getElementById('due-adjustment');
+  var advanceLabelInput = document.getElementById('advance-label');
+  var dueAdjustmentLabelInput = document.getElementById('due-adjustment-label');
   var linesBody = document.getElementById('invoice-lines-body');
   var linesEmpty = document.getElementById('invoice-lines-empty');
   var lineTemplate = document.getElementById('invoice-line-template');
@@ -31,6 +35,14 @@
     if (raw === '' || raw === '-' || raw === '.') return 0;
     var n = parseFloat(raw);
     return isFinite(n) && n >= 0 ? n : 0;
+  }
+
+  function parseSignedMoney(input) {
+    if (!input) return 0;
+    var raw = String(input.value || '').trim();
+    if (raw === '' || raw === '-' || raw === '.' || raw === '-.') return 0;
+    var n = parseFloat(raw);
+    return isFinite(n) ? n : 0;
   }
 
   function normalizeDiscountField(input, maxValue) {
@@ -55,10 +67,35 @@
     input.value = String(n);
   }
 
+  function normalizeSignedMoneyField(input) {
+    if (!input) return;
+    var raw = String(input.value || '').trim();
+    if (raw === '' || raw === '-' || raw === '.' || raw === '-.') {
+      input.value = '0';
+      return;
+    }
+    var n = parseFloat(raw);
+    if (!isFinite(n)) {
+      input.value = '0';
+      return;
+    }
+    if (Math.abs(n) < 0.0000001) {
+      input.value = '0';
+      return;
+    }
+    input.value = String(n);
+  }
+
   function money(n) {
     var v = Math.round((Number(n) || 0) * 100) / 100;
     var abs = Math.abs(v).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     return (v < 0 ? '-$' : '$') + abs;
+  }
+
+  function adjustmentMoney(n) {
+    var v = Math.round((Number(n) || 0) * 100) / 100;
+    if (v < 0) return '(' + money(Math.abs(v)) + ')';
+    return money(v);
   }
 
   function escapeHtml(str) {
@@ -104,20 +141,33 @@
     var flatAmt = discountFlat > 0 ? Math.round(Math.min(discountFlat, remaining) * 100) / 100 : 0;
     var totalDiscount = Math.round((percentAmt + flatAmt) * 100) / 100;
     var total = Math.round(Math.max(0, subtotal - totalDiscount) * 100) / 100;
+    var advanceAmt = parseDiscountNumber(advanceInput);
+    var dueAdj = parseSignedMoney(dueAdjustmentInput);
+    var amountDue = Math.round(Math.max(0, total - advanceAmt + dueAdj) * 100) / 100;
 
     var elSub = document.getElementById('preview-subtotal');
     var elTotal = document.getElementById('preview-total');
+    var elDue = document.getElementById('preview-amount-due');
     var percentRow = document.getElementById('preview-discount-percent-row');
     var percentLabelEl = document.getElementById('preview-discount-percent-label');
     var elPercent = document.getElementById('preview-discount-percent');
     var flatRow = document.getElementById('preview-discount-flat-row');
     var flatLabelEl = document.getElementById('preview-discount-flat-label');
     var elFlat = document.getElementById('preview-discount-flat');
+    var advanceRow = document.getElementById('preview-advance-row');
+    var advanceLabelEl = document.getElementById('preview-advance-label');
+    var elAdvance = document.getElementById('preview-advance');
+    var adjRow = document.getElementById('preview-due-adjustment-row');
+    var adjLabelEl = document.getElementById('preview-due-adjustment-label');
+    var elAdj = document.getElementById('preview-due-adjustment');
     var customPercentLabel = discountPercentLabelInput ? String(discountPercentLabelInput.value || '').trim() : '';
     var customFlatLabel = discountFlatLabelInput ? String(discountFlatLabelInput.value || '').trim() : '';
+    var customAdvanceLabel = advanceLabelInput ? String(advanceLabelInput.value || '').trim() : '';
+    var customAdjLabel = dueAdjustmentLabelInput ? String(dueAdjustmentLabelInput.value || '').trim() : '';
 
     if (elSub) elSub.textContent = money(subtotal);
     if (elTotal) elTotal.textContent = money(total);
+    if (elDue) elDue.textContent = money(amountDue);
     if (percentRow) {
       var showPercent = discountPct > 0 && percentAmt > 0;
       if (percentLabelEl) {
@@ -139,6 +189,26 @@
         elFlat.textContent = showFlat ? '(' + money(flatAmt) + ')' : '$0.00';
       }
       flatRow.hidden = !showFlat;
+    }
+    if (advanceRow) {
+      var showAdvance = advanceAmt > 0;
+      if (advanceLabelEl) {
+        advanceLabelEl.textContent = customAdvanceLabel !== '' ? customAdvanceLabel : 'Advance';
+      }
+      if (elAdvance) {
+        elAdvance.textContent = showAdvance ? '(' + money(advanceAmt) + ')' : '$0.00';
+      }
+      advanceRow.hidden = !showAdvance;
+    }
+    if (adjRow) {
+      var showAdj = Math.abs(dueAdj) > 0.0000001;
+      if (adjLabelEl) {
+        adjLabelEl.textContent = customAdjLabel !== '' ? customAdjLabel : 'Due adjustment';
+      }
+      if (elAdj) {
+        elAdj.textContent = showAdj ? adjustmentMoney(dueAdj) : '$0.00';
+      }
+      adjRow.hidden = !showAdj;
     }
     syncEmptyState();
   }
@@ -191,6 +261,7 @@
       var bits = [];
       if (client.company) bits.push(client.company);
       if (client.email) bits.push(client.email);
+      if (client.phone) bits.push(client.phone);
       clientSelectedMeta.textContent = bits.join(' · ');
     }
     if (clientSelected) clientSelected.hidden = false;
@@ -202,8 +273,12 @@
 
     var company = document.getElementById('bill-company');
     var name = document.getElementById('bill-name');
+    var email = document.getElementById('bill-email');
+    var phone = document.getElementById('bill-phone');
     if (company && client.company) company.value = client.company;
     if (name && client.name) name.value = client.name;
+    if (email && client.email) email.value = client.email;
+    if (phone && client.phone) phone.value = client.phone;
   }
 
   function clearClient() {
@@ -235,7 +310,7 @@
     if (!clientResults) return;
     var matches = filterClients(query);
     if (!matches.length) {
-      clientResults.innerHTML = '<div class="invoice-client-empty">No clients match “' + escapeHtml(query) + '”</div>';
+      clientResults.innerHTML = '<div class="invoice-client-empty">No clients match “' + escapeHtml(query) + '”. Enter bill-to details below for this customer.</div>';
       clientResults.hidden = false;
       if (clientSearch) clientSearch.setAttribute('aria-expanded', 'true');
       activeIndex = -1;
@@ -333,7 +408,11 @@
       e.target === discountInput ||
       e.target === discountFlatInput ||
       e.target === discountPercentLabelInput ||
-      e.target === discountFlatLabelInput
+      e.target === discountFlatLabelInput ||
+      e.target === advanceInput ||
+      e.target === dueAdjustmentInput ||
+      e.target === advanceLabelInput ||
+      e.target === dueAdjustmentLabelInput
     ) {
       recalc();
     }
@@ -345,6 +424,12 @@
       recalc();
     } else if (e.target === discountFlatInput) {
       normalizeDiscountField(discountFlatInput);
+      recalc();
+    } else if (e.target === advanceInput) {
+      normalizeDiscountField(advanceInput);
+      recalc();
+    } else if (e.target === dueAdjustmentInput) {
+      normalizeSignedMoneyField(dueAdjustmentInput);
       recalc();
     }
   }, true);
@@ -359,5 +444,7 @@
 
   normalizeDiscountField(discountInput, 100);
   normalizeDiscountField(discountFlatInput);
+  normalizeDiscountField(advanceInput);
+  normalizeSignedMoneyField(dueAdjustmentInput);
   recalc();
 })();

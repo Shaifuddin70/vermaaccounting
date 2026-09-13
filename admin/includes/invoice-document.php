@@ -5,8 +5,10 @@
 /** @var list<string> $billLines */
 /** @var string $currency */
 /** @var array $discountState */
+/** @var array $dueState */
 /** @var float $subtotal */
 /** @var float $total */
+/** @var float $amountDue */
 
 $notesText = trim((string) ($invoice['notes'] ?? ''));
 $thankYou = 'Thank you for choosing our service!';
@@ -19,6 +21,8 @@ if ($notesText !== '') {
     ) ?? $notesText);
 }
 $logoUrl = brand_logo_url();
+$dueState = $dueState ?? invoice_due_state($invoice);
+$amountDue = isset($amountDue) ? (float) $amountDue : (float) $dueState['amount_due'];
 ?>
 <article class="invoice-doc" aria-label="Invoice <?= e((string) $invoice['invoice_number']) ?>">
   <header class="invoice-doc-header">
@@ -72,7 +76,7 @@ $logoUrl = brand_logo_url();
         </tr>
         <tr class="invoice-doc-amount-due-row">
           <th>Amount Due (<?= e($currency) ?>):</th>
-          <td><?= e(invoice_format_money($total)) ?></td>
+          <td><?= e(invoice_format_money($amountDue)) ?></td>
         </tr>
       </table>
     </div>
@@ -133,9 +137,21 @@ $logoUrl = brand_logo_url();
           <th>Total:</th>
           <td><?= e(invoice_format_money($total)) ?></td>
         </tr>
+        <?php if ($dueState['advance_amount'] > 0): ?>
+          <tr>
+            <th><?= e($dueState['advance_label']) ?>:</th>
+            <td>(<?= e(invoice_format_money($dueState['advance_amount'])) ?>)</td>
+          </tr>
+        <?php endif; ?>
+        <?php if (abs($dueState['due_adjustment']) > 0.0000001): ?>
+          <tr>
+            <th><?= e($dueState['due_adjustment_label']) ?>:</th>
+            <td><?= e(invoice_format_adjustment_money($dueState['due_adjustment'])) ?></td>
+          </tr>
+        <?php endif; ?>
         <tr class="invoice-doc-totals-due">
           <th>Amount Due (<?= e($currency) ?>):</th>
-          <td><?= e(invoice_format_money($total)) ?></td>
+          <td><?= e(invoice_format_money($amountDue)) ?></td>
         </tr>
       </table>
     </div>

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('activity.view');
 
 $filterAction  = (string) ($_GET['action'] ?? '');
 $filterUser    = isset($_GET['user_id']) && $_GET['user_id'] !== '' ? (int) $_GET['user_id'] : null;

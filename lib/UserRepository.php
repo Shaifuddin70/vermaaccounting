@@ -27,7 +27,7 @@ final class UserRepository
         $limit = max(1, min(200, $limit));
         $offset = max(0, $offset);
         $stmt = $this->db->query(
-            'SELECT id, name, email, reference_code, avatar_path, role, status, created_at, updated_at FROM users ORDER BY name ASC LIMIT '
+            'SELECT id, name, email, reference_code, avatar_path, role, permissions_json, status, created_at, updated_at FROM users ORDER BY name ASC LIMIT '
             . $limit . ' OFFSET ' . $offset
         );
         return $stmt->fetchAll();
@@ -36,7 +36,7 @@ final class UserRepository
     public function find(int $id): ?array
     {
         $stmt = $this->db->prepare('
-            SELECT id, name, email, reference_code, avatar_path, role, status, created_at, updated_at
+            SELECT id, name, email, reference_code, avatar_path, role, permissions_json, status, created_at, updated_at
             FROM users WHERE id = ?
         ');
         $stmt->execute([$id]);
@@ -66,16 +66,20 @@ final class UserRepository
     {
         $now = now_iso();
         $stmt = $this->db->prepare('
-            INSERT INTO users (name, email, reference_code, password_hash, role, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO users (name, email, reference_code, password_hash, role, permissions_json, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         $referenceCode = $this->normalizeReferenceCode($data['reference_code'] ?? null, (string) ($data['role'] ?? 'reviewer'));
+        $permissionsJson = array_key_exists('permissions_json', $data)
+            ? $data['permissions_json']
+            : null;
         $stmt->execute([
             $data['name'],
             $data['email'],
             $referenceCode,
             password_hash($data['password'], PASSWORD_BCRYPT),
             $data['role'] ?? 'reviewer',
+            $permissionsJson,
             $data['status'] ?? 'active',
             $now,
             $now,
@@ -98,24 +102,27 @@ final class UserRepository
             'reference_code' => array_key_exists('reference_code', $data)
                 ? $this->normalizeReferenceCode($data['reference_code'], (string) ($data['role'] ?? $existing['role']))
                 : ($existing['reference_code'] ?? null),
+            'permissions_json' => array_key_exists('permissions_json', $data)
+                ? $data['permissions_json']
+                : ($existing['permissions_json'] ?? null),
         ];
 
         if (!empty($data['password'])) {
             $stmt = $this->db->prepare('
-                UPDATE users SET name = ?, email = ?, reference_code = ?, role = ?, status = ?, password_hash = ?, updated_at = ? WHERE id = ?
+                UPDATE users SET name = ?, email = ?, reference_code = ?, role = ?, permissions_json = ?, status = ?, password_hash = ?, updated_at = ? WHERE id = ?
             ');
             return $stmt->execute([
-                $fields['name'], $fields['email'], $fields['reference_code'], $fields['role'], $fields['status'],
+                $fields['name'], $fields['email'], $fields['reference_code'], $fields['role'], $fields['permissions_json'], $fields['status'],
                 password_hash($data['password'], PASSWORD_BCRYPT),
                 now_iso(), $id,
             ]);
         }
 
         $stmt = $this->db->prepare('
-            UPDATE users SET name = ?, email = ?, reference_code = ?, role = ?, status = ?, updated_at = ? WHERE id = ?
+            UPDATE users SET name = ?, email = ?, reference_code = ?, role = ?, permissions_json = ?, status = ?, updated_at = ? WHERE id = ?
         ');
         return $stmt->execute([
-            $fields['name'], $fields['email'], $fields['reference_code'], $fields['role'], $fields['status'],
+            $fields['name'], $fields['email'], $fields['reference_code'], $fields['role'], $fields['permissions_json'], $fields['status'],
             now_iso(), $id,
         ]);
     }

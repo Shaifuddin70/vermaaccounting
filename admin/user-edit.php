@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('team.manage');
 
 $userRepo = new UserRepository();
 $editId = isset($_GET['id']) ? (int) $_GET['id'] : null;
@@ -88,7 +88,7 @@ require __DIR__ . '/includes/layout-start.php';
           <option value="partner"  <?= ($old['role'] ?? $editUser['role'] ?? '') === 'partner' ? 'selected' : '' ?>>Partner</option>
           <option value="admin"    <?= ($old['role'] ?? $editUser['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
         </select>
-        <small class="admin-field-hint">Partners only see submissions where clients selected them. Reviewers see all published form responses. Admins have full access.</small>
+        <small class="admin-field-hint">Partners only see submissions where clients selected them. Reviewers see all published form responses. Admins have full access. Use the Team page modal to customize permissions.</small>
       </div>
 
       <div class="admin-field">

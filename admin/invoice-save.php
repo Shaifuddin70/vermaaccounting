@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('invoices.manage');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /admin/invoices');
@@ -35,6 +35,10 @@ $discountPercent = invoice_parse_discount_percent_input($_POST['discount_percent
 $discountFlat = invoice_parse_discount_flat_input($_POST['discount_flat'] ?? 0);
 $discountPercentLabel = invoice_sanitize_discount_label((string) ($_POST['discount_percent_label'] ?? ''));
 $discountFlatLabel = invoice_sanitize_discount_label((string) ($_POST['discount_flat_label'] ?? ''));
+$advanceAmount = invoice_parse_discount_flat_input($_POST['advance_amount'] ?? 0);
+$dueAdjustment = invoice_parse_signed_money_input($_POST['due_adjustment'] ?? 0);
+$advanceLabel = invoice_sanitize_discount_label((string) ($_POST['advance_label'] ?? ''));
+$dueAdjustmentLabel = invoice_sanitize_discount_label((string) ($_POST['due_adjustment_label'] ?? ''));
 $status = trim((string) ($_POST['status'] ?? 'draft'));
 $notes = trim((string) ($_POST['notes'] ?? ''));
 
@@ -61,14 +65,22 @@ if ($discountPercent < 0 || $discountPercent > 100) {
 if ($discountFlat < 0) {
     $errors[] = 'Flat discount cannot be negative.';
 }
+if ($advanceAmount < 0) {
+    $errors[] = 'Advance cannot be negative.';
+}
 if ($items === []) {
     $errors[] = 'Select at least one service or add a custom line item.';
 }
 
 $billToName = trim((string) ($_POST['bill_to_name'] ?? ''));
 $billToCompany = trim((string) ($_POST['bill_to_company'] ?? ''));
+$billToEmail = strtolower(trim((string) ($_POST['bill_to_email'] ?? '')));
+$billToPhone = trim((string) ($_POST['bill_to_phone'] ?? ''));
 if ($billToName === '' && $billToCompany === '') {
     $errors[] = 'Enter a bill-to company or contact name.';
+}
+if ($billToEmail !== '' && !filter_var($billToEmail, FILTER_VALIDATE_EMAIL)) {
+    $errors[] = 'Enter a valid bill-to email address.';
 }
 
 if ($clientId) {
@@ -76,7 +88,25 @@ if ($clientId) {
     if (!$client) {
         $errors[] = 'Selected client was not found.';
         $clientId = null;
+    } elseif (!partner_has_client_access((int) $clientId)) {
+        $errors[] = 'You can only invoice clients linked to your submissions.';
+        $clientId = null;
     }
+}
+
+$partnerId = partner_user_id();
+if ($partnerId !== null && (!$clientId || $clientId < 1)) {
+    $errors[] = 'Partners must select one of their linked clients for the invoice.';
+}
+
+if ($editId) {
+    $existingInvoice = $repo->find($editId, $partnerId);
+    if (!$existingInvoice) {
+        $_SESSION['flash_error'] = 'Invoice not found.';
+        header('Location: /admin/invoices');
+        exit;
+    }
+    assert_invoice_access($existingInvoice);
 }
 
 if ($errors !== []) {
@@ -86,12 +116,29 @@ if ($errors !== []) {
     exit;
 }
 
+if ($partnerId !== null) {
+    // Keep the selected linked client; do not auto-create unscoped clients.
+    $clientLink = ['client_id' => $clientId, 'created' => false];
+} else {
+    $clientLink = invoice_ensure_client_from_bill_to(
+        $clientId,
+        $billToName,
+        $billToCompany,
+        $billToEmail,
+        $billToPhone
+    );
+}
+$clientId = $clientLink['client_id'];
+$clientCreated = !empty($clientLink['created']);
+
 $user = Auth::currentUser();
 $data = [
     'invoice_number' => $invoiceNumber,
     'client_id' => $clientId,
     'bill_to_company' => $billToCompany,
     'bill_to_name' => $billToName,
+    'bill_to_email' => $billToEmail,
+    'bill_to_phone' => $billToPhone,
     'bill_to_street' => trim((string) ($_POST['bill_to_street'] ?? '')),
     'bill_to_city' => trim((string) ($_POST['bill_to_city'] ?? '')),
     'bill_to_province' => trim((string) ($_POST['bill_to_province'] ?? '')),
@@ -104,14 +151,26 @@ $data = [
     'discount_flat' => $discountFlat,
     'discount_percent_label' => $discountPercentLabel,
     'discount_flat_label' => $discountFlatLabel,
+    'advance_amount' => $advanceAmount,
+    'due_adjustment' => $dueAdjustment,
+    'advance_label' => $advanceLabel,
+    'due_adjustment_label' => $dueAdjustmentLabel,
     'notes' => $notes,
     'status' => $status,
 ];
 
+$clientNote = $clientCreated
+    ? ' Client added to the directory.'
+    : '';
+
 if ($editId) {
     $repo->update($editId, $data, $items);
-    ActivityLog::record('invoice.updated', 'invoice', $editId, ['number' => $invoiceNumber]);
-    $_SESSION['flash_success'] = 'Invoice #' . $invoiceNumber . ' saved.';
+    ActivityLog::record('invoice.updated', 'invoice', $editId, [
+        'number' => $invoiceNumber,
+        'client_id' => $clientId,
+        'client_created' => $clientCreated,
+    ]);
+    $_SESSION['flash_success'] = 'Invoice #' . $invoiceNumber . ' saved.' . $clientNote;
     header('Location: /admin/invoice-view?id=' . $editId);
     exit;
 }
@@ -119,7 +178,11 @@ if ($editId) {
 $data['created_by_user_id'] = $user['id'] ?? null;
 $data['created_by_name'] = (string) ($user['name'] ?? 'Admin');
 $id = $repo->create($data, $items);
-ActivityLog::record('invoice.created', 'invoice', $id, ['number' => $invoiceNumber]);
-$_SESSION['flash_success'] = 'Invoice #' . $invoiceNumber . ' created.';
+ActivityLog::record('invoice.created', 'invoice', $id, [
+    'number' => $invoiceNumber,
+    'client_id' => $clientId,
+    'client_created' => $clientCreated,
+]);
+$_SESSION['flash_success'] = 'Invoice #' . $invoiceNumber . ' created.' . $clientNote;
 header('Location: /admin/invoice-view?id=' . $id);
 exit;

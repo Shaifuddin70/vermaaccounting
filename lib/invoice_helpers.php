@@ -38,6 +38,19 @@ function invoice_parse_discount_flat_input(mixed $raw): float
     return invoice_money(max(0, (float) $text));
 }
 
+function invoice_parse_signed_money_input(mixed $raw): float
+{
+    if ($raw === null) {
+        return 0.0;
+    }
+    $text = trim((string) $raw);
+    if ($text === '' || $text === '-' || $text === '.' || $text === '-.') {
+        return 0.0;
+    }
+
+    return invoice_money((float) $text);
+}
+
 function invoice_format_discount_percent_input(float $percent): string
 {
     $percent = invoice_percent($percent);
@@ -51,6 +64,16 @@ function invoice_format_discount_percent_input(float $percent): string
 function invoice_format_discount_flat_input(float $amount): string
 {
     $amount = invoice_money(max(0, $amount));
+    if (abs($amount) < 0.0000001) {
+        return '0';
+    }
+
+    return rtrim(rtrim(number_format($amount, 2, '.', ''), '0'), '.') ?: '0';
+}
+
+function invoice_format_signed_money_input(float $amount): string
+{
+    $amount = invoice_money($amount);
     if (abs($amount) < 0.0000001) {
         return '0';
     }
@@ -87,11 +110,19 @@ function invoice_format_date(?string $ymd): string
  *   discount_flat_amount: float,
  *   discount_amount: float,
  *   total: float,
+ *   advance_amount: float,
+ *   due_adjustment: float,
+ *   amount_due: float,
  *   items: list<array<string, mixed>>
  * }
  */
-function invoice_calculate_totals(array $items, float $discountPercent = 0.0, float $discountFlat = 0.0): array
-{
+function invoice_calculate_totals(
+    array $items,
+    float $discountPercent = 0.0,
+    float $discountFlat = 0.0,
+    float $advanceAmount = 0.0,
+    float $dueAdjustment = 0.0
+): array {
     $normalized = [];
     $subtotal = 0.0;
     foreach ($items as $item) {
@@ -108,6 +139,9 @@ function invoice_calculate_totals(array $items, float $discountPercent = 0.0, fl
     $subtotal = invoice_money($subtotal);
     $breakdown = invoice_discount_breakdown($subtotal, $discountPercent, $discountFlat);
     $total = invoice_money(max(0, $subtotal - $breakdown['total_discount']));
+    $advance = invoice_money(max(0, $advanceAmount));
+    $adjustment = invoice_money($dueAdjustment);
+    $amountDue = invoice_money(max(0, $total - $advance + $adjustment));
 
     return [
         'subtotal' => $subtotal,
@@ -115,6 +149,9 @@ function invoice_calculate_totals(array $items, float $discountPercent = 0.0, fl
         'discount_flat_amount' => $breakdown['flat_amount'],
         'discount_amount' => $breakdown['total_discount'],
         'total' => $total,
+        'advance_amount' => $advance,
+        'due_adjustment' => $adjustment,
+        'amount_due' => $amountDue,
         'items' => $normalized,
     ];
 }
@@ -194,6 +231,77 @@ function invoice_discount_flat_label(array $invoice): string
     return invoice_default_flat_discount_label();
 }
 
+function invoice_default_advance_label(): string
+{
+    return 'Advance';
+}
+
+function invoice_default_due_adjustment_label(): string
+{
+    return 'Due adjustment';
+}
+
+function invoice_advance_label(array $invoice): string
+{
+    $custom = invoice_sanitize_discount_label((string) ($invoice['advance_label'] ?? ''));
+    if ($custom !== '') {
+        return $custom;
+    }
+
+    return invoice_default_advance_label();
+}
+
+function invoice_due_adjustment_label(array $invoice): string
+{
+    $custom = invoice_sanitize_discount_label((string) ($invoice['due_adjustment_label'] ?? ''));
+    if ($custom !== '') {
+        return $custom;
+    }
+
+    return invoice_default_due_adjustment_label();
+}
+
+/** @return array{advance_amount: float, due_adjustment: float, amount_due: float, advance_label: string, due_adjustment_label: string} */
+function invoice_due_state(array $invoice): array
+{
+    $total = invoice_money((float) ($invoice['total'] ?? 0));
+    $advance = invoice_money(max(0, (float) ($invoice['advance_amount'] ?? 0)));
+    $adjustment = invoice_money((float) ($invoice['due_adjustment'] ?? 0));
+    $storedDue = array_key_exists('amount_due', $invoice)
+        ? invoice_money((float) $invoice['amount_due'])
+        : null;
+    $amountDue = $storedDue !== null
+        ? $storedDue
+        : invoice_money(max(0, $total - $advance + $adjustment));
+
+    return [
+        'advance_amount' => $advance,
+        'due_adjustment' => $adjustment,
+        'amount_due' => $amountDue,
+        'advance_label' => invoice_advance_label($invoice),
+        'due_adjustment_label' => invoice_due_adjustment_label($invoice),
+    ];
+}
+
+function invoice_amount_due(array $invoice): float
+{
+    return invoice_due_state($invoice)['amount_due'];
+}
+
+/** Format adjustment for display: credits in parentheses, charges plain. */
+function invoice_format_adjustment_money(float $amount): string
+{
+    $amount = invoice_money($amount);
+    if ($amount < 0) {
+        return '(' . invoice_format_money(abs($amount)) . ')';
+    }
+    if ($amount > 0) {
+        return invoice_format_money($amount);
+    }
+
+    return invoice_format_money(0);
+}
+
 /** @return array<string, string> */
 function invoice_company_defaults(): array
 {
@@ -239,16 +347,18 @@ function invoice_save_company_settings(array $data): void
 /** @return list<string> */
 function invoice_status_options(): array
 {
-    return ['draft', 'sent', 'paid', 'void'];
+    return ['draft', 'approved', 'sent'];
 }
 
 function invoice_status_label(string $status): string
 {
     return match ($status) {
         'draft' => 'Draft',
+        'approved' => 'Approved',
         'sent' => 'Sent',
-        'paid' => 'Paid',
-        'void' => 'Void',
+        // Legacy values mapped for display until migration runs.
+        'paid' => 'Sent',
+        'void' => 'Draft',
         default => ucfirst($status),
     };
 }
@@ -353,6 +463,8 @@ function invoice_bill_to_lines(array $invoice): array
     $lines = [];
     $company = trim((string) ($invoice['bill_to_company'] ?? ''));
     $name = trim((string) ($invoice['bill_to_name'] ?? ''));
+    $email = trim((string) ($invoice['bill_to_email'] ?? ''));
+    $phone = trim((string) ($invoice['bill_to_phone'] ?? ''));
     $street = trim((string) ($invoice['bill_to_street'] ?? ''));
     $city = trim((string) ($invoice['bill_to_city'] ?? ''));
     $province = trim((string) ($invoice['bill_to_province'] ?? ''));
@@ -364,6 +476,12 @@ function invoice_bill_to_lines(array $invoice): array
     }
     if ($name !== '') {
         $lines[] = $name;
+    }
+    if ($email !== '') {
+        $lines[] = $email;
+    }
+    if ($phone !== '') {
+        $lines[] = $phone;
     }
     if ($street !== '') {
         $lines[] = $street;
@@ -491,6 +609,8 @@ function invoice_prefill_from_submission(int $submissionId, int $formId): ?array
         'client_id' => $client ? (int) $client['id'] : null,
         'bill_to_company' => $billToCompany,
         'bill_to_name' => $billToName,
+        'bill_to_email' => trim((string) ($client['email'] ?? $extracted['email'] ?? '')),
+        'bill_to_phone' => trim((string) ($client['phone'] ?? $extracted['phone'] ?? '')),
         'bill_to_street' => $address['street'],
         'bill_to_city' => $address['city'],
         'bill_to_province' => $address['province'],
@@ -503,4 +623,43 @@ function invoice_prefill_from_submission(int $submissionId, int $formId): ?array
 function invoice_edit_url_from_submission(int $submissionId, int $formId): string
 {
     return '/admin/invoice-edit?submission_id=' . max(0, $submissionId) . '&form_id=' . max(0, $formId);
+}
+
+/**
+ * Ensure a clients-directory record exists for walk-in invoice bill-to details.
+ *
+ * @return array{client_id: ?int, created: bool}
+ */
+function invoice_ensure_client_from_bill_to(
+    ?int $clientId,
+    string $billToName,
+    string $billToCompany,
+    string $billToEmail = '',
+    string $billToPhone = ''
+): array {
+    if ($clientId !== null && $clientId > 0) {
+        return ['client_id' => $clientId, 'created' => false];
+    }
+
+    $name = trim($billToName);
+    $company = trim($billToCompany);
+    if ($name === '' && $company === '') {
+        return ['client_id' => null, 'created' => false];
+    }
+
+    $result = (new ClientRepository())->upsertFromContact([
+        'name' => $name !== '' ? $name : $company,
+        'company' => $company,
+        'email' => strtolower(trim($billToEmail)),
+        'phone' => trim($billToPhone),
+    ], 'manual');
+
+    if ($result === null) {
+        return ['client_id' => null, 'created' => false];
+    }
+
+    return [
+        'client_id' => (int) $result['id'],
+        'created' => !empty($result['is_new']),
+    ];
 }

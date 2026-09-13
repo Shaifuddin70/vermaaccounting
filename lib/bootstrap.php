@@ -48,6 +48,7 @@ function ensure_data_dirs(): void
 }
 
 require_once __DIR__ . '/Database.php';
+require_once __DIR__ . '/permissions.php';
 require_once __DIR__ . '/Auth.php';
 require_once __DIR__ . '/FormRepository.php';
 require_once __DIR__ . '/UploadRepository.php';
@@ -66,6 +67,7 @@ require_once __DIR__ . '/ClientRepository.php';
 require_once __DIR__ . '/pagination_helpers.php';
 require_once __DIR__ . '/Mailer.php';
 require_once __DIR__ . '/email_tracking.php';
+require_once __DIR__ . '/email_unsubscribe.php';
 require_once __DIR__ . '/submission_emails.php';
 require_once __DIR__ . '/campaign_emails.php';
 require_once __DIR__ . '/HolidayScheduleRepository.php';
@@ -84,6 +86,7 @@ require_once __DIR__ . '/InvoiceRepository.php';
 require_once __DIR__ . '/invoice_helpers.php';
 require_once __DIR__ . '/InvoicePdf.php';
 require_once __DIR__ . '/invoice_emails.php';
+require_once __DIR__ . '/report_helpers.php';
 require_once __DIR__ . '/contact_form.php';
 require_once __DIR__ . '/document_submission_form.php';
 require_once __DIR__ . '/tax_intake_form.php';

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
+Auth::requireCapability('submissions.view');
 
 $repo = new FormRepository();
 $userRepo = new UserRepository();
@@ -319,7 +320,7 @@ require __DIR__ . '/includes/layout-start.php';
                       <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Delete</button>
                     </form>
                   <?php endif; ?>
-                  <?php if ($status === 'pending' && $role !== 'partner'): ?>
+                  <?php if ($status === 'pending' && Auth::can('submissions.complete')): ?>
                     <form method="post" action="/admin/submission-status" class="inline-form">
                       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                       <input type="hidden" name="submission_id" value="<?= $sid ?>">

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('clients.view');
 
 $clientId = (int) ($_GET['id'] ?? 0);
 $yearParam = (string) ($_GET['year'] ?? 'all');
@@ -19,21 +19,26 @@ if (!$client) {
     header('Location: /admin/clients');
     exit;
 }
+assert_client_access($client);
+$partnerId = partner_user_id();
 
 $page = pagination_page_from_request();
 $perPage = pagination_per_page_from_request();
-$yearCounts = $clientRepo->submissionYearCountsForClient($clientId);
-$submissionTotal = $clientRepo->countSubmissionsForClient($clientId, $yearFilter);
+$yearCounts = $clientRepo->submissionYearCountsForClient($clientId, $partnerId);
+$submissionTotal = $clientRepo->countSubmissionsForClient($clientId, $yearFilter, $partnerId);
 $pagination = pagination_meta($submissionTotal, $page, $perPage);
 $submissions = $clientRepo->submissionsForClient(
     $clientId,
     $yearFilter,
     $pagination['per_page'],
-    $pagination['offset']
+    $pagination['offset'],
+    $partnerId
 );
 
 $pageTitle = $client['name'];
 $activeNav = 'clients';
+$csrf = Auth::csrfToken();
+$deleteConfirm = 'Delete “' . $client['name'] . '”? Linked form submissions stay in the system, but this client record will be removed. This cannot be undone.';
 
 $paginationPath = '/admin/client';
 $paginationQuery = array_filter([
@@ -59,6 +64,14 @@ require __DIR__ . '/includes/layout-start.php';
   <h1><?= e($client['name']) ?></h1>
   <div class="admin-header-actions">
     <span class="client-id-badge">Client ID: <?= (int) $client['id'] ?></span>
+    <a href="/admin/client-edit?id=<?= (int) $client['id'] ?>" class="admin-btn">Edit</a>
+    <form method="post" action="/admin/client-action" class="inline-form"
+      onsubmit="return confirm(<?= e(json_encode($deleteConfirm)) ?>);">
+      <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+      <input type="hidden" name="id" value="<?= (int) $client['id'] ?>">
+      <input type="hidden" name="action" value="delete">
+      <button type="submit" class="admin-btn admin-btn-danger">Delete</button>
+    </form>
     <a href="/admin/clients" class="admin-btn admin-btn-secondary">← All clients</a>
   </div>
 </div>
@@ -94,6 +107,12 @@ require __DIR__ . '/includes/layout-start.php';
       <span class="submission-meta-label">Submissions</span>
       <strong><?= array_sum($yearCounts) ?></strong>
     </div>
+    <?php if (trim((string) ($client['notes'] ?? '')) !== ''): ?>
+      <div style="grid-column:1 / -1;">
+        <span class="submission-meta-label">Notes</span>
+        <strong style="white-space:pre-wrap;font-weight:500;"><?= e((string) $client['notes']) ?></strong>
+      </div>
+    <?php endif; ?>
   </div>
 </div>
 

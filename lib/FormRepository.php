@@ -499,6 +499,47 @@ final class FormRepository
     }
 
     /**
+     * Submission counts for a calendar date window (created_at / completed in range).
+     *
+     * @return array{received: int, completed: int, pending: int}
+     */
+    public function submissionCountsBetween(?string $from = null, ?string $to = null, ?int $partnerUserId = null): array
+    {
+        $parts = ['f.slug != ?'];
+        $params = [file_manager_form_slug()];
+        if ($from !== null && $from !== '') {
+            $parts[] = 'DATE(s.created_at) >= ?';
+            $params[] = $from;
+        }
+        if ($to !== null && $to !== '') {
+            $parts[] = 'DATE(s.created_at) <= ?';
+            $params[] = $to;
+        }
+        [$partnerJoin, $partnerParams] = $this->partnerFilterClause($partnerUserId);
+        $params = array_merge($partnerParams, $params);
+        $where = ' WHERE ' . implode(' AND ', $parts);
+
+        $stmt = $this->db->prepare('
+            SELECT
+                COUNT(*) AS received,
+                SUM(CASE WHEN s.status = \'complete\' THEN 1 ELSE 0 END) AS completed,
+                SUM(CASE WHEN s.status = \'pending\' THEN 1 ELSE 0 END) AS pending
+            FROM submissions s
+            INNER JOIN forms f ON f.id = s.form_id
+            ' . $partnerJoin . '
+            ' . $where
+        );
+        $stmt->execute($params);
+        $row = $stmt->fetch() ?: [];
+
+        return [
+            'received' => (int) ($row['received'] ?? 0),
+            'completed' => (int) ($row['completed'] ?? 0),
+            'pending' => (int) ($row['pending'] ?? 0),
+        ];
+    }
+
+    /**
      * Rolling submission activity for dashboard KPIs.
      *
      * @return array{today: int, week: int, completed_week: int}

@@ -33,7 +33,7 @@ $form = $repo->find($formId);
 
 if (!$form || is_file_manager_form($form)) {
     if ($allForms === []) {
-        header('Location: /admin/' . (Auth::userRole() === 'admin' ? 'forms' : 'reviewer-submissions'));
+        header('Location: /admin/' . (Auth::can('forms.manage') ? 'forms' : 'reviewer-submissions'));
         exit;
     }
     header('Location: /admin/submissions?form_id=' . (int) $allForms[0]['id']);
@@ -88,13 +88,13 @@ function submissions_list_url(int $formId, string $tab, ?int $year, bool $includ
 }
 
 $pageTitle = 'Responses: ' . $form['title'];
-$activeNav = Auth::userRole() === 'admin' ? 'forms' : 'submissions';
+$activeNav = Auth::can('forms.manage') ? 'forms' : 'submissions';
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>Responses: <?= e($form['title']) ?></h1>
   <div class="admin-header-actions">
-    <?php if ($counts['all'] > 0 && Auth::userRole() !== 'partner'): ?>
+    <?php if ($counts['all'] > 0 && Auth::can('submissions.export')): ?>
       <?php
         $exportQs = 'form_id=' . $formId;
         if ($taxYearFilter) {
@@ -103,8 +103,8 @@ require __DIR__ . '/includes/layout-start.php';
       ?>
       <a href="/admin/export-csv?<?= e($exportQs) ?>" class="admin-btn admin-btn-secondary">Export CSV</a>
     <?php endif; ?>
-    <?php if (Auth::userRole() === 'admin'): ?>
-      <?php if ($counts['all'] > 0): ?>
+    <?php if (Auth::can('forms.manage') || Auth::can('submissions.manage')): ?>
+      <?php if ($counts['all'] > 0 && Auth::can('submissions.manage')): ?>
         <form method="post" action="/admin/form-action" class="inline-form"
           onsubmit="return confirm('Delete ALL <?= (int) $counts['all'] ?> submissions for this form? This cannot be undone.');">
           <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
@@ -112,7 +112,11 @@ require __DIR__ . '/includes/layout-start.php';
           <button type="submit" name="action" value="purge_submissions" class="admin-btn admin-btn-danger">Delete all submissions</button>
         </form>
       <?php endif; ?>
+      <?php if (Auth::can('forms.manage')): ?>
       <a href="/admin/form-builder?id=<?= $formId ?>" class="admin-btn admin-btn-secondary">← Edit form</a>
+      <?php else: ?>
+      <a href="/admin/reviewer-submissions" class="admin-btn admin-btn-secondary">← All forms</a>
+      <?php endif; ?>
     <?php else: ?>
       <a href="/admin/reviewer-submissions" class="admin-btn admin-btn-secondary">← All forms</a>
     <?php endif; ?>
@@ -228,8 +232,11 @@ require __DIR__ . '/includes/layout-start.php';
             <?php endforeach; ?>
             <td class="admin-table-actions">
               <a href="/admin/submission?id=<?= (int) $sub['id'] ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
-              <?php if (Auth::userRole() === 'admin'): ?>
+              <?php if (Auth::can('submissions.manage') || Auth::can('invoices.manage')): ?>
+                <?php if (Auth::can('invoices.manage')): ?>
                 <a href="<?= e(invoice_edit_url_from_submission((int) $sub['id'], $formId)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Invoice</a>
+                <?php endif; ?>
+                <?php if (Auth::can('submissions.manage')): ?>
                 <form method="post" action="/admin/submission-delete" class="inline-form"
                   onsubmit="return confirm('Delete submission #<?= (int) $sub['id'] ?>? This cannot be undone.');">
                   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
@@ -238,8 +245,9 @@ require __DIR__ . '/includes/layout-start.php';
                   <input type="hidden" name="redirect" value="<?= e(submissions_list_url($formId, $tab, $taxYearFilter, $taxYearOn, $pagination['page'], $pagination['per_page'])) ?>">
                   <button type="submit" class="admin-btn admin-btn-danger admin-btn-sm">Delete</button>
                 </form>
+                <?php endif; ?>
               <?php endif; ?>
-              <?php if ($status === 'pending'): ?>
+              <?php if ($status === 'pending' && Auth::can('submissions.complete')): ?>
                 <form method="post" action="/admin/submission-status" class="inline-form">
                   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                   <input type="hidden" name="submission_id" value="<?= (int) $sub['id'] ?>">

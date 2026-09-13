@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('invoices.manage');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /admin/invoices');
@@ -19,13 +19,15 @@ if (!Auth::verifyCsrf($_POST['csrf_token'] ?? '')) {
 $action = (string) ($_POST['action'] ?? '');
 $id = (int) ($_POST['id'] ?? 0);
 $repo = new InvoiceRepository();
-$invoice = $id > 0 ? $repo->find($id) : null;
+$partnerId = partner_user_id();
+$invoice = $id > 0 ? $repo->find($id, $partnerId) : null;
 
 if (!$invoice) {
     $_SESSION['flash_error'] = 'Invoice not found.';
     header('Location: /admin/invoices');
     exit;
 }
+assert_invoice_access($invoice);
 
 $redirect = '/admin/invoice-view?id=' . $id;
 
@@ -68,15 +70,18 @@ if ($action === 'send_email') {
         exit;
     }
 
-    if (($invoice['status'] ?? '') === 'draft') {
+    $wasSent = ($invoice['status'] ?? '') === 'sent';
+    if (!$wasSent) {
         $repo->updateStatus($id, 'sent');
     }
 
     ActivityLog::record('invoice.emailed', 'invoice', $id, [
         'number' => (string) ($invoice['invoice_number'] ?? ''),
         'to' => $result['to'] ?? $to,
+        'status' => 'sent',
     ]);
-    $_SESSION['flash_success'] = 'Invoice PDF sent to ' . ($result['to'] ?? $to) . '.';
+    $_SESSION['flash_success'] = 'Invoice PDF sent to ' . ($result['to'] ?? $to) . '.'
+        . ($wasSent ? '' : ' Status set to Sent.');
     header('Location: ' . $redirect);
     exit;
 }

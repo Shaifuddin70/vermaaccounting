@@ -13,7 +13,7 @@ $activity = $repo->submissionActivityCounts($partnerId);
 $formStats = $repo->formStatusCounts();
 $recentSubmissions = $repo->recentSubmissions(8, $partnerId);
 
-$isAdmin = Auth::userRole() === 'admin';
+$isAdmin = Auth::can('forms.manage') || Auth::can('clients.view') || Auth::can('reports.view');
 $isPartner = Auth::userRole() === 'partner';
 $allFormsList = $repo->all();
 if (!$isAdmin) {

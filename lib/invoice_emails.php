@@ -7,6 +7,11 @@ declare(strict_types=1);
  */
 function invoice_recipient_email(array $invoice): string
 {
+    $billEmail = trim((string) ($invoice['bill_to_email'] ?? ''));
+    if ($billEmail !== '' && filter_var($billEmail, FILTER_VALIDATE_EMAIL)) {
+        return strtolower($billEmail);
+    }
+
     $clientEmail = trim((string) ($invoice['client_email'] ?? ''));
     if ($clientEmail !== '' && filter_var($clientEmail, FILTER_VALIDATE_EMAIL)) {
         return strtolower($clientEmail);
@@ -39,7 +44,7 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
     $number = (string) ($invoice['invoice_number'] ?? '');
     $company = invoice_company_settings();
     $currency = (string) ($invoice['currency'] ?? 'CAD');
-    $total = invoice_format_money($invoice['total'] ?? 0);
+    $amountDue = invoice_format_money(invoice_amount_due($invoice));
     $due = invoice_format_date((string) ($invoice['due_date'] ?? ''));
     $billName = trim((string) ($invoice['bill_to_name'] ?? ''));
     if ($billName === '') {
@@ -58,7 +63,7 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
         . '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 20px;">'
         . '<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;width:40%;">Amount due</td>'
         . '<td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#1e3a8a;font-weight:700;text-align:right;">'
-        . e($total) . ' ' . e($currency) . '</td></tr>'
+        . e($amountDue) . ' ' . e($currency) . '</td></tr>'
         . '<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">Payment due</td>'
         . '<td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#334155;text-align:right;">'
         . e($due) . '</td></tr>'
@@ -79,7 +84,7 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
 
     $text = "Hi {$billName},\n\n"
         . "Please find invoice #{$number} attached as a PDF.\n\n"
-        . "Amount due: {$total} {$currency}\n"
+        . "Amount due: {$amountDue} {$currency}\n"
         . "Payment due: {$due}\n\n";
     if ($extra !== '') {
         $text .= $extra . "\n\n";
@@ -99,6 +104,7 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
         null,
         [
             'kind' => 'invoice',
+            'enabled' => false,
             'ref_type' => 'invoice',
             'ref_id' => (int) ($invoice['id'] ?? 0),
             'client_id' => !empty($invoice['client_id']) ? (int) $invoice['client_id'] : null,

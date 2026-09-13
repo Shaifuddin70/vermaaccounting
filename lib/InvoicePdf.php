@@ -17,22 +17,26 @@ final class InvoicePdf extends FPDF
     private array $company;
     /** @var list<string> */
     private array $billLines;
-    /** @var array{percent: float, flat: float, percent_amount: float, flat_amount: float, total_discount: float} */
+    /** @var array{percent: float, flat: float, percent_amount: float, flat_amount: float, total_discount: float, percent_label?: string, flat_label?: string} */
     private array $discountState;
+    /** @var array{advance_amount: float, due_adjustment: float, amount_due: float, advance_label: string, due_adjustment_label: string} */
+    private array $dueState;
 
     /**
      * @param array<string, mixed> $invoice
      * @param list<array<string, mixed>> $items
      * @param array<string, string> $company
      * @param list<string> $billLines
-     * @param array{percent: float, flat: float, percent_amount: float, flat_amount: float, total_discount: float} $discountState
+     * @param array{percent: float, flat: float, percent_amount: float, flat_amount: float, total_discount: float, percent_label?: string, flat_label?: string} $discountState
+     * @param array{advance_amount: float, due_adjustment: float, amount_due: float, advance_label: string, due_adjustment_label: string}|null $dueState
      */
     public function __construct(
         array $invoice,
         array $items,
         array $company,
         array $billLines,
-        array $discountState
+        array $discountState,
+        ?array $dueState = null
     ) {
         parent::__construct('P', 'mm', 'Letter');
         $this->invoice = $invoice;
@@ -40,6 +44,7 @@ final class InvoicePdf extends FPDF
         $this->company = $company;
         $this->billLines = $billLines;
         $this->discountState = $discountState;
+        $this->dueState = $dueState ?? invoice_due_state($invoice);
         $this->SetMargins(16, 14, 16);
         $this->SetAutoPageBreak(true, 18);
         $this->AliasNbPages();
@@ -123,7 +128,7 @@ final class InvoicePdf extends FPDF
         $leftBottom = $this->GetY();
 
         $currency = (string) ($this->invoice['currency'] ?? 'CAD');
-        $total = invoice_format_money($this->invoice['total'] ?? 0);
+        $amountDue = invoice_format_money($this->dueState['amount_due']);
         $rows = [
             ['Invoice Number:', (string) ($this->invoice['invoice_number'] ?? '')],
             ['Invoice Date:', invoice_format_date((string) ($this->invoice['invoice_date'] ?? ''))],
@@ -149,7 +154,7 @@ final class InvoicePdf extends FPDF
         $this->SetFont('Helvetica', 'B', 9);
         $this->SetTextColor(30, 58, 138);
         $this->Cell(46, 5.5, $this->t('Amount Due (' . $currency . '):'), 0, 0, 'L');
-        $this->Cell(34.5, 5.5, $this->t($total), 0, 1, 'R');
+        $this->Cell(34.5, 5.5, $this->t($amountDue), 0, 1, 'R');
         $rightBottom = $metaY + 11;
 
         $this->SetY(max($leftBottom, $rightBottom) + 8);
@@ -224,6 +229,7 @@ final class InvoicePdf extends FPDF
         $currency = (string) ($this->invoice['currency'] ?? 'CAD');
         $subtotal = invoice_format_money($this->invoice['subtotal'] ?? 0);
         $total = invoice_format_money($this->invoice['total'] ?? 0);
+        $amountDue = invoice_format_money($this->dueState['amount_due']);
 
         $notesText = trim((string) ($this->invoice['notes'] ?? ''));
         $thankYou = 'Thank you for choosing our service!';
@@ -273,6 +279,23 @@ final class InvoicePdf extends FPDF
         $this->SetY($lineY + 2);
         $this->drawTotalRow($totalsX, 'Total:', $total, true);
 
+        if ($this->dueState['advance_amount'] > 0) {
+            $this->drawTotalRow(
+                $totalsX,
+                $this->dueState['advance_label'] . ':',
+                '(' . invoice_format_money($this->dueState['advance_amount']) . ')',
+                false
+            );
+        }
+        if (abs($this->dueState['due_adjustment']) > 0.0000001) {
+            $this->drawTotalRow(
+                $totalsX,
+                $this->dueState['due_adjustment_label'] . ':',
+                invoice_format_adjustment_money($this->dueState['due_adjustment']),
+                false
+            );
+        }
+
         $this->SetDrawColor(226, 232, 240);
         $lineY = $this->GetY() + 1;
         $this->Line($totalsX, $lineY, 199.9, $lineY);
@@ -281,7 +304,7 @@ final class InvoicePdf extends FPDF
         $this->SetTextColor(30, 58, 138);
         $this->SetX($totalsX);
         $this->Cell(48, 6, $this->t('Amount Due (' . $currency . '):'), 0, 0, 'R');
-        $this->Cell(34, 6, $this->t($total), 0, 1, 'R');
+        $this->Cell(34, 6, $this->t($amountDue), 0, 1, 'R');
     }
 
     private function drawTotalRow(float $x, string $label, string $value, bool $bold): void
@@ -324,8 +347,9 @@ function invoice_build_pdf(array $invoice, array $items): array
     $company = invoice_company_settings();
     $billLines = invoice_bill_to_lines($invoice);
     $discountState = invoice_discount_state($invoice);
+    $dueState = invoice_due_state($invoice);
 
-    $pdf = new InvoicePdf($invoice, $items, $company, $billLines, $discountState);
+    $pdf = new InvoicePdf($invoice, $items, $company, $billLines, $discountState, $dueState);
     $bytes = $pdf->build();
     $number = preg_replace('/[^A-Za-z0-9_-]+/', '_', (string) ($invoice['invoice_number'] ?? 'invoice')) ?: 'invoice';
     $date = preg_replace('/[^0-9-]+/', '', (string) ($invoice['invoice_date'] ?? '')) ?: date('Y-m-d');

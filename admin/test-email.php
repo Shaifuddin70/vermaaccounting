@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('email.settings');
 
 $result = null;
 $error = null;
@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ),
                 'Test email from Verma Accounting admin panel.',
                 null,
-                ['kind' => 'test']
+                ['kind' => 'test', 'enabled' => false]
             );
             if ($ok) {
                 $result = 'Test email sent to ' . $to . '. Check your inbox and spam folder.';

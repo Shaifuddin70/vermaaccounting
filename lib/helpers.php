@@ -168,6 +168,7 @@ function mail_config(): array
         'from_name' => 'Verma Accounting',
         'admin_email' => '',
         'admin_name' => 'Verma Accounting',
+        'reply_to' => '',
         'smtp' => [
             'host' => '',
             'port' => 587,

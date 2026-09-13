@@ -6,14 +6,14 @@ Auth::requireLogin();
 
 $formId = (int) ($_GET['form_id'] ?? 0);
 $submissionId = (int) ($_GET['id'] ?? 0);
-$editMode = isset($_GET['edit']) && Auth::userRole() === 'admin';
+$editMode = isset($_GET['edit']) && Auth::can('submissions.manage');
 
 $repo = new FormRepository();
 $form = $repo->find($formId);
 $submission = $repo->findSubmissionForForm($submissionId, $formId);
 
 if (!$form || !$submission) {
-    header('Location: /admin/' . (Auth::userRole() === 'admin' ? 'forms' : 'reviewer-submissions'));
+    header('Location: /admin/' . (Auth::can('forms.manage') ? 'forms' : 'reviewer-submissions'));
     exit;
 }
 
@@ -29,14 +29,16 @@ $editErrors = $_SESSION['submission_edit_errors'] ?? [];
 unset($_SESSION['submission_edit_errors']);
 
 $pageTitle = 'Submission #' . $submissionId;
-$activeNav = Auth::userRole() === 'admin' ? 'forms' : 'submissions';
+$activeNav = Auth::can('forms.manage') ? 'forms' : 'submissions';
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>Submission #<?= $submissionId ?></h1>
   <div class="admin-header-actions">
-    <?php if (!$editMode && Auth::userRole() === 'admin'): ?>
+    <?php if (!$editMode && Auth::can('submissions.manage')): ?>
+      <?php if (Auth::can('invoices.manage')): ?>
       <a href="<?= e(invoice_edit_url_from_submission($submissionId, $formId)) ?>" class="admin-btn admin-btn-secondary">Create invoice</a>
+      <?php endif; ?>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>&edit=1" class="admin-btn admin-btn-primary">Edit</a>
       <form method="post" action="/admin/submission-delete" class="inline-form"
         onsubmit="return confirm('Delete submission #<?= $submissionId ?>? This cannot be undone.');">

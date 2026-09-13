@@ -11,9 +11,9 @@ final class InvoiceRepository
         $this->db = Database::instance()->pdo();
     }
 
-    public function count(?string $search = null, ?string $status = null): int
+    public function count(?string $search = null, ?string $status = null, ?int $partnerUserId = null): int
     {
-        [$where, $params] = $this->filterClause($search, $status);
+        [$where, $params] = $this->filterClause($search, $status, $partnerUserId);
         $stmt = $this->db->prepare('
             SELECT COUNT(*)
             FROM invoices i
@@ -25,11 +25,16 @@ final class InvoiceRepository
     }
 
     /** @return list<array<string, mixed>> */
-    public function all(?string $search = null, ?string $status = null, int $limit = 50, int $offset = 0): array
-    {
+    public function all(
+        ?string $search = null,
+        ?string $status = null,
+        int $limit = 50,
+        int $offset = 0,
+        ?int $partnerUserId = null
+    ): array {
         $limit = max(1, min(200, $limit));
         $offset = max(0, $offset);
-        [$where, $params] = $this->filterClause($search, $status);
+        [$where, $params] = $this->filterClause($search, $status, $partnerUserId);
         $stmt = $this->db->prepare('
             SELECT i.*, c.name AS client_name, c.company AS client_company
             FROM invoices i
@@ -42,15 +47,22 @@ final class InvoiceRepository
         return $stmt->fetchAll();
     }
 
-    public function find(int $id): ?array
+    public function find(int $id, ?int $partnerUserId = null): ?array
     {
-        $stmt = $this->db->prepare('
-            SELECT i.*, c.name AS client_name, c.company AS client_company, c.email AS client_email
+        [$scopeSql, $scopeParams] = partner_invoice_scope_sql($partnerUserId, 'i');
+        $sql = '
+            SELECT i.*, c.name AS client_name, c.company AS client_company, c.email AS client_email, c.phone AS client_phone
             FROM invoices i
             LEFT JOIN clients c ON c.id = i.client_id
             WHERE i.id = ?
-        ');
-        $stmt->execute([$id]);
+        ';
+        $params = [$id];
+        if ($scopeSql !== '') {
+            $sql .= ' AND ' . $scopeSql;
+            $params = array_merge($params, $scopeParams);
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         return $stmt->fetch() ?: null;
     }
 
@@ -87,7 +99,9 @@ final class InvoiceRepository
         $totals = invoice_calculate_totals(
             $items,
             (float) ($data['discount_percent'] ?? 0),
-            (float) ($data['discount_flat'] ?? 0)
+            (float) ($data['discount_flat'] ?? 0),
+            (float) ($data['advance_amount'] ?? 0),
+            (float) ($data['due_adjustment'] ?? 0)
         );
 
         $this->db->beginTransaction();
@@ -95,14 +109,16 @@ final class InvoiceRepository
             $stmt = $this->db->prepare('
                 INSERT INTO invoices (
                     invoice_number, client_id,
-                    bill_to_company, bill_to_name, bill_to_street, bill_to_city,
+                    bill_to_company, bill_to_name, bill_to_email, bill_to_phone,
+                    bill_to_street, bill_to_city,
                     bill_to_province, bill_to_postal, bill_to_country,
                     invoice_date, due_date, currency, discount_percent, discount_flat,
                     discount_percent_label, discount_flat_label,
-                    subtotal, discount_amount, total, notes, status,
+                    advance_amount, due_adjustment, advance_label, due_adjustment_label,
+                    subtotal, discount_amount, total, amount_due, notes, status,
                     created_by_user_id, created_by_name, created_at, updated_at
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
             ');
             $stmt->execute([
@@ -110,6 +126,8 @@ final class InvoiceRepository
                 $data['client_id'] ?? null,
                 (string) ($data['bill_to_company'] ?? ''),
                 (string) ($data['bill_to_name'] ?? ''),
+                (string) ($data['bill_to_email'] ?? ''),
+                (string) ($data['bill_to_phone'] ?? ''),
                 (string) ($data['bill_to_street'] ?? ''),
                 (string) ($data['bill_to_city'] ?? ''),
                 (string) ($data['bill_to_province'] ?? ''),
@@ -122,9 +140,14 @@ final class InvoiceRepository
                 invoice_money(max(0, (float) ($data['discount_flat'] ?? 0))),
                 invoice_sanitize_discount_label((string) ($data['discount_percent_label'] ?? '')) ?: null,
                 invoice_sanitize_discount_label((string) ($data['discount_flat_label'] ?? '')) ?: null,
+                $totals['advance_amount'],
+                $totals['due_adjustment'],
+                invoice_sanitize_discount_label((string) ($data['advance_label'] ?? '')) ?: null,
+                invoice_sanitize_discount_label((string) ($data['due_adjustment_label'] ?? '')) ?: null,
                 $totals['subtotal'],
                 $totals['discount_amount'],
                 $totals['total'],
+                $totals['amount_due'],
                 (string) ($data['notes'] ?? ''),
                 (string) ($data['status'] ?? 'draft'),
                 $data['created_by_user_id'] ?? null,
@@ -151,7 +174,9 @@ final class InvoiceRepository
         $totals = invoice_calculate_totals(
             $items,
             (float) ($data['discount_percent'] ?? 0),
-            (float) ($data['discount_flat'] ?? 0)
+            (float) ($data['discount_flat'] ?? 0),
+            (float) ($data['advance_amount'] ?? 0),
+            (float) ($data['due_adjustment'] ?? 0)
         );
 
         $this->db->beginTransaction();
@@ -162,6 +187,8 @@ final class InvoiceRepository
                     client_id = ?,
                     bill_to_company = ?,
                     bill_to_name = ?,
+                    bill_to_email = ?,
+                    bill_to_phone = ?,
                     bill_to_street = ?,
                     bill_to_city = ?,
                     bill_to_province = ?,
@@ -174,9 +201,14 @@ final class InvoiceRepository
                     discount_flat = ?,
                     discount_percent_label = ?,
                     discount_flat_label = ?,
+                    advance_amount = ?,
+                    due_adjustment = ?,
+                    advance_label = ?,
+                    due_adjustment_label = ?,
                     subtotal = ?,
                     discount_amount = ?,
                     total = ?,
+                    amount_due = ?,
                     notes = ?,
                     status = ?,
                     updated_at = ?
@@ -187,6 +219,8 @@ final class InvoiceRepository
                 $data['client_id'] ?? null,
                 (string) ($data['bill_to_company'] ?? ''),
                 (string) ($data['bill_to_name'] ?? ''),
+                (string) ($data['bill_to_email'] ?? ''),
+                (string) ($data['bill_to_phone'] ?? ''),
                 (string) ($data['bill_to_street'] ?? ''),
                 (string) ($data['bill_to_city'] ?? ''),
                 (string) ($data['bill_to_province'] ?? ''),
@@ -199,9 +233,14 @@ final class InvoiceRepository
                 invoice_money(max(0, (float) ($data['discount_flat'] ?? 0))),
                 invoice_sanitize_discount_label((string) ($data['discount_percent_label'] ?? '')) ?: null,
                 invoice_sanitize_discount_label((string) ($data['discount_flat_label'] ?? '')) ?: null,
+                $totals['advance_amount'],
+                $totals['due_adjustment'],
+                invoice_sanitize_discount_label((string) ($data['advance_label'] ?? '')) ?: null,
+                invoice_sanitize_discount_label((string) ($data['due_adjustment_label'] ?? '')) ?: null,
                 $totals['subtotal'],
                 $totals['discount_amount'],
                 $totals['total'],
+                $totals['amount_due'],
                 (string) ($data['notes'] ?? ''),
                 (string) ($data['status'] ?? 'draft'),
                 now_iso(),
@@ -271,7 +310,7 @@ final class InvoiceRepository
     }
 
     /** @return array{0: string, 1: list<mixed>} */
-    private function filterClause(?string $search, ?string $status): array
+    private function filterClause(?string $search, ?string $status, ?int $partnerUserId = null): array
     {
         $parts = [];
         $params = [];
@@ -288,7 +327,51 @@ final class InvoiceRepository
             $parts[] = 'i.status = ?';
             $params[] = $status;
         }
+        [$scopeSql, $scopeParams] = partner_invoice_scope_sql($partnerUserId, 'i');
+        if ($scopeSql !== '') {
+            $parts[] = $scopeSql;
+            $params = array_merge($params, $scopeParams);
+        }
         $where = $parts === [] ? '' : (' WHERE ' . implode(' AND ', $parts));
         return [$where, $params];
+    }
+
+    /**
+     * Invoice rows for reporting, filtered by invoice_date (inclusive).
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function reportRows(?string $from = null, ?string $to = null, ?int $partnerUserId = null): array
+    {
+        $parts = [];
+        $params = [];
+        if ($from !== null && $from !== '') {
+            $parts[] = 'i.invoice_date >= ?';
+            $params[] = $from;
+        }
+        if ($to !== null && $to !== '') {
+            $parts[] = 'i.invoice_date <= ?';
+            $params[] = $to;
+        }
+        [$scopeSql, $scopeParams] = partner_invoice_scope_sql($partnerUserId, 'i');
+        if ($scopeSql !== '') {
+            $parts[] = $scopeSql;
+            $params = array_merge($params, $scopeParams);
+        }
+        $where = $parts === [] ? '' : (' WHERE ' . implode(' AND ', $parts));
+
+        $stmt = $this->db->prepare('
+            SELECT i.id, i.invoice_number, i.client_id, i.invoice_date, i.due_date, i.status,
+                   i.subtotal, i.discount_amount, i.total, i.amount_due, i.advance_amount, i.due_adjustment,
+                   i.bill_to_name, i.bill_to_company,
+                   c.name AS client_name, c.company AS client_company
+            FROM invoices i
+            LEFT JOIN clients c ON c.id = i.client_id
+            ' . $where . '
+            ORDER BY i.invoice_date ASC, i.id ASC
+        ');
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
     }
 }

@@ -3,11 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-
-if (Auth::userRole() === 'partner') {
-    http_response_code(403);
-    exit('Export is not available for partner accounts.');
-}
+Auth::requireCapability('submissions.export');
 
 $formId = (int) ($_GET['form_id'] ?? 0);
 $repo = new FormRepository();

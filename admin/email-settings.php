@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('email.settings');
 
 $mail = mail_config();
 $errors = $_SESSION['email_settings_errors'] ?? [];

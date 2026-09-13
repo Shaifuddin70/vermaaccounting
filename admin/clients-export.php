@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('clients.manage');
 
 $clientRepo = new ClientRepository();
-$rows = $clientRepo->exportRows();
+$rows = $clientRepo->exportRows(partner_user_id());
 
 header('Content-Type: text/csv; charset=utf-8');
 header('Content-Disposition: attachment; filename="clients-' . date('Y-m-d') . '.csv"');

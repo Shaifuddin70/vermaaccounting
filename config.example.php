@@ -59,6 +59,8 @@ return [
         'admin_email' => 'info@vermaaccounting.ca',
         // Optional: multiple admin notification recipients (overridden by Admin → Email settings)
         'admin_emails' => ['info@vermaaccounting.ca'],
+        // Prefer a real inbox on your brand domain (helps Reply-To / trust)
+        'reply_to' => 'info@vermaaccounting.ca',
         'admin_name' => 'Verma Accounting',
         'smtp' => [
             'host' => 'smtp.office365.com',

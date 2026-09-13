@@ -3,25 +3,29 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('invoices.view');
 
 $id = (int) ($_GET['id'] ?? 0);
 $repo = new InvoiceRepository();
-$invoice = $id > 0 ? $repo->find($id) : null;
+$partnerId = partner_user_id();
+$invoice = $id > 0 ? $repo->find($id, $partnerId) : null;
 
 if (!$invoice) {
     $_SESSION['flash_error'] = 'Invoice not found.';
     header('Location: /admin/invoices');
     exit;
 }
+assert_invoice_access($invoice);
 
 $items = $repo->itemsForInvoice($id);
 $company = invoice_company_settings();
 $billLines = invoice_bill_to_lines($invoice);
 $currency = (string) ($invoice['currency'] ?? 'CAD');
 $discountState = invoice_discount_state($invoice);
+$dueState = invoice_due_state($invoice);
 $subtotal = (float) ($invoice['subtotal'] ?? 0);
 $total = (float) ($invoice['total'] ?? 0);
+$amountDue = (float) $dueState['amount_due'];
 $status = (string) ($invoice['status'] ?? 'draft');
 $csrf = Auth::csrfToken();
 $print = isset($_GET['print']);

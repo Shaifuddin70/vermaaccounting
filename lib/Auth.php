@@ -29,18 +29,78 @@ final class Auth
 
     /**
      * Require the logged-in user to have at least one of the given roles.
-     * Admins always pass. Redirects to dashboard with an error if role missing.
+     * Users with role=admin always pass. Prefer requireCapability() for feature gates.
      */
     public static function requireRole(string ...$roles): void
     {
         self::requireLogin();
         $current = self::userRole();
-        // admin can do everything
         if ($current === 'admin') {
             return;
         }
         foreach ($roles as $role) {
             if ($current === $role) {
+                return;
+            }
+        }
+        $_SESSION['flash_error'] = 'You do not have permission to access that page.';
+        header('Location: /admin/');
+        exit;
+    }
+
+    /**
+     * Effective capability list for the current user (request-cached).
+     *
+     * @return list<string>
+     */
+    public static function capabilities(): array
+    {
+        static $cached = null;
+        static $cacheKey = null;
+
+        if (!self::check()) {
+            return [];
+        }
+
+        $userId = self::userId();
+        $role = self::userRole();
+        $key = ($userId === null ? 'config' : (string) $userId) . '|' . $role;
+        if ($cached !== null && $cacheKey === $key) {
+            return $cached;
+        }
+
+        if ($userId === null) {
+            $cached = permission_resolve_for_user([
+                'role' => 'admin',
+                'is_config_admin' => true,
+            ]);
+            $cacheKey = $key;
+            return $cached;
+        }
+
+        $row = (new UserRepository())->find($userId);
+        $cached = permission_resolve_for_user([
+            'role' => (string) ($row['role'] ?? $role),
+            'permissions_json' => $row['permissions_json'] ?? null,
+            'is_config_admin' => false,
+        ]);
+        $cacheKey = $key;
+        return $cached;
+    }
+
+    public static function can(string $capability): bool
+    {
+        return permission_user_can(self::capabilities(), $capability);
+    }
+
+    /**
+     * Require at least one of the listed capabilities.
+     */
+    public static function requireCapability(string ...$capabilities): void
+    {
+        self::requireLogin();
+        foreach ($capabilities as $capability) {
+            if (self::can($capability)) {
                 return;
             }
         }

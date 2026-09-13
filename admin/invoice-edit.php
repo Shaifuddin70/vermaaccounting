@@ -3,18 +3,22 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('invoices.manage');
 
 $invoiceRepo = new InvoiceRepository();
 $serviceRepo = new InvoiceServiceRepository();
 $clientRepo = new ClientRepository();
+$partnerId = partner_user_id();
 
 $editId = isset($_GET['id']) ? (int) $_GET['id'] : null;
-$invoice = $editId ? $invoiceRepo->find($editId) : null;
+$invoice = $editId ? $invoiceRepo->find($editId, $partnerId) : null;
 
 if ($editId && !$invoice) {
     header('Location: /admin/invoices');
     exit;
+}
+if ($invoice) {
+    assert_invoice_access($invoice);
 }
 
 $existingItems = $editId ? $invoiceRepo->itemsForInvoice($editId) : [];
@@ -49,7 +53,7 @@ foreach ($lineItems as &$li) {
 }
 unset($li);
 
-$clients = $clientRepo->listForSelect();
+$clients = $clientRepo->listForSelect(2000, partner_user_id());
 
 $submissionPrefill = null;
 $prefillSubmissionId = isset($_GET['submission_id']) ? (int) $_GET['submission_id'] : 0;
@@ -62,6 +66,8 @@ $invoiceNumber = (string) ($old['invoice_number'] ?? $invoice['invoice_number'] 
 $clientId = (string) ($old['client_id'] ?? ($invoice['client_id'] ?? ''));
 $billToCompany = (string) ($old['bill_to_company'] ?? $invoice['bill_to_company'] ?? '');
 $billToName = (string) ($old['bill_to_name'] ?? $invoice['bill_to_name'] ?? '');
+$billToEmail = (string) ($old['bill_to_email'] ?? $invoice['bill_to_email'] ?? '');
+$billToPhone = (string) ($old['bill_to_phone'] ?? $invoice['bill_to_phone'] ?? '');
 $billToStreet = (string) ($old['bill_to_street'] ?? $invoice['bill_to_street'] ?? '');
 $billToCity = (string) ($old['bill_to_city'] ?? $invoice['bill_to_city'] ?? '');
 $billToProvince = (string) ($old['bill_to_province'] ?? $invoice['bill_to_province'] ?? 'Ontario');
@@ -83,6 +89,20 @@ if ($discountFlat === '') {
 }
 $discountPercentLabel = (string) ($old['discount_percent_label'] ?? ($invoice ? (string) ($invoice['discount_percent_label'] ?? '') : ''));
 $discountFlatLabel = (string) ($old['discount_flat_label'] ?? ($invoice ? (string) ($invoice['discount_flat_label'] ?? '') : ''));
+$advanceAmount = (string) ($old['advance_amount'] ?? ($invoice
+    ? invoice_format_discount_flat_input((float) ($invoice['advance_amount'] ?? 0))
+    : '0'));
+if ($advanceAmount === '') {
+    $advanceAmount = '0';
+}
+$dueAdjustment = (string) ($old['due_adjustment'] ?? ($invoice
+    ? invoice_format_signed_money_input((float) ($invoice['due_adjustment'] ?? 0))
+    : '0'));
+if ($dueAdjustment === '') {
+    $dueAdjustment = '0';
+}
+$advanceLabel = (string) ($old['advance_label'] ?? ($invoice ? (string) ($invoice['advance_label'] ?? '') : ''));
+$dueAdjustmentLabel = (string) ($old['due_adjustment_label'] ?? ($invoice ? (string) ($invoice['due_adjustment_label'] ?? '') : ''));
 $status = (string) ($old['status'] ?? $invoice['status'] ?? 'draft');
 $notes = (string) ($old['notes'] ?? $invoice['notes'] ?? invoice_default_notes());
 
@@ -95,6 +115,12 @@ if ($submissionPrefill !== null && $old === []) {
     }
     if (($submissionPrefill['bill_to_name'] ?? '') !== '') {
         $billToName = (string) $submissionPrefill['bill_to_name'];
+    }
+    if (($submissionPrefill['bill_to_email'] ?? '') !== '') {
+        $billToEmail = (string) $submissionPrefill['bill_to_email'];
+    }
+    if (($submissionPrefill['bill_to_phone'] ?? '') !== '') {
+        $billToPhone = (string) $submissionPrefill['bill_to_phone'];
     }
     if (($submissionPrefill['bill_to_street'] ?? '') !== '') {
         $billToStreet = (string) $submissionPrefill['bill_to_street'];
@@ -123,6 +149,7 @@ foreach ($clients as $c) {
         'name' => (string) $c['name'],
         'company' => (string) $c['company'],
         'email' => (string) $c['email'],
+        'phone' => (string) ($c['phone'] ?? ''),
     ];
 }
 
@@ -149,7 +176,8 @@ if ($clientId !== '') {
             'id' => (int) $clientId,
             'name' => (string) ($invoice['client_name'] ?? $billToName),
             'company' => (string) ($invoice['client_company'] ?? $billToCompany),
-            'email' => (string) ($invoice['client_email'] ?? ''),
+            'email' => (string) ($invoice['client_email'] ?? $billToEmail),
+            'phone' => (string) ($invoice['client_phone'] ?? $billToPhone),
         ];
     }
 }
@@ -205,68 +233,85 @@ require __DIR__ . '/includes/layout-start.php';
   <div class="invoice-composer">
     <div class="invoice-composer-main">
     <section class="invoice-composer-panel">
-      <div class="invoice-composer-grid">
-        <div class="invoice-client-picker" id="invoice-client-picker">
-          <input type="hidden" name="client_id" id="client-id" value="<?= e($clientId) ?>">
-          <label for="client-search">Client</label>
-          <div class="invoice-client-search-wrap">
-            <input type="search" id="client-search" placeholder="Search name, company, or email…"
-              autocomplete="off" aria-autocomplete="list" aria-controls="client-results" aria-expanded="false">
-            <div id="client-results" class="invoice-client-results" role="listbox" hidden></div>
-          </div>
-          <div id="client-selected" class="invoice-client-selected" <?= $selectedClient ? '' : 'hidden' ?>>
-            <div class="invoice-client-selected-main">
-              <strong id="client-selected-name"><?= e((string) ($selectedClient['name'] ?? '')) ?></strong>
-              <span class="admin-field-hint" id="client-selected-meta">
-                <?php
-                  if ($selectedClient) {
-                      $bits = array_filter([
-                          (string) ($selectedClient['company'] ?? ''),
-                          (string) ($selectedClient['email'] ?? ''),
-                      ]);
-                      echo e(implode(' · ', $bits));
-                  }
-                ?>
-              </span>
-            </div>
-            <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" id="client-clear">Clear</button>
-          </div>
+      <div class="invoice-panel-head">
+        <h2 class="invoice-panel-title">Invoice</h2>
+      </div>
+      <div class="invoice-meta-grid invoice-meta-grid--wide">
+        <div class="admin-field">
+          <label for="invoice-number">Invoice #</label>
+          <input type="text" id="invoice-number" name="invoice_number" required value="<?= e($invoiceNumber) ?>">
         </div>
+        <div class="admin-field">
+          <label for="invoice-status">Status</label>
+          <select id="invoice-status" name="status">
+            <?php foreach (invoice_status_options() as $opt): ?>
+              <option value="<?= e($opt) ?>" <?= $status === $opt ? 'selected' : '' ?>><?= e(invoice_status_label($opt)) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="admin-field">
+          <label for="invoice-date">Date</label>
+          <input type="date" id="invoice-date" name="invoice_date" required value="<?= e($invoiceDate) ?>">
+        </div>
+        <div class="admin-field">
+          <label for="due-date">Due</label>
+          <input type="date" id="due-date" name="due_date" required value="<?= e($dueDate) ?>">
+        </div>
+      </div>
+    </section>
 
-        <div class="invoice-meta-grid">
-          <div class="admin-field">
-            <label for="invoice-number">Invoice #</label>
-            <input type="text" id="invoice-number" name="invoice_number" required value="<?= e($invoiceNumber) ?>">
+    <section class="invoice-composer-panel">
+      <div class="invoice-panel-head">
+        <h2 class="invoice-panel-title">Customer</h2>
+        <p class="invoice-panel-hint">Link a saved client, or enter bill-to details. Walk-in customers are added to Clients when you save.</p>
+      </div>
+
+      <div class="invoice-client-picker" id="invoice-client-picker">
+        <input type="hidden" name="client_id" id="client-id" value="<?= e($clientId) ?>">
+        <label for="client-search">Link existing client</label>
+        <div class="invoice-client-search-wrap">
+          <input type="search" id="client-search" placeholder="Search name, company, or email…"
+            autocomplete="off" aria-autocomplete="list" aria-controls="client-results" aria-expanded="false">
+          <div id="client-results" class="invoice-client-results" role="listbox" hidden></div>
+        </div>
+        <div id="client-selected" class="invoice-client-selected" <?= $selectedClient ? '' : 'hidden' ?>>
+          <div class="invoice-client-selected-main">
+            <strong id="client-selected-name"><?= e((string) ($selectedClient['name'] ?? '')) ?></strong>
+            <span class="admin-field-hint" id="client-selected-meta">
+              <?php
+                if ($selectedClient) {
+                    $bits = array_filter([
+                        (string) ($selectedClient['company'] ?? ''),
+                        (string) ($selectedClient['email'] ?? ''),
+                        (string) ($selectedClient['phone'] ?? ''),
+                    ]);
+                    echo e(implode(' · ', $bits));
+                }
+              ?>
+            </span>
           </div>
-          <div class="admin-field">
-            <label for="invoice-status">Status</label>
-            <select id="invoice-status" name="status">
-              <?php foreach (invoice_status_options() as $opt): ?>
-                <option value="<?= e($opt) ?>" <?= $status === $opt ? 'selected' : '' ?>><?= e(invoice_status_label($opt)) ?></option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          <div class="admin-field">
-            <label for="invoice-date">Date</label>
-            <input type="date" id="invoice-date" name="invoice_date" required value="<?= e($invoiceDate) ?>">
-          </div>
-          <div class="admin-field">
-            <label for="due-date">Due</label>
-            <input type="date" id="due-date" name="due_date" required value="<?= e($dueDate) ?>">
-          </div>
+          <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" id="client-clear">Clear</button>
         </div>
       </div>
 
-      <details class="invoice-billto-details" open>
-        <summary>Bill to address</summary>
+      <div class="invoice-billto-block">
+        <h3 class="invoice-billto-title">Bill to</h3>
         <div class="invoice-billto-grid">
           <div class="admin-field">
             <label for="bill-company">Company</label>
-            <input type="text" id="bill-company" name="bill_to_company" value="<?= e($billToCompany) ?>">
+            <input type="text" id="bill-company" name="bill_to_company" value="<?= e($billToCompany) ?>" placeholder="Optional">
           </div>
           <div class="admin-field">
             <label for="bill-name">Contact name</label>
-            <input type="text" id="bill-name" name="bill_to_name" value="<?= e($billToName) ?>">
+            <input type="text" id="bill-name" name="bill_to_name" value="<?= e($billToName) ?>" placeholder="Required if no company" autocomplete="name">
+          </div>
+          <div class="admin-field">
+            <label for="bill-email">Email</label>
+            <input type="email" id="bill-email" name="bill_to_email" value="<?= e($billToEmail) ?>" placeholder="optional@email.com" autocomplete="email">
+          </div>
+          <div class="admin-field">
+            <label for="bill-phone">Phone</label>
+            <input type="tel" id="bill-phone" name="bill_to_phone" value="<?= e($billToPhone) ?>" placeholder="Optional" autocomplete="tel">
           </div>
           <div class="admin-field invoice-billto-street">
             <label for="bill-street">Street</label>
@@ -289,7 +334,7 @@ require __DIR__ . '/includes/layout-start.php';
             <input type="text" id="bill-country" name="bill_to_country" value="<?= e($billToCountry) ?>">
           </div>
         </div>
-      </details>
+      </div>
     </section>
 
     <section class="invoice-composer-panel">
@@ -381,11 +426,34 @@ require __DIR__ . '/includes/layout-start.php';
             value="<?= e($discountFlatLabel) ?>" placeholder="e.g. Courtesy credit">
           <small class="admin-field-hint">Optional label shown on the invoice for the dollar discount.</small>
         </div>
+        <div class="admin-field">
+          <label for="advance-amount">Advance ($)</label>
+          <input type="number" id="advance-amount" name="advance_amount" min="0" step="0.01" inputmode="decimal" autocomplete="off" value="<?= e($advanceAmount) ?>">
+          <small class="admin-field-hint">Prepaid amount that reduces the balance due.</small>
+        </div>
+        <div class="admin-field">
+          <label for="advance-label">Advance name</label>
+          <input type="text" id="advance-label" name="advance_label" maxlength="120"
+            value="<?= e($advanceLabel) ?>" placeholder="e.g. Deposit received">
+        </div>
+        <div class="admin-field">
+          <label for="due-adjustment">Due adjustment ($)</label>
+          <input type="number" id="due-adjustment" name="due_adjustment" step="0.01" inputmode="decimal" autocomplete="off" value="<?= e($dueAdjustment) ?>">
+          <small class="admin-field-hint">Positive increases amount due; negative reduces it.</small>
+        </div>
+        <div class="admin-field">
+          <label for="due-adjustment-label">Due adjustment name</label>
+          <input type="text" id="due-adjustment-label" name="due_adjustment_label" maxlength="120"
+            value="<?= e($dueAdjustmentLabel) ?>" placeholder="e.g. Late fee / write-off">
+        </div>
         <div class="invoice-totals-preview" id="invoice-totals-preview" aria-live="polite">
           <div class="invoice-totals-row"><span>Subtotal</span><strong id="preview-subtotal">$0.00</strong></div>
           <div class="invoice-totals-row" id="preview-discount-percent-row" hidden><span id="preview-discount-percent-label">Discount</span><strong id="preview-discount-percent">$0.00</strong></div>
           <div class="invoice-totals-row" id="preview-discount-flat-row" hidden><span id="preview-discount-flat-label">Flat discount</span><strong id="preview-discount-flat">$0.00</strong></div>
           <div class="invoice-totals-row invoice-totals-row--total"><span>Total</span><strong id="preview-total">$0.00</strong></div>
+          <div class="invoice-totals-row" id="preview-advance-row" hidden><span id="preview-advance-label">Advance</span><strong id="preview-advance">$0.00</strong></div>
+          <div class="invoice-totals-row" id="preview-due-adjustment-row" hidden><span id="preview-due-adjustment-label">Due adjustment</span><strong id="preview-due-adjustment">$0.00</strong></div>
+          <div class="invoice-totals-row invoice-totals-row--due"><span>Amount due</span><strong id="preview-amount-due">$0.00</strong></div>
         </div>
         <div class="invoice-summary-actions">
           <button type="submit" class="admin-btn admin-btn-primary"><?= $invoice ? 'Save invoice' : 'Create invoice' ?></button>
@@ -422,5 +490,5 @@ require __DIR__ . '/includes/layout-start.php';
 window.INVOICE_CLIENTS = <?= json_encode($clientsList, JSON_UNESCAPED_UNICODE) ?>;
 window.INVOICE_SERVICES = <?= json_encode($servicesList, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/admin/js/invoice-edit.js?v=7" defer></script>
+<script src="/admin/js/invoice-edit.js?v=8" defer></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

@@ -45,6 +45,7 @@ function send_submission_notification_emails(
             foreach ($adminEmails as $adminTo) {
                 if (!$mailer->send($adminTo, $adminSubject, $adminHtml, $adminText, $replyTo, [
                     'kind' => 'submission_admin',
+                    'enabled' => false,
                     'ref_type' => 'submission',
                     'ref_id' => $submissionId,
                 ])) {
@@ -71,6 +72,7 @@ function send_submission_notification_emails(
             );
             if (!$mailer->send($clientInfo['email'], $clientSubject, $clientHtml, $clientText, null, [
                 'kind' => 'submission_client',
+                'enabled' => false,
                 'ref_type' => 'submission',
                 'ref_id' => $submissionId,
                 'client_id' => null,

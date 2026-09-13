@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('team.manage');
 
 $userRepo = new UserRepository();
 $page = pagination_page_from_request();
@@ -13,6 +13,8 @@ $pagination = pagination_meta($userTotal, $page, $perPage);
 $users = $userRepo->allPaginated($pagination['per_page'], $pagination['offset']);
 $counts = $userRepo->counts();
 $csrf = Auth::csrfToken();
+$permissionGroups = permission_catalog_grouped();
+$rolePermissionDefaults = permission_role_defaults();
 
 $paginationPath = '/admin/users';
 $paginationQuery = [];
@@ -108,7 +110,8 @@ require __DIR__ . '/includes/layout-start.php';
                 data-user-email="<?= e($u['email']) ?>"
                 data-user-role="<?= e($u['role']) ?>"
                 data-user-status="<?= e($u['status']) ?>"
-                data-user-reference="<?= e($u['reference_code'] ?? '') ?>">
+                data-user-reference="<?= e($u['reference_code'] ?? '') ?>"
+                data-user-permissions="<?= e((string) ($u['permissions_json'] ?? '')) ?>">
                 Edit
               </button>
               <?php if ($u['status'] === 'active'): ?>
@@ -214,6 +217,35 @@ require __DIR__ . '/includes/layout-start.php';
             placeholder="e.g. 1001 or JV-REF" pattern="[A-Za-z0-9_-]{2,32}">
           <small class="admin-field-hint">Shown on dropdowns and used when clients enter a reference code.</small>
         </div>
+
+        <div class="admin-field" id="umodal-permissions-wrap">
+          <div class="umodal-perm-header">
+            <label>Access permissions</label>
+            <button type="button" class="admin-btn admin-btn-sm admin-btn-secondary" id="umodal-perm-reset">
+              Reset to role defaults
+            </button>
+          </div>
+          <p class="admin-field-hint" id="umodal-permissions-hint">
+            Check every area this member can use. Partners still only see submissions linked to their reference.
+          </p>
+          <input type="hidden" name="permissions_custom" id="umodal-permissions-custom" value="1">
+          <div id="umodal-permissions-panel" class="umodal-permissions">
+            <?php foreach ($permissionGroups as $groupLabel => $items): ?>
+              <div class="umodal-perm-group">
+                <div class="umodal-perm-group-title"><?= e($groupLabel) ?></div>
+                <?php foreach ($items as $item): ?>
+                  <label class="umodal-perm-item">
+                    <input type="checkbox" name="permissions[]" value="<?= e($item['key']) ?>" data-perm-key="<?= e($item['key']) ?>">
+                    <span>
+                      <strong><?= e($item['label']) ?></strong>
+                      <small><?= e($item['description']) ?></small>
+                    </span>
+                  </label>
+                <?php endforeach; ?>
+              </div>
+            <?php endforeach; ?>
+          </div>
+        </div>
       </div>
 
       <div class="umodal-footer">
@@ -232,6 +264,7 @@ require __DIR__ . '/includes/layout-start.php';
   'use strict';
 
   const csrf = <?= json_encode($csrf) ?>;
+  const roleDefaults = <?= json_encode($rolePermissionDefaults, JSON_UNESCAPED_UNICODE) ?>;
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const modal     = document.getElementById('user-modal');
@@ -245,6 +278,11 @@ require __DIR__ . '/includes/layout-start.php';
   const statSelect= document.getElementById('umodal-status');
   const refWrap   = document.getElementById('umodal-reference-wrap');
   const refInput  = document.getElementById('umodal-reference-code');
+  const permWrap  = document.getElementById('umodal-permissions-wrap');
+  const permCustom= document.getElementById('umodal-permissions-custom');
+  const permPanel = document.getElementById('umodal-permissions-panel');
+  const permHint  = document.getElementById('umodal-permissions-hint');
+  const permReset = document.getElementById('umodal-perm-reset');
   const title     = document.getElementById('umodal-title');
   const submitBtn = document.getElementById('umodal-submit');
   const submitTxt = document.getElementById('umodal-submit-text');
@@ -256,10 +294,38 @@ require __DIR__ . '/includes/layout-start.php';
     return modal.classList.contains('is-open');
   }
 
+  function permCheckboxes() {
+    return Array.from(document.querySelectorAll('#umodal-permissions-panel input[data-perm-key]'));
+  }
+
+  function setPermissionChecks(keys) {
+    const set = new Set(Array.isArray(keys) ? keys : []);
+    permCheckboxes().forEach(function(cb) {
+      cb.checked = set.has(cb.getAttribute('data-perm-key'));
+    });
+  }
+
   function syncPartnerFields() {
     const isPartner = roleSelect.value === 'partner';
     if (refWrap) refWrap.hidden = !isPartner;
     if (refInput) refInput.required = isPartner;
+  }
+
+  function syncPermissionUi(forceDefaults) {
+    const isAdmin = roleSelect.value === 'admin';
+    if (permWrap) permWrap.hidden = isAdmin;
+    if (permCustom) permCustom.value = isAdmin ? '0' : '1';
+    if (isAdmin) {
+      return;
+    }
+    if (forceDefaults) {
+      setPermissionChecks(roleDefaults[roleSelect.value] || roleDefaults.reviewer || []);
+    }
+    if (permHint) {
+      permHint.textContent = roleSelect.value === 'partner'
+        ? 'Check every area this partner can use. Submissions stay limited to their reference code.'
+        : 'Check every area this member can use. Unchecked areas stay hidden in the menu.';
+    }
   }
 
   // ── Open / close ─────────────────────────────────────────────────────────
@@ -277,7 +343,22 @@ require __DIR__ . '/includes/layout-start.php';
     pwInput.required      = isNew;
     pwReq.style.display   = isNew ? '' : 'none';
     pwOpt.style.display   = isNew ? 'none' : '';
+
+    let customKeys = null;
+    if (!isNew && user.permissions_json) {
+      try {
+        const parsed = typeof user.permissions_json === 'string'
+          ? JSON.parse(user.permissions_json)
+          : user.permissions_json;
+        if (Array.isArray(parsed) && parsed.length) customKeys = parsed;
+      } catch (e) { customKeys = null; }
+    }
     syncPartnerFields();
+    syncPermissionUi(true);
+    if (Array.isArray(customKeys)) {
+      setPermissionChecks(customKeys);
+    }
+
     hideErrors();
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
@@ -394,7 +475,13 @@ require __DIR__ . '/includes/layout-start.php';
     if (e.key === 'Escape' && isOpen()) closeModal();
   });
 
-  roleSelect?.addEventListener('change', syncPartnerFields);
+  roleSelect?.addEventListener('change', function() {
+    syncPartnerFields();
+    syncPermissionUi(true);
+  });
+  permReset?.addEventListener('click', function() {
+    syncPermissionUi(true);
+  });
 
   document.querySelectorAll('.btn-edit-user').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -405,6 +492,7 @@ require __DIR__ . '/includes/layout-start.php';
         role:   btn.dataset.userRole || 'reviewer',
         status: btn.dataset.userStatus || 'active',
         reference_code: btn.dataset.userReference || '',
+        permissions_json: btn.dataset.userPermissions || '',
       });
     });
   });

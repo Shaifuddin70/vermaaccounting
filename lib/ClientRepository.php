@@ -11,9 +11,9 @@ final class ClientRepository
         $this->db = Database::instance()->pdo();
     }
 
-    public function count(?string $search = null): int
+    public function count(?string $search = null, ?int $partnerUserId = null): int
     {
-        [$where, $params] = $this->searchClause($search);
+        [$where, $params] = $this->searchClause($search, $partnerUserId);
         $stmt = $this->db->prepare('SELECT COUNT(*) FROM clients c ' . $where);
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
@@ -25,7 +25,61 @@ final class ClientRepository
             SELECT COUNT(DISTINCT LOWER(email))
             FROM clients
             WHERE email IS NOT NULL AND TRIM(email) != ''
+              AND email_unsubscribed_at IS NULL
         ");
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function setEmailUnsubscribed(int $clientId, bool $unsubscribed = true): bool
+    {
+        $clientId = max(0, $clientId);
+        if ($clientId < 1) {
+            return false;
+        }
+        $stmt = $this->db->prepare('
+            UPDATE clients
+            SET email_unsubscribed_at = ?, updated_at = ?
+            WHERE id = ?
+        ');
+        $stmt->execute([
+            $unsubscribed ? now_iso() : null,
+            now_iso(),
+            $clientId,
+        ]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function isEmailUnsubscribed(int $clientId): bool
+    {
+        $stmt = $this->db->prepare('
+            SELECT email_unsubscribed_at FROM clients WHERE id = ? LIMIT 1
+        ');
+        $stmt->execute([$clientId]);
+        $val = $stmt->fetchColumn();
+        return $val !== false && $val !== null && trim((string) $val) !== '';
+    }
+
+    public function countCreatedBetween(?string $from = null, ?string $to = null, ?int $partnerUserId = null): int
+    {
+        $parts = [];
+        $params = [];
+        if ($from !== null && $from !== '') {
+            $parts[] = 'DATE(c.created_at) >= ?';
+            $params[] = $from;
+        }
+        if ($to !== null && $to !== '') {
+            $parts[] = 'DATE(c.created_at) <= ?';
+            $params[] = $to;
+        }
+        [$scopeSql, $scopeParams] = partner_client_scope_sql($partnerUserId, 'c');
+        if ($scopeSql !== '') {
+            $parts[] = $scopeSql;
+            $params = array_merge($params, $scopeParams);
+        }
+        $where = $parts === [] ? '' : (' WHERE ' . implode(' AND ', $parts));
+        $stmt = $this->db->prepare('SELECT COUNT(*) FROM clients c' . $where);
+        $stmt->execute($params);
+
         return (int) $stmt->fetchColumn();
     }
 
@@ -40,6 +94,7 @@ final class ClientRepository
             SELECT c.id, c.name, c.email, c.sin, c.company
             FROM clients c
             WHERE c.email IS NOT NULL AND TRIM(c.email) != ''
+              AND c.email_unsubscribed_at IS NULL
             ORDER BY c.name ASC, c.id ASC
         ")->fetchAll();
 
@@ -62,6 +117,7 @@ final class ClientRepository
             SELECT c.id, c.name, c.email, c.sin, c.company, c.date_of_birth
             FROM clients c
             WHERE c.email IS NOT NULL AND TRIM(c.email) != ''
+              AND c.email_unsubscribed_at IS NULL
               AND c.date_of_birth IS NOT NULL AND TRIM(c.date_of_birth) != ''
               AND (c.birthday_last_sent_year IS NULL OR c.birthday_last_sent_year != ?)
         ";
@@ -198,11 +254,11 @@ final class ClientRepository
     /**
      * @return list<array>
      */
-    public function allWithStats(?string $search = null, int $limit = 50, int $offset = 0): array
+    public function allWithStats(?string $search = null, int $limit = 50, int $offset = 0, ?int $partnerUserId = null): array
     {
         $limit = max(1, min(200, $limit));
         $offset = max(0, $offset);
-        [$where, $params] = $this->searchClause($search);
+        [$where, $params] = $this->searchClause($search, $partnerUserId);
 
         $sql = '
             SELECT
@@ -234,15 +290,19 @@ final class ClientRepository
      *
      * @return list<array{id: int, name: string, company: string, email: string}>
      */
-    public function listForSelect(int $limit = 2000): array
+    public function listForSelect(int $limit = 2000, ?int $partnerUserId = null): array
     {
         $limit = max(1, min(5000, $limit));
-        $stmt = $this->db->query('
-            SELECT id, name, company, email
-            FROM clients
-            ORDER BY name ASC
+        [$scopeSql, $scopeParams] = partner_client_scope_sql($partnerUserId, 'c');
+        $where = $scopeSql !== '' ? (' WHERE ' . $scopeSql) : '';
+        $stmt = $this->db->prepare('
+            SELECT c.id, c.name, c.company, c.email, c.phone
+            FROM clients c
+            ' . $where . '
+            ORDER BY c.name ASC
             LIMIT ' . $limit
         );
+        $stmt->execute($scopeParams);
         $rows = $stmt->fetchAll();
         $out = [];
         foreach ($rows as $row) {
@@ -251,6 +311,7 @@ final class ClientRepository
                 'name' => (string) ($row['name'] ?? ''),
                 'company' => (string) ($row['company'] ?? ''),
                 'email' => (string) ($row['email'] ?? ''),
+                'phone' => (string) ($row['phone'] ?? ''),
             ];
         }
         return $out;
@@ -259,9 +320,14 @@ final class ClientRepository
     /**
      * @return list<array>
      */
-    public function submissionsForClient(int $clientId, ?int $year = null, ?int $limit = null, ?int $offset = null): array
-    {
-        [$sql, $params] = $this->clientSubmissionSql($clientId, $year);
+    public function submissionsForClient(
+        int $clientId,
+        ?int $year = null,
+        ?int $limit = null,
+        ?int $offset = null,
+        ?int $partnerUserId = null
+    ): array {
+        [$sql, $params] = $this->clientSubmissionSql($clientId, $year, $partnerUserId);
         $sql .= ' ORDER BY s.created_at DESC';
         if ($limit !== null) {
             $limit = max(1, min(200, $limit));
@@ -273,15 +339,20 @@ final class ClientRepository
         return $stmt->fetchAll();
     }
 
-    public function countSubmissionsForClient(int $clientId, ?int $year = null): int
+    public function countSubmissionsForClient(int $clientId, ?int $year = null, ?int $partnerUserId = null): int
     {
         $sql = '
             SELECT COUNT(*)
             FROM client_submissions cs
             INNER JOIN submissions s ON s.id = cs.submission_id
-            WHERE cs.client_id = ?
         ';
-        $params = [$clientId];
+        $params = [];
+        if ($partnerUserId !== null && $partnerUserId > 0) {
+            $sql .= ' INNER JOIN submission_partners sp ON sp.submission_id = s.id AND sp.user_id = ?';
+            $params[] = $partnerUserId;
+        }
+        $sql .= ' WHERE cs.client_id = ?';
+        $params[] = $clientId;
         if ($year !== null && $year > 0) {
             $sql .= ' AND (s.tax_year = ? OR (s.tax_year IS NULL AND YEAR(s.created_at) = ?))';
             $params[] = $year;
@@ -293,16 +364,21 @@ final class ClientRepository
     }
 
     /** @return array{0: string, 1: list<mixed>} */
-    private function clientSubmissionSql(int $clientId, ?int $year): array
+    private function clientSubmissionSql(int $clientId, ?int $year, ?int $partnerUserId = null): array
     {
         $sql = '
             SELECT s.*, f.title AS form_title, f.slug AS form_slug
             FROM client_submissions cs
             INNER JOIN submissions s ON s.id = cs.submission_id
             INNER JOIN forms f ON f.id = s.form_id
-            WHERE cs.client_id = ?
         ';
-        $params = [$clientId];
+        $params = [];
+        if ($partnerUserId !== null && $partnerUserId > 0) {
+            $sql .= ' INNER JOIN submission_partners sp ON sp.submission_id = s.id AND sp.user_id = ?';
+            $params[] = $partnerUserId;
+        }
+        $sql .= ' WHERE cs.client_id = ?';
+        $params[] = $clientId;
         if ($year !== null && $year > 0) {
             $sql .= ' AND (s.tax_year = ? OR (s.tax_year IS NULL AND YEAR(s.created_at) = ?))';
             $params[] = $year;
@@ -312,17 +388,22 @@ final class ClientRepository
     }
 
     /** @return array<int, int> year => count */
-    public function submissionYearCountsForClient(int $clientId): array
+    public function submissionYearCountsForClient(int $clientId, ?int $partnerUserId = null): array
     {
-        $stmt = $this->db->prepare('
+        $sql = '
             SELECT COALESCE(s.tax_year, YEAR(s.created_at)) AS yr, COUNT(*) AS cnt
             FROM client_submissions cs
             INNER JOIN submissions s ON s.id = cs.submission_id
-            WHERE cs.client_id = ?
-            GROUP BY yr
-            ORDER BY yr DESC
-        ');
-        $stmt->execute([$clientId]);
+        ';
+        $params = [];
+        if ($partnerUserId !== null && $partnerUserId > 0) {
+            $sql .= ' INNER JOIN submission_partners sp ON sp.submission_id = s.id AND sp.user_id = ?';
+            $params[] = $partnerUserId;
+        }
+        $sql .= ' WHERE cs.client_id = ? GROUP BY yr ORDER BY yr DESC';
+        $params[] = $clientId;
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
         $map = [];
         foreach ($stmt->fetchAll() as $row) {
             $map[(int) $row['yr']] = (int) $row['cnt'];
@@ -399,6 +480,67 @@ final class ClientRepository
             now_iso(),
             $id,
         ]);
+    }
+
+    public function delete(int $id): bool
+    {
+        $id = (int) $id;
+        if ($id < 1 || $this->find($id) === null) {
+            return false;
+        }
+        $stmt = $this->db->prepare('DELETE FROM clients WHERE id = ?');
+        return $stmt->execute([$id]);
+    }
+
+    /**
+     * @param list<int> $ids
+     * @return int Number of clients deleted
+     */
+    public function deleteMany(array $ids): int
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map(static fn ($id): int => (int) $id, $ids),
+            static fn (int $id): bool => $id > 0
+        )));
+        if ($ids === []) {
+            return 0;
+        }
+
+        $deleted = 0;
+        foreach ($ids as $id) {
+            if ($this->delete($id)) {
+                $deleted++;
+            }
+        }
+        return $deleted;
+    }
+
+    /** Delete every client record. Returns how many were removed. */
+    public function deleteAll(): int
+    {
+        $total = $this->count(null);
+        if ($total < 1) {
+            return 0;
+        }
+        // FK cascades clear client_submissions; invoice client_id is SET NULL.
+        $this->db->exec('DELETE FROM clients');
+        return $total;
+    }
+
+    public function sinExists(string $sin, ?int $excludeId = null): bool
+    {
+        $sin = $this->normalizeSin($sin);
+        if ($sin === null || $sin === '') {
+            return false;
+        }
+        if ($excludeId !== null && $excludeId > 0) {
+            $stmt = $this->db->prepare('SELECT id FROM clients WHERE sin = ? AND id != ? LIMIT 1');
+            $stmt->execute([$sin, $excludeId]);
+        } else {
+            $stmt = $this->db->prepare('SELECT id FROM clients WHERE sin = ? LIMIT 1');
+            $stmt->execute([$sin]);
+        }
+        return (bool) $stmt->fetch();
     }
 
     public function linkSubmission(int $clientId, int $submissionId): void
@@ -575,9 +717,11 @@ final class ClientRepository
     /**
      * @return list<array>
      */
-    public function exportRows(): array
+    public function exportRows(?int $partnerUserId = null): array
     {
-        $stmt = $this->db->query('
+        [$scopeSql, $scopeParams] = partner_client_scope_sql($partnerUserId, 'c');
+        $where = $scopeSql !== '' ? (' WHERE ' . $scopeSql) : '';
+        $stmt = $this->db->prepare('
             SELECT
                 c.name,
                 c.sin,
@@ -591,9 +735,11 @@ final class ClientRepository
                 c.created_at
             FROM clients c
             LEFT JOIN client_submissions cs ON cs.client_id = c.id
+            ' . $where . '
             GROUP BY c.id
             ORDER BY c.name ASC
         ');
+        $stmt->execute($scopeParams);
         return $stmt->fetchAll();
     }
 
@@ -643,6 +789,25 @@ final class ClientRepository
         return ['id' => $id, 'is_new' => true];
     }
 
+    /**
+     * Create or match a client from invoice bill-to / contact fields.
+     *
+     * @param array{name?: string, email?: string, phone?: string, company?: string, sin?: string, date_of_birth?: string|null} $data
+     * @return array{id: int, is_new: bool}|null
+     */
+    public function upsertFromContact(array $data, string $source = 'manual'): ?array
+    {
+        $source = in_array($source, ['import', 'submission', 'manual'], true) ? $source : 'manual';
+        return $this->upsertFromExtracted([
+            'name' => trim((string) ($data['name'] ?? '')),
+            'email' => trim((string) ($data['email'] ?? '')),
+            'phone' => trim((string) ($data['phone'] ?? '')),
+            'company' => trim((string) ($data['company'] ?? '')),
+            'sin' => trim((string) ($data['sin'] ?? '')),
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+        ], $source);
+    }
+
     private function fillEmptyFields(int $clientId, array $extracted): void
     {
         $client = $this->find($clientId);
@@ -675,23 +840,38 @@ final class ClientRepository
     }
 
     /** @return array{0: string, 1: list<mixed>} */
-    private function searchClause(?string $search): array
+    private function searchClause(?string $search, ?int $partnerUserId = null): array
     {
+        $parts = [];
+        $params = [];
         $search = trim((string) $search);
-        if ($search === '') {
-            return ['', []];
+        if ($search !== '') {
+            if (preg_match('/^\d+$/', $search)) {
+                $parts[] = '(c.id = ? OR c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)';
+                $params[] = (int) $search;
+                $like = '%' . $search . '%';
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+            } else {
+                $like = '%' . $search . '%';
+                $parts[] = '(c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)';
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+                $params[] = $like;
+            }
         }
-        if (preg_match('/^\d+$/', $search)) {
-            return [
-                'WHERE (c.id = ? OR c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)',
-                [(int) $search, '%' . $search . '%', '%' . $search . '%', '%' . $search . '%', '%' . $search . '%', '%' . $search . '%'],
-            ];
+        [$scopeSql, $scopeParams] = partner_client_scope_sql($partnerUserId, 'c');
+        if ($scopeSql !== '') {
+            $parts[] = $scopeSql;
+            $params = array_merge($params, $scopeParams);
         }
-        $like = '%' . $search . '%';
-        return [
-            'WHERE (c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)',
-            [$like, $like, $like, $like, $like],
-        ];
+        $where = $parts === [] ? '' : ('WHERE ' . implode(' AND ', $parts));
+        return [$where, $params];
     }
 
     private function normalizeEmail(mixed $email): ?string

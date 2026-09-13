@@ -22,7 +22,7 @@ if (function_exists('app_begin_output_filter')) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/css/admin.css?v=88">
+  <link rel="stylesheet" href="/admin/css/admin.css?v=96">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.css">
 </head>
 <body class="admin-body">
@@ -47,69 +47,103 @@ if (function_exists('app_begin_output_filter')) {
         <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></span>
         <span class="admin-nav-label">Dashboard</span>
       </a>
+      <?php if (Auth::can('reports.view')): ?>
+        <a href="/admin/reports" class="admin-nav-item <?= $activeNav === 'reports' ? 'active' : '' ?>">
+          <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg></span>
+          <span class="admin-nav-label">Reports</span>
+        </a>
+      <?php endif; ?>
 
       <span class="admin-nav-section">Work</span>
+      <?php if (Auth::can('submissions.view')): ?>
       <a href="/admin/reviewer-submissions" class="admin-nav-item <?= $activeNav === 'submissions' ? 'active' : '' ?>">
         <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14H7v-2h5v2zm5-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
         <span class="admin-nav-label">Submissions</span>
       </a>
-      <?php if (Auth::userRole() === 'admin'): ?>
+      <?php endif; ?>
+      <?php if (Auth::can('clients.view')): ?>
         <a href="/admin/clients" class="admin-nav-item <?= $activeNav === 'clients' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>
           <span class="admin-nav-label">Clients</span>
         </a>
+      <?php endif; ?>
+      <?php if (Auth::can('invoices.view')): ?>
         <a href="/admin/invoices" class="admin-nav-item <?= $activeNav === 'invoices' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
           <span class="admin-nav-label">Invoices</span>
         </a>
       <?php endif; ?>
 
-      <?php if (Auth::userRole() === 'admin'): ?>
+      <?php if (Auth::can('forms.manage') || Auth::can('blogs.manage') || Auth::can('files.manage')): ?>
         <span class="admin-nav-section">Content</span>
+        <?php if (Auth::can('forms.manage')): ?>
         <a href="/admin/forms" class="admin-nav-item <?= $activeNav === 'forms' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></span>
           <span class="admin-nav-label">All forms</span>
         </a>
+        <?php endif; ?>
+        <?php if (Auth::can('blogs.manage')): ?>
         <a href="/admin/blogs" class="admin-nav-item <?= $activeNav === 'blogs' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
           <span class="admin-nav-label">Blogs</span>
         </a>
+        <?php endif; ?>
+        <?php if (Auth::can('files.manage')): ?>
         <a href="/admin/files" class="admin-nav-item <?= $activeNav === 'files' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg></span>
           <span class="admin-nav-label">Files</span>
         </a>
+        <?php endif; ?>
+      <?php endif; ?>
 
+      <?php if (Auth::can('campaigns.manage') || Auth::can('email.tracker') || Auth::can('email.holidays') || Auth::can('email.birthdays') || Auth::can('email.settings')): ?>
         <span class="admin-nav-section">Communications</span>
+        <?php if (Auth::can('campaigns.manage')): ?>
         <a href="/admin/campaigns" class="admin-nav-item <?= $activeNav === 'campaigns' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
           <span class="admin-nav-label">Campaigns</span>
         </a>
+        <?php endif; ?>
+        <?php if (Auth::can('email.tracker')): ?>
         <a href="/admin/email-tracker" class="admin-nav-item <?= $activeNav === 'email-tracker' || $activeNav === 'email-opens' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg></span>
           <span class="admin-nav-label">Email Tracker</span>
         </a>
+        <?php endif; ?>
+        <?php if (Auth::can('email.holidays')): ?>
         <a href="/admin/holiday-calendar" class="admin-nav-item <?= $activeNav === 'holidays' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/></svg></span>
           <span class="admin-nav-label">Holiday emails</span>
         </a>
+        <?php endif; ?>
+        <?php if (Auth::can('email.birthdays')): ?>
         <a href="/admin/birthday-emails" class="admin-nav-item <?= $activeNav === 'birthdays' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 6c1.11 0 2-.9 2-2 0-.38-.1-.73-.29-1.03L12 0l-1.71 2.97c-.19.3-.29.65-.29 1.03 0 1.1.9 2 2 2zm4.6 9.99l-1.07-1.07-1.08 1.07c-1.3 1.3-3.58 1.31-4.89 0l-1.07-1.07-1.09 1.07C6.29 17.21 5.55 18 4.62 18H1v2c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2v-2h-3.62c-.93 0-1.67-.79-2.78-1.01zM18 9h-5V7h-2v2H6c-1.66 0-3 1.34-3 3v2h2.12c.53 0 1.04.21 1.41.59l1.07 1.07 1.07-1.07c1.31-1.31 3.59-1.31 4.9 0l1.07 1.07 1.07-1.07c.37-.37.88-.59 1.41-.59H21v-2c0-1.66-1.34-3-3-3z"/></svg></span>
           <span class="admin-nav-label">Birthday emails</span>
         </a>
+        <?php endif; ?>
+        <?php if (Auth::can('email.settings')): ?>
         <a href="/admin/email-settings" class="admin-nav-item <?= $activeNav === 'email' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg></span>
           <span class="admin-nav-label">Email settings</span>
         </a>
+        <?php endif; ?>
+      <?php endif; ?>
 
+      <?php if (Auth::can('team.manage') || Auth::can('activity.view')): ?>
         <span class="admin-nav-section">Settings</span>
+        <?php if (Auth::can('team.manage')): ?>
         <a href="/admin/users" class="admin-nav-item <?= $activeNav === 'users' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></span>
           <span class="admin-nav-label">Team</span>
         </a>
+        <?php endif; ?>
+        <?php if (Auth::can('activity.view')): ?>
         <a href="/admin/activity-log" class="admin-nav-item <?= $activeNav === 'activity' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.954 8.954 0 0 0 13 21a9 9 0 0 0 0-18zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg></span>
           <span class="admin-nav-label">Activity log</span>
         </a>
+        <?php endif; ?>
       <?php endif; ?>
     </nav>
   </aside>

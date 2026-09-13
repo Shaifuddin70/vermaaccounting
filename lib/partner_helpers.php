@@ -168,6 +168,151 @@ function partner_user_id(): ?int
     return $id ? (int) $id : null;
 }
 
+/**
+ * Clients reachable via submissions linked to this partner.
+ *
+ * @return list<int>
+ */
+function partner_accessible_client_ids(int $partnerId): array
+{
+    $partnerId = max(0, $partnerId);
+    if ($partnerId < 1) {
+        return [];
+    }
+
+    $stmt = Database::instance()->pdo()->prepare('
+        SELECT DISTINCT cs.client_id
+        FROM client_submissions cs
+        INNER JOIN submission_partners sp
+            ON sp.submission_id = cs.submission_id AND sp.user_id = ?
+        WHERE cs.client_id IS NOT NULL
+    ');
+    $stmt->execute([$partnerId]);
+    $ids = [];
+    foreach ($stmt->fetchAll() ?: [] as $row) {
+        $id = (int) ($row['client_id'] ?? 0);
+        if ($id > 0) {
+            $ids[] = $id;
+        }
+    }
+
+    return $ids;
+}
+
+function partner_has_client_access(int $clientId, ?int $partnerId = null): bool
+{
+    $clientId = max(0, $clientId);
+    if ($clientId < 1) {
+        return false;
+    }
+    $partnerId = $partnerId ?? partner_user_id();
+    if ($partnerId === null) {
+        return true;
+    }
+
+    $stmt = Database::instance()->pdo()->prepare('
+        SELECT 1
+        FROM client_submissions cs
+        INNER JOIN submission_partners sp
+            ON sp.submission_id = cs.submission_id AND sp.user_id = ?
+        WHERE cs.client_id = ?
+        LIMIT 1
+    ');
+    $stmt->execute([$partnerId, $clientId]);
+
+    return (bool) $stmt->fetchColumn();
+}
+
+function partner_has_invoice_access(array $invoice, ?int $partnerId = null): bool
+{
+    $partnerId = $partnerId ?? partner_user_id();
+    if ($partnerId === null) {
+        return true;
+    }
+    $clientId = (int) ($invoice['client_id'] ?? 0);
+    if ($clientId < 1) {
+        return false;
+    }
+
+    return partner_has_client_access($clientId, $partnerId);
+}
+
+/** @param array<string, mixed> $client */
+function assert_client_access(array $client): void
+{
+    $partnerId = partner_user_id();
+    if ($partnerId === null) {
+        return;
+    }
+    if (!partner_has_client_access((int) ($client['id'] ?? 0), $partnerId)) {
+        $_SESSION['flash_error'] = 'You do not have access to that client.';
+        header('Location: /admin/clients');
+        exit;
+    }
+}
+
+/** @param array<string, mixed> $invoice */
+function assert_invoice_access(array $invoice): void
+{
+    $partnerId = partner_user_id();
+    if ($partnerId === null) {
+        return;
+    }
+    if (!partner_has_invoice_access($invoice, $partnerId)) {
+        $_SESSION['flash_error'] = 'You do not have access to that invoice.';
+        header('Location: /admin/invoices');
+        exit;
+    }
+}
+
+/**
+ * SQL fragment requiring client alias to be linked to the partner via submissions.
+ *
+ * @return array{0: string, 1: list<mixed>} AND-clause (no leading AND) + params
+ */
+function partner_client_scope_sql(?int $partnerUserId, string $clientAlias = 'c'): array
+{
+    if ($partnerUserId === null || $partnerUserId < 1) {
+        return ['', []];
+    }
+    $alias = preg_replace('/[^a-zA-Z0-9_]/', '', $clientAlias) ?: 'c';
+
+    return [
+        'EXISTS (
+            SELECT 1
+            FROM client_submissions pcs
+            INNER JOIN submission_partners psp
+                ON psp.submission_id = pcs.submission_id AND psp.user_id = ?
+            WHERE pcs.client_id = ' . $alias . '.id
+        )',
+        [$partnerUserId],
+    ];
+}
+
+/**
+ * SQL fragment requiring invoice alias to belong to a partner-linked client.
+ *
+ * @return array{0: string, 1: list<mixed>}
+ */
+function partner_invoice_scope_sql(?int $partnerUserId, string $invoiceAlias = 'i'): array
+{
+    if ($partnerUserId === null || $partnerUserId < 1) {
+        return ['', []];
+    }
+    $alias = preg_replace('/[^a-zA-Z0-9_]/', '', $invoiceAlias) ?: 'i';
+
+    return [
+        $alias . '.client_id IS NOT NULL AND EXISTS (
+            SELECT 1
+            FROM client_submissions pcs
+            INNER JOIN submission_partners psp
+                ON psp.submission_id = pcs.submission_id AND psp.user_id = ?
+            WHERE pcs.client_id = ' . $alias . '.client_id
+        )',
+        [$partnerUserId],
+    ];
+}
+
 function format_partner_submission_value(mixed $value): string
 {
     if ($value === '' || $value === null) {

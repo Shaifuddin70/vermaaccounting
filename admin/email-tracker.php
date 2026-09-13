@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('email.tracker');
 
 $view = trim((string) ($_GET['view'] ?? 'batches'));
 $days = (int) ($_GET['days'] ?? 30);

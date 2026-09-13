@@ -165,10 +165,13 @@ final class Database
         $this->ensureClientsTables();
         $this->ensureClientsSinColumn();
         $this->ensureClientsBirthdayColumns();
+        $this->ensureClientsManualSource();
+        $this->ensureClientsEmailUnsubscribedColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
         $this->ensureUsersAvatarColumn();
+        $this->ensureUsersPermissionsColumn();
         $this->ensureAppSettingsTable();
         $this->ensureEmailCampaignsTables();
         $this->ensureHolidaySchedulesTable();
@@ -177,9 +180,13 @@ final class Database
         $this->ensureInvoiceTables();
         $this->ensureInvoiceDiscountFlatColumn();
         $this->ensureInvoiceDiscountLabelColumns();
+        $this->ensureInvoiceBillToContactColumns();
+        $this->ensureInvoiceAdvanceColumns();
+        $this->ensureInvoiceStatusColumns();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
+        $this->ensureTaxIntakeForm();
     }
 
     private function migrateSqlite(): void
@@ -250,10 +257,13 @@ final class Database
         $this->ensureClientsTables();
         $this->ensureClientsSinColumn();
         $this->ensureClientsBirthdayColumns();
+        $this->ensureClientsManualSource();
+        $this->ensureClientsEmailUnsubscribedColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
         $this->ensureUsersAvatarColumn();
+        $this->ensureUsersPermissionsColumn();
         $this->ensureAppSettingsTable();
         $this->ensureEmailCampaignsTables();
         $this->ensureHolidaySchedulesTable();
@@ -262,6 +272,9 @@ final class Database
         $this->ensureInvoiceTables();
         $this->ensureInvoiceDiscountFlatColumn();
         $this->ensureInvoiceDiscountLabelColumns();
+        $this->ensureInvoiceBillToContactColumns();
+        $this->ensureInvoiceAdvanceColumns();
+        $this->ensureInvoiceStatusColumns();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -371,6 +384,8 @@ final class Database
                     client_id INT UNSIGNED DEFAULT NULL,
                     bill_to_company VARCHAR(255) DEFAULT NULL,
                     bill_to_name VARCHAR(255) DEFAULT NULL,
+                    bill_to_email VARCHAR(191) DEFAULT NULL,
+                    bill_to_phone VARCHAR(64) DEFAULT NULL,
                     bill_to_street VARCHAR(255) DEFAULT NULL,
                     bill_to_city VARCHAR(128) DEFAULT NULL,
                     bill_to_province VARCHAR(128) DEFAULT NULL,
@@ -383,11 +398,16 @@ final class Database
                     discount_flat DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     discount_percent_label VARCHAR(191) DEFAULT NULL,
                     discount_flat_label VARCHAR(191) DEFAULT NULL,
+                    advance_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    due_adjustment DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    advance_label VARCHAR(191) DEFAULT NULL,
+                    due_adjustment_label VARCHAR(191) DEFAULT NULL,
                     subtotal DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     discount_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     total DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    amount_due DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     notes TEXT,
-                    status ENUM("draft", "sent", "paid", "void") NOT NULL DEFAULT "draft",
+                    status ENUM("draft", "approved", "sent") NOT NULL DEFAULT "draft",
                     created_by_user_id INT UNSIGNED DEFAULT NULL,
                     created_by_name VARCHAR(191) DEFAULT NULL,
                     created_at DATETIME NOT NULL,
@@ -438,6 +458,8 @@ final class Database
                 client_id INTEGER,
                 bill_to_company TEXT,
                 bill_to_name TEXT,
+                bill_to_email TEXT,
+                bill_to_phone TEXT,
                 bill_to_street TEXT,
                 bill_to_city TEXT,
                 bill_to_province TEXT,
@@ -450,9 +472,14 @@ final class Database
                 discount_flat REAL NOT NULL DEFAULT 0,
                 discount_percent_label TEXT,
                 discount_flat_label TEXT,
+                advance_amount REAL NOT NULL DEFAULT 0,
+                due_adjustment REAL NOT NULL DEFAULT 0,
+                advance_label TEXT,
+                due_adjustment_label TEXT,
                 subtotal REAL NOT NULL DEFAULT 0,
                 discount_amount REAL NOT NULL DEFAULT 0,
                 total REAL NOT NULL DEFAULT 0,
+                amount_due REAL NOT NULL DEFAULT 0,
                 notes TEXT,
                 status TEXT NOT NULL DEFAULT "draft",
                 created_by_user_id INTEGER,
@@ -509,6 +536,88 @@ final class Database
                 $this->pdo->exec('ALTER TABLE invoices ADD COLUMN discount_flat_label TEXT');
             }
         }
+    }
+
+    private function ensureInvoiceBillToContactColumns(): void
+    {
+        if (!$this->columnExists('invoices', 'bill_to_email')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN bill_to_email VARCHAR(191) DEFAULT NULL AFTER bill_to_name');
+            } else {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN bill_to_email TEXT');
+            }
+        }
+        if (!$this->columnExists('invoices', 'bill_to_phone')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN bill_to_phone VARCHAR(64) DEFAULT NULL AFTER bill_to_email');
+            } else {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN bill_to_phone TEXT');
+            }
+        }
+    }
+
+    private function ensureInvoiceAdvanceColumns(): void
+    {
+        $moneyType = $this->driver === 'mysql' ? 'DECIMAL(12, 2) NOT NULL DEFAULT 0.00' : 'REAL NOT NULL DEFAULT 0';
+        $labelType = $this->driver === 'mysql' ? 'VARCHAR(191) DEFAULT NULL' : 'TEXT';
+
+        if (!$this->columnExists('invoices', 'advance_amount')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN advance_amount {$moneyType} AFTER discount_flat_label");
+            } else {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN advance_amount {$moneyType}");
+            }
+        }
+        if (!$this->columnExists('invoices', 'due_adjustment')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN due_adjustment {$moneyType} AFTER advance_amount");
+            } else {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN due_adjustment {$moneyType}");
+            }
+        }
+        if (!$this->columnExists('invoices', 'advance_label')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN advance_label {$labelType} AFTER due_adjustment");
+            } else {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN advance_label {$labelType}");
+            }
+        }
+        if (!$this->columnExists('invoices', 'due_adjustment_label')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN due_adjustment_label {$labelType} AFTER advance_label");
+            } else {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN due_adjustment_label {$labelType}");
+            }
+        }
+        if (!$this->columnExists('invoices', 'amount_due')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN amount_due {$moneyType} AFTER total");
+            } else {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN amount_due {$moneyType}");
+            }
+            // Backfill existing invoices: amount due starts equal to total.
+            $this->pdo->exec('UPDATE invoices SET amount_due = total WHERE amount_due = 0 AND total <> 0');
+        }
+    }
+
+    private function ensureInvoiceStatusColumns(): void
+    {
+        // Remap legacy statuses before tightening the MySQL ENUM.
+        $this->pdo->exec("UPDATE invoices SET status = 'sent' WHERE status = 'paid'");
+        $this->pdo->exec("UPDATE invoices SET status = 'draft' WHERE status = 'void'");
+
+        if ($this->driver !== 'mysql') {
+            return;
+        }
+
+        $stmt = $this->pdo->query("SHOW COLUMNS FROM invoices LIKE 'status'");
+        $col = $stmt ? $stmt->fetch() : false;
+        $type = strtolower((string) ($col['Type'] ?? ''));
+        if ($type !== '' && str_contains($type, 'approved') && !str_contains($type, 'paid') && !str_contains($type, 'void')) {
+            return;
+        }
+
+        $this->pdo->exec('ALTER TABLE invoices MODIFY COLUMN status ENUM("draft", "approved", "sent") NOT NULL DEFAULT "draft"');
     }
 
     private function ensurePartnerRole(): void
@@ -587,6 +696,20 @@ final class Database
         }
     }
 
+    private function ensureUsersPermissionsColumn(): void
+    {
+        if ($this->driver === 'mysql') {
+            if (!$this->columnExists('users', 'permissions_json')) {
+                $this->pdo->exec('ALTER TABLE users ADD COLUMN permissions_json JSON DEFAULT NULL AFTER role');
+            }
+            return;
+        }
+
+        if (!$this->sqliteColumnExists('users', 'permissions_json')) {
+            $this->pdo->exec('ALTER TABLE users ADD COLUMN permissions_json TEXT');
+        }
+    }
+
     private function ensureClientsTables(): void
     {
         if ($this->driver === 'mysql') {
@@ -599,7 +722,7 @@ final class Database
                     phone VARCHAR(64) DEFAULT NULL,
                     company VARCHAR(255) DEFAULT NULL,
                     notes TEXT DEFAULT NULL,
-                    source ENUM("import", "submission") NOT NULL DEFAULT "submission",
+                    source ENUM("import", "submission", "manual") NOT NULL DEFAULT "submission",
                     created_at DATETIME NOT NULL,
                     updated_at DATETIME NOT NULL,
                     UNIQUE KEY uk_clients_sin (sin),
@@ -698,6 +821,34 @@ final class Database
             $this->pdo->exec('ALTER TABLE clients ADD COLUMN birthday_last_sent_year INTEGER');
         }
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_clients_dob ON clients(date_of_birth)');
+    }
+
+    private function ensureClientsManualSource(): void
+    {
+        if ($this->driver !== 'mysql') {
+            return;
+        }
+        $stmt = $this->pdo->query("SHOW COLUMNS FROM clients LIKE 'source'");
+        $col = $stmt->fetch();
+        $type = (string) ($col['Type'] ?? '');
+        if ($type !== '' && !str_contains($type, 'manual')) {
+            $this->pdo->exec("ALTER TABLE clients MODIFY source ENUM('import', 'submission', 'manual') NOT NULL DEFAULT 'submission'");
+        }
+    }
+
+    private function ensureClientsEmailUnsubscribedColumn(): void
+    {
+        if ($this->driver === 'mysql') {
+            if (!$this->columnExists('clients', 'email_unsubscribed_at')) {
+                $this->pdo->exec('ALTER TABLE clients ADD COLUMN email_unsubscribed_at DATETIME DEFAULT NULL AFTER updated_at');
+                $this->pdo->exec('ALTER TABLE clients ADD KEY idx_clients_email_unsub (email_unsubscribed_at)');
+            }
+            return;
+        }
+
+        if (!$this->sqliteColumnExists('clients', 'email_unsubscribed_at')) {
+            $this->pdo->exec('ALTER TABLE clients ADD COLUMN email_unsubscribed_at TEXT');
+        }
     }
 
     private function ensureFormsSiteCtaColumns(): void

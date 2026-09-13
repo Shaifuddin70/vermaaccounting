@@ -3,19 +3,20 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('invoices.view');
 
 $invoiceRepo = new InvoiceRepository();
 $serviceRepo = new InvoiceServiceRepository();
+$partnerId = partner_user_id();
 
 $search = trim((string) ($_GET['q'] ?? ''));
 $status = trim((string) ($_GET['status'] ?? 'all'));
 $page = pagination_page_from_request();
 $perPage = pagination_per_page_from_request();
 
-$total = $invoiceRepo->count($search !== '' ? $search : null, $status);
+$total = $invoiceRepo->count($search !== '' ? $search : null, $status, $partnerId);
 $pagination = pagination_meta($total, $page, $perPage);
-$invoices = $invoiceRepo->all($search !== '' ? $search : null, $status, $pagination['per_page'], $pagination['offset']);
+$invoices = $invoiceRepo->all($search !== '' ? $search : null, $status, $pagination['per_page'], $pagination['offset'], $partnerId);
 $serviceCount = $serviceRepo->count(null, true);
 
 $paginationQuery = array_filter([
@@ -35,9 +36,13 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Invoices</h1>
   <div class="admin-header-actions">
+    <?php if ($partnerId === null && Auth::can('invoices.manage')): ?>
     <a href="/admin/invoice-settings" class="admin-btn admin-btn-secondary">Company details</a>
     <a href="/admin/invoice-services" class="admin-btn admin-btn-secondary">Services (<?= (int) $serviceCount ?>)</a>
+    <?php endif; ?>
+    <?php if (Auth::can('invoices.manage')): ?>
     <a href="/admin/invoice-edit" class="admin-btn admin-btn-primary">+ New invoice</a>
+    <?php endif; ?>
   </div>
 </div>
 
@@ -151,9 +156,9 @@ require __DIR__ . '/includes/layout-start.php';
                 <?php
                   $st = (string) ($inv['status'] ?? 'draft');
                   $badge = match ($st) {
-                      'paid' => 'admin-badge-success',
+                      'approved' => 'admin-badge-success',
                       'sent' => 'admin-badge-info',
-                      'void' => 'admin-badge-muted',
+                      'paid' => 'admin-badge-info',
                       default => '',
                   };
                 ?>

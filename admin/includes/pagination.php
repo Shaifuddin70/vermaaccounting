@@ -6,7 +6,7 @@ declare(strict_types=1);
 /** @var string $paginationPath */
 /** @var array<string, scalar> $paginationQuery */
 /** @var string $paginationLabel */
-/** @var string $paginationShow 'per_page'|'nav' */
+/** @var string $paginationShow 'per_page'|'per_page_bare'|'nav' */
 
 $total = (int) ($pagination['total'] ?? 0);
 if ($total < 1) {
@@ -21,8 +21,8 @@ $query = $paginationQuery ?? [];
 $show = $paginationShow ?? 'nav';
 $fieldId = 'per-page-' . md5($paginationPath . serialize($query));
 
-if ($show === 'per_page'): ?>
-  <div class="admin-table-toolbar">
+if ($show === 'per_page' || $show === 'per_page_bare'):
+  ob_start(); ?>
     <form method="get" action="<?= e($paginationPath) ?>" class="admin-pagination-per-page">
       <?php foreach ($query as $key => $value): ?>
         <?php if ($value !== '' && $value !== null): ?>
@@ -42,6 +42,15 @@ if ($show === 'per_page'): ?>
       </select>
       <span class="admin-pagination-per-page-suffix">per page</span>
     </form>
+  <?php
+  $perPageFormHtml = ob_get_clean();
+  if ($show === 'per_page_bare') {
+      echo $perPageFormHtml;
+      return;
+  }
+  ?>
+  <div class="admin-table-toolbar">
+    <?= $perPageFormHtml ?>
   </div>
 <?php
     return;

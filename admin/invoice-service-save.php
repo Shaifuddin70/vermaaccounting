@@ -3,7 +3,13 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireRole('admin');
+Auth::requireCapability('invoices.manage');
+
+if (partner_user_id() !== null) {
+    $_SESSION['flash_error'] = 'This area is only available to admins.';
+    header('Location: /admin/');
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /admin/invoice-services');
