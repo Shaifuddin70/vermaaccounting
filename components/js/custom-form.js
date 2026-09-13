@@ -1235,8 +1235,9 @@
       if (generation !== lookupGeneration) return;
       const json = await res.json();
       if (generation !== lookupGeneration) return;
-      if (json.found && json.data) {
-        showPrefillModal(json.data, json.submitted_at || '');
+      // API intentionally does not return submission payloads (PII).
+      if (json.found) {
+        showPrefillModal(null, json.submitted_at || '');
       }
     } catch (err) {
       /* silent */
@@ -1259,9 +1260,7 @@
     });
 
     prefillConfirm?.addEventListener('click', () => {
-      if (pendingPrefillData) {
-        applyPrefillData(pendingPrefillData);
-      }
+      // Do not apply prior submission data — server no longer returns it.
       hidePrefillModal();
       lastLookupKey = '';
     });

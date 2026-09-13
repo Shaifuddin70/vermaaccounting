@@ -60,6 +60,10 @@ function seo_meta_for_path(string $path): array
             'title' => 'Submit Tax Documents | Verma Accounting',
             'description' => 'Securely upload personal or business tax documents to Verma Accounting using your customer ID reference number.',
         ],
+        '/tax-intake' => [
+            'title' => 'File Your Tax Return | Verma Accounting',
+            'description' => 'Start your personal tax filing with Verma Accounting. Answer a few simple questions about you, your household, income, and deductions.',
+        ],
         '/about' => [
             'title' => 'About Verma Accounting | Ontario Tax Accountants',
             'description' => 'Learn about Verma Accounting: certified Ontario accountants with 10+ years helping individuals and businesses with tax, bookkeeping, and payroll.',

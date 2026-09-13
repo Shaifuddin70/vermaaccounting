@@ -1169,11 +1169,11 @@ function normalize_data_match_settings(array $settings, array $formFields = []):
     return [
         'enabled' => $enabled,
         'fieldIds' => $fieldIds,
-        'title' => trim((string) ($dm['title'] ?? '')) ?: 'We found your information',
+        'title' => trim((string) ($dm['title'] ?? '')) ?: 'We may already have your information',
         'message' => trim((string) ($dm['message'] ?? ''))
-            ?: 'A previous submission matches what you entered. Would you like to fill this form with that saved information?',
-        'confirmLabel' => trim((string) ($dm['confirmLabel'] ?? '')) ?: 'Yes, fill the form',
-        'declineLabel' => trim((string) ($dm['declineLabel'] ?? '')) ?: 'No, start fresh',
+            ?: 'A previous submission matches what you entered. For your privacy we do not auto-fill personal details here — continue this form and our team will match your records.',
+        'confirmLabel' => trim((string) ($dm['confirmLabel'] ?? '')) ?: 'Continue',
+        'declineLabel' => trim((string) ($dm['declineLabel'] ?? '')) ?: 'Got it',
     ];
 }
 

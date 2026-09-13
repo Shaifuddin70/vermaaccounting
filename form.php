@@ -50,7 +50,7 @@ if ($embed) {
     <?php include __DIR__ . '/components/form-render.php'; ?>
   </div>
   <script>window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;</script>
-  <script src="/components/js/custom-form.js?v=19"></script>
+  <script src="/components/js/custom-form.js?v=20"></script>
 </body>
 </html>
     <?php
@@ -130,5 +130,5 @@ include __DIR__ . '/components/header.php';
 <script>
   window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/components/js/custom-form.js?v=19"></script>
+<script src="/components/js/custom-form.js?v=20"></script>
 <?php include __DIR__ . '/components/footer.php'; ?>

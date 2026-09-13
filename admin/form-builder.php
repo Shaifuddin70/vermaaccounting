@@ -14,12 +14,28 @@ if ($formId && !$form) {
     exit;
 }
 
-$schema = $form ? $repo->decodeSchema($form) : normalize_form_schema(['fields' => []]);
+$templateKey = !$form ? trim((string) ($_GET['template'] ?? '')) : '';
+$templateSchema = null;
+$templateTitle = 'Untitled form';
+$templateDescription = '';
+$templateSlug = '';
+
+if ($templateKey === 'tax-intake' && function_exists('tax_intake_default_schema')) {
+    $templateSchema = tax_intake_default_schema();
+    $templateTitle = 'File Your Tax Return';
+    $templateDescription = 'Personal tax intake — about you, household, income, deductions, and documents.';
+    // Leave slug empty so a copy does not collide with the seeded /tax-intake form.
+    $templateSlug = '';
+}
+
+$schema = $form
+    ? $repo->decodeSchema($form)
+    : normalize_form_schema($templateSchema ?? ['fields' => []]);
 $initial = [
     'id' => $form ? (int) $form['id'] : null,
-    'slug' => $form['slug'] ?? '',
-    'title' => $form['title'] ?? 'Untitled form',
-    'description' => $form['description'] ?? '',
+    'slug' => $form['slug'] ?? $templateSlug,
+    'title' => $form['title'] ?? $templateTitle,
+    'description' => $form['description'] ?? $templateDescription,
     'status' => $form['status'] ?? 'draft',
     'is_site_cta' => $form ? !empty($form['is_site_cta']) : false,
     'cta_label' => $form['cta_label'] ?? '',

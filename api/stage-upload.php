@@ -12,6 +12,15 @@ try {
         json_response(['error' => 'Method not allowed'], 405);
     }
 
+    // Opportunistic cleanup of abandoned staging sessions (TTL).
+    staging_cleanup_expired();
+
+    $uploadLimit = 30;
+    $uploadWindow = 3600;
+    if (form_spam_action_is_limited('stage-upload', $uploadLimit, $uploadWindow)) {
+        json_response(['error' => 'Too many uploads from your network. Please try again later.'], 429);
+    }
+
     $slug = trim((string) ($_POST['form_slug'] ?? ''));
     $fieldId = trim((string) ($_POST['field_id'] ?? ''));
     $session = normalize_upload_session_id(trim((string) ($_POST['upload_session'] ?? '')));
@@ -49,6 +58,8 @@ try {
     if (!$check['ok']) {
         json_response(['error' => (string) ($check['error'] ?? 'Upload failed.')], 422);
     }
+
+    form_spam_action_record('stage-upload', $uploadWindow);
 
     $result = staging_store_upload($form, $field, $session, $_FILES['file'], (string) $check['mime']);
 

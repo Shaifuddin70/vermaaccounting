@@ -58,6 +58,15 @@ function staging_find_field(array $schema, string $fieldId): ?array
         if (($field['id'] ?? '') === $fieldId) {
             return $field;
         }
+        if (($field['type'] ?? '') !== 'yes_no') {
+            continue;
+        }
+        foreach (yes_no_follow_ups($field) as $followUp) {
+            $pseudo = yes_no_follow_up_as_field($field, $followUp);
+            if (($pseudo['id'] ?? '') === $fieldId) {
+                return $pseudo;
+            }
+        }
     }
     return null;
 }
@@ -489,4 +498,99 @@ function process_field_file_uploads(
         : $storedNames;
 
     return [$dataValue, $filesMeta];
+}
+
+/** Default staging TTL: 6 hours. */
+function staging_ttl_seconds(): int
+{
+    $config = function_exists('app_config') ? app_config() : [];
+    $spam = is_array($config['form_spam'] ?? null) ? $config['form_spam'] : [];
+    return max(3600, (int) ($spam['staging_ttl_seconds'] ?? 21600));
+}
+
+function staging_cleanup_lock_path(): string
+{
+    return UPLOADS_DIR . '/staging/.cleanup-lock';
+}
+
+/**
+ * Recursively remove a directory tree.
+ */
+function staging_rm_tree(string $dir): void
+{
+    if (!is_dir($dir)) {
+        return;
+    }
+    $items = @scandir($dir);
+    if (!is_array($items)) {
+        return;
+    }
+    foreach ($items as $item) {
+        if ($item === '.' || $item === '..') {
+            continue;
+        }
+        $path = $dir . '/' . $item;
+        if (is_dir($path)) {
+            staging_rm_tree($path);
+        } else {
+            @unlink($path);
+        }
+    }
+    @rmdir($dir);
+}
+
+/**
+ * Delete abandoned staging sessions older than TTL.
+ * Throttled to at most once every 5 minutes per process host.
+ *
+ * @return int Number of sessions removed
+ */
+function staging_cleanup_expired(?int $maxAgeSeconds = null): int
+{
+    $maxAgeSeconds = $maxAgeSeconds ?? staging_ttl_seconds();
+    $root = UPLOADS_DIR . '/staging';
+    if (!is_dir($root)) {
+        return 0;
+    }
+
+    $lock = staging_cleanup_lock_path();
+    $now = time();
+    if (is_file($lock)) {
+        $last = (int) @file_get_contents($lock);
+        if ($last > 0 && ($now - $last) < 300) {
+            return 0;
+        }
+    }
+    @file_put_contents($lock, (string) $now, LOCK_EX);
+
+    $removed = 0;
+    $entries = @scandir($root);
+    if (!is_array($entries)) {
+        return 0;
+    }
+
+    foreach ($entries as $entry) {
+        if ($entry === '.' || $entry === '..' || str_starts_with($entry, '.')) {
+            continue;
+        }
+        if (!preg_match(staging_upload_session_pattern(), $entry)) {
+            continue;
+        }
+        $dir = $root . '/' . $entry;
+        if (!is_dir($dir)) {
+            continue;
+        }
+
+        $mtime = @filemtime($dir) ?: 0;
+        $manifest = $dir . '/manifest.json';
+        if (is_file($manifest)) {
+            $mtime = max($mtime, (int) (@filemtime($manifest) ?: 0));
+        }
+        if ($mtime > 0 && ($now - $mtime) > $maxAgeSeconds) {
+            staging_rm_tree($dir);
+            $removed++;
+        }
+    }
+
+    return $removed;
 }

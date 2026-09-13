@@ -27,7 +27,10 @@ require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>All forms</h1>
-  <a href="/admin/form-builder" class="admin-btn">+ New form</a>
+  <div class="admin-header-actions">
+    <a href="/admin/form-builder?template=tax-intake" class="admin-btn admin-btn-secondary">Tax intake template</a>
+    <a href="/admin/form-builder" class="admin-btn">+ New form</a>
+  </div>
 </div>
 
 <div class="admin-card">
@@ -38,7 +41,10 @@ require __DIR__ . '/includes/layout-start.php';
       </span>
       <h2 class="admin-empty-state-title">No forms yet</h2>
       <p class="admin-empty-state-text">Build your first form to start collecting client information and documents.</p>
-      <a href="/admin/form-builder" class="admin-btn">Create your first form</a>
+      <div class="admin-header-actions">
+        <a href="/admin/form-builder?template=tax-intake" class="admin-btn">Start from tax intake</a>
+        <a href="/admin/form-builder" class="admin-btn admin-btn-secondary">Blank form</a>
+      </div>
     </div>
   <?php else: ?>
     <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>

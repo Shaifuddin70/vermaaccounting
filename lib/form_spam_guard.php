@@ -23,23 +23,36 @@ function form_spam_token_field_name(): string
 
 function form_spam_client_ip(): string
 {
-    $candidates = [
-        (string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''),
-        (string) ($_SERVER['HTTP_X_REAL_IP'] ?? ''),
-    ];
-    $forwarded = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
-    if ($forwarded !== '') {
-        $first = trim(explode(',', $forwarded)[0] ?? '');
-        if ($first !== '') {
-            array_unshift($candidates, $first);
+    // Prefer Cloudflare's connecting IP (set at the edge; clients cannot forge it
+    // when traffic actually passes through Cloudflare).
+    $cf = trim((string) ($_SERVER['HTTP_CF_CONNECTING_IP'] ?? ''));
+    if ($cf !== '' && filter_var($cf, FILTER_VALIDATE_IP)) {
+        return $cf;
+    }
+
+    $config = function_exists('app_config') ? app_config() : [];
+    $spam = is_array($config['form_spam'] ?? null) ? $config['form_spam'] : [];
+    $trustProxy = !empty($spam['trust_proxy_headers']);
+
+    // Only trust reverse-proxy headers when explicitly enabled (otherwise spoofable).
+    if ($trustProxy) {
+        $candidates = [
+            trim((string) ($_SERVER['HTTP_X_REAL_IP'] ?? '')),
+        ];
+        $forwarded = (string) ($_SERVER['HTTP_X_FORWARDED_FOR'] ?? '');
+        if ($forwarded !== '') {
+            $first = trim(explode(',', $forwarded)[0] ?? '');
+            if ($first !== '') {
+                $candidates[] = $first;
+            }
+        }
+        foreach ($candidates as $candidate) {
+            if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_IP)) {
+                return $candidate;
+            }
         }
     }
-    foreach ($candidates as $candidate) {
-        $ip = trim($candidate);
-        if ($ip !== '' && filter_var($ip, FILTER_VALIDATE_IP)) {
-            return $ip;
-        }
-    }
+
     $ip = trim((string) ($_SERVER['REMOTE_ADDR'] ?? ''));
     return $ip !== '' ? $ip : 'unknown';
 }
@@ -282,6 +295,26 @@ function form_spam_record_hit(string $slug = ''): void
 {
     form_spam_record_ip_hit();
     form_spam_record_global_hit($slug);
+}
+
+/**
+ * Generic per-IP action rate limit (lookups, staged uploads, etc.).
+ */
+function form_spam_action_is_limited(string $action, int $limit, int $windowSeconds): bool
+{
+    $limit = max(1, $limit);
+    $windowSeconds = max(60, $windowSeconds);
+    $path = form_spam_hit_file('action:' . $action . ':' . form_spam_client_ip());
+    return count(form_spam_read_hits($path, time() - $windowSeconds)) >= $limit;
+}
+
+function form_spam_action_record(string $action, int $windowSeconds): void
+{
+    $windowSeconds = max(60, $windowSeconds);
+    $path = form_spam_hit_file('action:' . $action . ':' . form_spam_client_ip());
+    $hits = form_spam_read_hits($path, time() - $windowSeconds);
+    $hits[] = time();
+    form_spam_write_hits($path, $hits);
 }
 
 /**

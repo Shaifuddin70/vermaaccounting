@@ -86,6 +86,7 @@ require_once __DIR__ . '/InvoicePdf.php';
 require_once __DIR__ . '/invoice_emails.php';
 require_once __DIR__ . '/contact_form.php';
 require_once __DIR__ . '/document_submission_form.php';
+require_once __DIR__ . '/tax_intake_form.php';
 require_once __DIR__ . '/form_spam_guard.php';
 
 ensure_data_dirs();

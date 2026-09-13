@@ -16,7 +16,8 @@ include 'components/header.php';
           <h1 class="section-title">Professional Personal Tax Services in Canada | Expert Tax Preparers</h1>
           <p>Maximize refunds. Minimize stress. We prepare and file personal income taxes with precision, ensuring compliance and uncovering eligible credits for better returns. Serving individuals across Ontario, Toronto, Vancouver, Montreal, and all of Canada with comprehensive personal tax services.</p>
           <div class="cta-buttons left">
-            <a href="/contact" class="cta-button primary">Get Free Consultation</a>
+            <a href="/tax-intake" class="cta-button primary">File Your Taxes</a>
+            <a href="/contact" class="cta-button orange">Get Free Consultation</a>
             <a href="tel:613-318-6478" class="cta-button orange"><i class="fas fa-phone"></i> 613-318-6478</a>
           </div>
         </div>

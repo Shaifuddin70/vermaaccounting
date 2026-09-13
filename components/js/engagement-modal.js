@@ -7,6 +7,7 @@
     '/contact': true,
     '/contact-us': true,
     '/submit-documents': true,
+    '/tax-intake': true,
   };
 
   function shouldSkip() {

@@ -7,6 +7,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_response(['error' => 'Method not allowed'], 405);
 }
 
+// Throttle enumeration / guessing of match fields (email + phone, etc.).
+$lookupLimit = 10;
+$lookupWindow = 3600;
+if (form_spam_action_is_limited('lookup-submission', $lookupLimit, $lookupWindow)) {
+    json_response(['error' => 'Too many lookup attempts. Please try again later.'], 429);
+}
+form_spam_action_record('lookup-submission', $lookupWindow);
+
 $input = json_decode(file_get_contents('php://input') ?: '{}', true);
 if (!is_array($input)) {
     $input = $_POST;
@@ -61,11 +69,9 @@ if (!$submission) {
     json_response(['found' => false]);
 }
 
-$data = json_decode($submission['data_json'], true) ?: [];
-
+// Never return submission payloads to anonymous callers (SIN, DOB, documents metadata, etc.).
 json_response([
     'found' => true,
     'submitted_at' => $submission['created_at'],
     'tax_year' => $submission['tax_year'] ?? null,
-    'data' => $data,
 ]);

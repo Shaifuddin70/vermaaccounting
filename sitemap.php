@@ -30,6 +30,7 @@ $static = [
     ['loc' => '/about', 'changefreq' => 'monthly', 'priority' => '0.7', 'lastmod' => $today],
     ['loc' => '/contact', 'changefreq' => 'monthly', 'priority' => '0.7', 'lastmod' => $today],
     ['loc' => '/submit-documents', 'changefreq' => 'monthly', 'priority' => '0.7', 'lastmod' => $today],
+    ['loc' => '/tax-intake', 'changefreq' => 'monthly', 'priority' => '0.8', 'lastmod' => $today],
     ['loc' => '/privacy', 'changefreq' => 'yearly', 'priority' => '0.3', 'lastmod' => $today],
 ];
 

@@ -265,6 +265,7 @@ final class Database
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
+        $this->ensureTaxIntakeForm();
     }
 
     private function ensureDocumentSubmissionForm(): void
@@ -281,6 +282,14 @@ final class Database
             return;
         }
         ensure_contact_form();
+    }
+
+    private function ensureTaxIntakeForm(): void
+    {
+        if (!function_exists('ensure_tax_intake_form')) {
+            return;
+        }
+        ensure_tax_intake_form();
     }
 
     private function ensureEmailTrackingTable(): void

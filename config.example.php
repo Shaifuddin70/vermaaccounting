@@ -84,6 +84,11 @@ return [
         'global_limit' => 15,
         'global_window' => 600,
         'min_seconds' => 3,
+        // Only enable if Apache/nginx strips client-supplied X-Forwarded-For / X-Real-IP.
+        // Cloudflare CF-Connecting-IP is always preferred when present.
+        'trust_proxy_headers' => false,
+        // Abandoned staged uploads older than this are removed opportunistically.
+        'staging_ttl_seconds' => 21600,
         // Optional: set a long random string in config.local.php
         // 'secret' => 'change-me-to-a-long-random-string',
     ],

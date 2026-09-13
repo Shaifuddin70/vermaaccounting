@@ -18,6 +18,15 @@ if (!$file) {
     exit('File not found.');
 }
 
+$form = $repo->find((int) ($file['form_id'] ?? 0));
+$submission = $repo->findSubmission((int) ($file['submission_id'] ?? 0));
+if (!$form || !$submission) {
+    http_response_code(404);
+    exit('File not found.');
+}
+
+assert_submission_access($form, $submission);
+
 $path = UPLOADS_DIR . '/' . $file['stored_name'];
 if (!is_file($path) || !is_readable($path)) {
     http_response_code(404);
