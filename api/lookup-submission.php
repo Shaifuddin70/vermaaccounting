@@ -69,9 +69,15 @@ if (!$submission) {
     json_response(['found' => false]);
 }
 
-// Never return submission payloads to anonymous callers (SIN, DOB, documents metadata, etc.).
+$data = json_decode((string) ($submission['data_json'] ?? ''), true);
+if (!is_array($data)) {
+    $data = [];
+}
+
 json_response([
     'found' => true,
     'submitted_at' => $submission['created_at'],
     'tax_year' => $submission['tax_year'] ?? null,
+    // Strip SIN / DOB / files / etc. — returning visitors who know match keys can still autofill the rest.
+    'data' => form_data_match_public_prefill($schema, $data),
 ]);

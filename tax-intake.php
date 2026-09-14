@@ -87,5 +87,5 @@ include __DIR__ . '/components/header.php';
 <script>
   window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/components/js/custom-form.js?v=20"></script>
+<script src="/components/js/custom-form.js?v=21"></script>
 <?php include __DIR__ . '/components/footer.php'; ?>

@@ -1573,7 +1573,17 @@
     state.schema.settings.successMessage =
       el('success-message').value.trim() || 'Thank you! Your response has been received.';
     const taxYear = syncTaxYearSettings();
-    syncDataMatchSettings();
+    const dataMatch = syncDataMatchSettings();
+    if (dataMatch.enabled && (dataMatch.fieldIds || []).length < 2) {
+      if (window.AdminToast) {
+        window.AdminToast.error('Autofill requires at least 2 match fields selected.');
+      } else {
+        alert('Autofill requires at least 2 match fields selected.');
+      }
+      const section = el('fb-section-autofill');
+      if (section) section.open = true;
+      return;
+    }
 
     const getSelected = getSelectedField();
     if (getSelected) {

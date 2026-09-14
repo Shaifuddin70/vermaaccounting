@@ -738,13 +738,12 @@ function tax_intake_default_schema(): array
                 'years' => [],
             ],
             'dataMatch' => [
-                // Disabled: anonymous lookup must not return tax PII (SIN, DOB, etc.).
                 'enabled' => false,
                 'fieldIds' => ['ti_email', 'ti_phone'],
-                'title' => 'We may already have your info',
-                'message' => 'We found a matching client profile on file. Continue filling this form — our team will match your records securely.',
-                'confirmLabel' => 'Continue',
-                'declineLabel' => 'Got it',
+                'title' => 'We found your information',
+                'message' => 'A previous submission matches what you entered. Would you like to fill this form with that saved information?',
+                'confirmLabel' => 'Yes, fill the form',
+                'declineLabel' => 'No, start fresh',
             ],
         ],
     ];
@@ -752,7 +751,6 @@ function tax_intake_default_schema(): array
 
 /**
  * Ensure the published Tax Intake form exists (create-if-missing; never overwrite edits).
- * Also hardens security-sensitive settings on existing installs.
  */
 function ensure_tax_intake_form(): void
 {
@@ -766,40 +764,5 @@ function ensure_tax_intake_form(): void
             'schema' => tax_intake_default_schema(),
             'status' => 'published',
         ]);
-        return;
     }
-
-    tax_intake_harden_existing_form();
-}
-
-/**
- * Disable anonymous PII prefill on the seeded tax intake form.
- */
-function tax_intake_harden_existing_form(): void
-{
-    $repo = new FormRepository();
-    $form = $repo->findBySlug(tax_intake_form_slug(), false);
-    if ($form === null) {
-        return;
-    }
-
-    $schema = $repo->decodeSchema($form);
-    $dm = is_array($schema['settings']['dataMatch'] ?? null) ? $schema['settings']['dataMatch'] : [];
-    if (empty($dm['enabled'])) {
-        return;
-    }
-
-    $schema['settings']['dataMatch']['enabled'] = false;
-    $schema['settings']['dataMatch']['message'] = 'We found a matching client profile on file. Continue filling this form — our team will match your records securely.';
-    $schema['settings']['dataMatch']['confirmLabel'] = 'Continue';
-    $schema['settings']['dataMatch']['declineLabel'] = 'Got it';
-
-    $repo->update((int) $form['id'], [
-        'slug' => $form['slug'],
-        'title' => $form['title'],
-        'description' => $form['description'] ?? '',
-        'status' => $form['status'],
-        'schema' => $schema,
-        'cta_label' => $form['cta_label'] ?? null,
-    ]);
 }

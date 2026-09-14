@@ -206,6 +206,7 @@ require __DIR__ . '/includes/layout-start.php';
             <input type="checkbox" id="data-match-enabled" <?= !empty($dm['enabled']) ? 'checked' : '' ?>>
             <span>Enable lookup and autofill popup</span>
           </label>
+          <small class="admin-field-hint">Select at least 2 match fields below, then save. Sensitive fields (SIN, DOB, uploads) are never auto-filled.</small>
         </div>
         <div id="data-match-settings" class="data-match-settings">
           <div class="admin-field admin-field--full">
@@ -284,5 +285,5 @@ require __DIR__ . '/includes/layout-start.php';
     activePartners: <?= json_encode((new UserRepository())->activePartners(), JSON_UNESCAPED_UNICODE) ?>
   };
 </script>
-<script src="/admin/js/form-builder.js?v=20"></script>
+<script src="/admin/js/form-builder.js?v=21"></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

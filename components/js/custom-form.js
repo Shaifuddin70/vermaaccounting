@@ -1235,9 +1235,11 @@
       if (generation !== lookupGeneration) return;
       const json = await res.json();
       if (generation !== lookupGeneration) return;
-      // API intentionally does not return submission payloads (PII).
-      if (json.found) {
-        showPrefillModal(null, json.submitted_at || '');
+      // Prefill safe fields only (API already strips sensitive values).
+      if (json.found && json.data && typeof json.data === 'object') {
+        showPrefillModal(json.data, json.submitted_at || '');
+      } else if (json.found) {
+        showPrefillModal({}, json.submitted_at || '');
       }
     } catch (err) {
       /* silent */
@@ -1260,7 +1262,9 @@
     });
 
     prefillConfirm?.addEventListener('click', () => {
-      // Do not apply prior submission data — server no longer returns it.
+      if (pendingPrefillData && typeof pendingPrefillData === 'object') {
+        applyPrefillData(pendingPrefillData);
+      }
       hidePrefillModal();
       lastLookupKey = '';
     });

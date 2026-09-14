@@ -1142,6 +1142,98 @@ function form_data_matchable_field_types(): array
     return ['text', 'email', 'tel', 'number', 'date', 'select', 'radio', 'yes_no'];
 }
 
+/** Field types never returned for public autofill. */
+function form_data_match_excluded_field_types(): array
+{
+    return ['file', 'signature', 'partners'];
+}
+
+/** @param array<string, mixed> $field */
+function form_data_match_field_is_sensitive(array $field): bool
+{
+    $type = (string) ($field['type'] ?? '');
+    if (in_array($type, form_data_match_excluded_field_types(), true)) {
+        return true;
+    }
+
+    $blob = strtolower(trim(
+        (string) ($field['id'] ?? '') . ' '
+        . (string) ($field['name'] ?? '') . ' '
+        . (string) ($field['label'] ?? '')
+    ));
+    if ($blob === '') {
+        return false;
+    }
+
+    $needles = [
+        'sin',
+        'ssn',
+        'social insurance',
+        'social security',
+        'password',
+        'date_of_birth',
+        'date of birth',
+        'dob',
+        'passport',
+        'driver licence',
+        'driver license',
+        'drivers license',
+        'banking',
+        'transit number',
+        'account number',
+        'institution number',
+    ];
+    foreach ($needles as $needle) {
+        if (str_contains($needle, ' ')) {
+            if (str_contains($blob, $needle)) {
+                return true;
+            }
+            continue;
+        }
+        if (preg_match('/(?:^|[^a-z0-9])' . preg_quote($needle, '/') . '(?:[^a-z0-9]|$)/', $blob)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Strip sensitive / upload fields from a submission payload before public autofill.
+ *
+ * @param array<string, mixed> $schema
+ * @param array<string, mixed> $data
+ * @return array<string, mixed>
+ */
+function form_data_match_public_prefill(array $schema, array $data): array
+{
+    $allowedNames = [];
+    foreach ($schema['fields'] ?? [] as $field) {
+        if (!is_array($field) || form_data_match_field_is_sensitive($field)) {
+            continue;
+        }
+        $name = trim((string) ($field['name'] ?? ''));
+        if ($name !== '') {
+            $allowedNames[$name] = true;
+            $allowedNames[$name . '_reason'] = true;
+        }
+    }
+
+    $out = [];
+    foreach ($data as $key => $value) {
+        $key = (string) $key;
+        if ($key === '' || !isset($allowedNames[$key])) {
+            continue;
+        }
+        if (is_array($value) && isset($value[0]) && is_array($value[0]) && isset($value[0]['stored_name'])) {
+            continue;
+        }
+        $out[$key] = $value;
+    }
+
+    return $out;
+}
+
 /** @return array{enabled: bool, fieldIds: list<string>, title: string, message: string, confirmLabel: string, declineLabel: string} */
 function normalize_data_match_settings(array $settings, array $formFields = []): array
 {
@@ -1170,11 +1262,11 @@ function normalize_data_match_settings(array $settings, array $formFields = []):
     return [
         'enabled' => $enabled,
         'fieldIds' => $fieldIds,
-        'title' => trim((string) ($dm['title'] ?? '')) ?: 'We may already have your information',
+        'title' => trim((string) ($dm['title'] ?? '')) ?: 'We found your information',
         'message' => trim((string) ($dm['message'] ?? ''))
-            ?: 'A previous submission matches what you entered. For your privacy we do not auto-fill personal details here — continue this form and our team will match your records.',
-        'confirmLabel' => trim((string) ($dm['confirmLabel'] ?? '')) ?: 'Continue',
-        'declineLabel' => trim((string) ($dm['declineLabel'] ?? '')) ?: 'Got it',
+            ?: 'A previous submission matches what you entered. Would you like to fill this form with that saved information?',
+        'confirmLabel' => trim((string) ($dm['confirmLabel'] ?? '')) ?: 'Yes, fill the form',
+        'declineLabel' => trim((string) ($dm['declineLabel'] ?? '')) ?: 'No, start fresh',
     ];
 }
 
