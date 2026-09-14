@@ -1185,14 +1185,18 @@
 
   function showPrefillModal(data, submittedAt) {
     if (prefillDismissed) return;
+    if (prefillModal && !prefillModal.hidden) {
+      pendingPrefillData = data;
+      if (prefillMeta && submittedAt) {
+        prefillMeta.textContent = 'Last submitted: ' + submittedAt;
+      }
+      return;
+    }
     pendingPrefillData = data;
     if (prefillMeta && submittedAt) {
       prefillMeta.textContent = 'Last submitted: ' + submittedAt;
     } else if (prefillMeta) {
       prefillMeta.textContent = '';
-    }
-    if (prefillModal && !prefillModal.hidden) {
-      return;
     }
     if (prefillModal) {
       prefillModal.hidden = false;
@@ -1265,18 +1269,25 @@
       if (pendingPrefillData && typeof pendingPrefillData === 'object') {
         applyPrefillData(pendingPrefillData);
       }
+      // Accepted once — do not prompt again for the same visit.
+      prefillDismissed = true;
+      clearTimeout(lookupTimer);
+      lookupGeneration += 1;
       hidePrefillModal();
-      lastLookupKey = '';
     });
 
     prefillDecline?.addEventListener('click', () => {
       prefillDismissed = true;
+      clearTimeout(lookupTimer);
+      lookupGeneration += 1;
       hidePrefillModal();
     });
 
     prefillModal?.querySelectorAll('[data-prefill-close]').forEach((node) => {
       node.addEventListener('click', () => {
         prefillDismissed = true;
+        clearTimeout(lookupTimer);
+        lookupGeneration += 1;
         hidePrefillModal();
       });
     });
@@ -1284,6 +1295,8 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && prefillModal && !prefillModal.hidden) {
         prefillDismissed = true;
+        clearTimeout(lookupTimer);
+        lookupGeneration += 1;
         hidePrefillModal();
       }
     });
