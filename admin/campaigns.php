@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('campaigns.manage');
+Auth::requireCapability('campaigns.view', 'campaigns.manage');
 
 $campaignRepo = new EmailCampaignRepository();
 $clientRepo = new ClientRepository();
@@ -28,9 +28,11 @@ require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>Email campaigns</h1>
+  <?php if (Auth::can('campaigns.manage')): ?>
   <div class="admin-header-actions">
     <a href="/admin/campaign-edit" class="admin-btn admin-btn-primary">+ New campaign</a>
   </div>
+  <?php endif; ?>
 </div>
 
 <div class="admin-card campaign-summary-card">
@@ -44,7 +46,9 @@ require __DIR__ . '/includes/layout-start.php';
   <div class="admin-card admin-empty-state">
     <h2 class="admin-empty-state-title">No campaigns yet</h2>
     <p class="admin-empty-state-text">Create a campaign to schedule a bulk email to your clients.</p>
+    <?php if (Auth::can('campaigns.manage')): ?>
     <a href="/admin/campaign-edit" class="admin-btn admin-btn-primary">Create campaign</a>
+    <?php endif; ?>
   </div>
 <?php else: ?>
   <div class="admin-card campaigns-list-card">
@@ -77,7 +81,8 @@ require __DIR__ . '/includes/layout-start.php';
             $sent = (int) ($campaign['sent_count'] ?? 0);
             $failed = (int) ($campaign['failed_count'] ?? 0);
             $canEdit = campaign_is_editable($campaign);
-            $canDelete = !in_array($status, ['sending', 'sent'], true);
+            $canManage = Auth::can('campaigns.manage');
+            $canDelete = $canManage && !in_array($status, ['sending', 'sent'], true);
             $schedUtc = (string) ($campaign['scheduled_at'] ?? '');
             $schedFuture = $status === 'scheduled' && $schedUtc !== '' && $schedUtc > now_iso();
           ?>
@@ -124,10 +129,12 @@ require __DIR__ . '/includes/layout-start.php';
                 <div class="campaigns-actions-row">
                   <a href="/admin/campaign-view?id=<?= $id ?>" class="admin-btn admin-btn-secondary admin-btn-sm">View</a>
                   <?php if ($canEdit): ?>
+                    <?php if ($canManage): ?>
                     <a href="/admin/campaign-edit?id=<?= $id ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Edit</a>
+                    <?php endif; ?>
                   <?php endif; ?>
                   <?php
-                    $showSendNow = $schedFuture;
+                    $showSendNow = $canManage && $schedFuture;
                     $showDelete = $canDelete;
                     $useMoreMenu = $showSendNow && $showDelete;
                   ?>

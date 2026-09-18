@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('clients.manage');
+Auth::requireCapability('clients.delete');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);

@@ -13,7 +13,13 @@ $page = pagination_page_from_request();
 $perPage = pagination_per_page_from_request();
 
 // Backfill from existing submissions when the list has never been synced.
-if ($partnerId === null && $search === '' && $page === 1 && $clientRepo->count(null) === 0) {
+if (
+    $partnerId === null
+    && Auth::can('clients.sync')
+    && $search === ''
+    && $page === 1
+    && $clientRepo->count(null) === 0
+) {
     $submissionCount = (int) Database::instance()->pdo()->query('SELECT COUNT(*) FROM submissions')->fetchColumn();
     if ($submissionCount > 0) {
         $syncResult = $clientRepo->syncFromSubmissions();
@@ -70,15 +76,22 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Clients</h1>
   <div class="admin-header-actions">
-    <?php if (Auth::can('clients.manage') && $partnerId === null): ?>
+    <?php if (Auth::can('clients.create')): ?>
     <a href="/admin/client-edit" class="admin-btn">+ Add client</a>
+    <?php endif; ?>
+    <?php if (Auth::can('clients.sync') && $partnerId === null): ?>
     <form method="post" action="/admin/clients-sync" class="inline-form">
       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
       <button type="submit" class="admin-btn admin-btn-secondary">Sync from submissions</button>
     </form>
+    <?php endif; ?>
+    <?php if (Auth::can('clients.import') && $partnerId === null): ?>
     <a href="/admin/clients-import" class="admin-btn admin-btn-secondary">Import CSV</a>
+    <?php endif; ?>
+    <?php if (Auth::can('clients.export')): ?>
     <a href="/admin/clients-export" class="admin-btn admin-btn-secondary">Export CSV</a>
-    <?php if ($totalAll > 0): ?>
+    <?php endif; ?>
+    <?php if (Auth::can('clients.delete') && $partnerId === null && $totalAll > 0): ?>
       <form method="post" action="/admin/client-action" class="inline-form" id="clients-delete-all-form">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
         <input type="hidden" name="action" value="delete_all">
@@ -88,9 +101,6 @@ require __DIR__ . '/includes/layout-start.php';
           Delete all
         </button>
       </form>
-    <?php endif; ?>
-    <?php elseif (Auth::can('clients.manage') && $partnerId !== null): ?>
-    <a href="/admin/clients-export" class="admin-btn admin-btn-secondary">Export CSV</a>
     <?php endif; ?>
   </div>
 </div>
@@ -126,11 +136,15 @@ require __DIR__ . '/includes/layout-start.php';
       <?php else: ?>
         <h2 class="admin-empty-state-title">No clients yet</h2>
         <p class="admin-empty-state-text"><?= $partnerId !== null
-          ? 'Clients appear here after form submissions that include your partner reference.'
+          ? (Auth::can('clients.create')
+            ? 'Add a client manually, or wait for form submissions that include your partner reference.'
+            : 'Clients appear here after form submissions that include your partner reference.')
           : 'Add a client manually, import a spreadsheet, or sync from existing form submissions.' ?></p>
         <div class="admin-header-actions">
-          <?php if (Auth::can('clients.manage') && $partnerId === null): ?>
+          <?php if (Auth::can('clients.create')): ?>
           <a href="/admin/client-edit" class="admin-btn">Add client</a>
+          <?php endif; ?>
+          <?php if (Auth::can('clients.import') && $partnerId === null): ?>
           <a href="/admin/clients-import" class="admin-btn admin-btn-secondary">Import from spreadsheet</a>
           <?php endif; ?>
         </div>
@@ -139,7 +153,7 @@ require __DIR__ . '/includes/layout-start.php';
   <?php else: ?>
     <div class="admin-table-toolbar clients-table-toolbar">
       <?php $paginationShow = 'per_page_bare'; require __DIR__ . '/includes/pagination.php'; ?>
-      <?php if (Auth::can('clients.manage') && $partnerId === null): ?>
+      <?php if (Auth::can('clients.delete') && $partnerId === null): ?>
       <div class="clients-bulk-bar" id="clients-bulk-bar" hidden>
         <label class="clients-bulk-select-all">
           <input type="checkbox" id="clients-select-all" aria-label="Select all clients on this page">
@@ -154,7 +168,7 @@ require __DIR__ . '/includes/layout-start.php';
       <?php endif; ?>
     </div>
 
-    <?php if (Auth::can('clients.manage') && $partnerId === null): ?>
+    <?php if (Auth::can('clients.delete') && $partnerId === null): ?>
     <form method="post" action="/admin/client-action" id="clients-bulk-form"
       onsubmit="return confirmClientsBulkDelete(this);">
       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
@@ -165,7 +179,7 @@ require __DIR__ . '/includes/layout-start.php';
       <table class="admin-table clients-table">
         <thead>
           <tr>
-            <?php if (Auth::can('clients.manage') && $partnerId === null): ?>
+            <?php if (Auth::can('clients.delete') && $partnerId === null): ?>
             <th class="clients-col-check">
               <input type="checkbox" id="clients-select-all-head" aria-label="Select all clients on this page">
             </th>
@@ -188,7 +202,7 @@ require __DIR__ . '/includes/layout-start.php';
             $deleteConfirm = 'Delete “' . $client['name'] . '”? Linked form submissions stay in the system, but this client record will be removed. This cannot be undone.';
           ?>
             <tr>
-              <?php if (Auth::can('clients.manage') && $partnerId === null): ?>
+              <?php if (Auth::can('clients.delete') && $partnerId === null): ?>
               <td class="clients-col-check">
                 <input type="checkbox" class="clients-row-check" name="ids[]"
                   value="<?= (int) $client['id'] ?>"
@@ -225,13 +239,14 @@ require __DIR__ . '/includes/layout-start.php';
               </td>
               <td>
                 <div class="admin-table-actions">
-                  <?php if (Auth::can('clients.manage')): ?>
+                  <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="admin-btn admin-btn-sm">View</a>
+                  <?php if (Auth::can('clients.edit')): ?>
                   <a href="/admin/client-edit?id=<?= (int) $client['id'] ?>" class="admin-btn admin-btn-sm">Edit</a>
+                  <?php endif; ?>
+                  <?php if (Auth::can('clients.delete')): ?>
                   <button type="submit" form="clients-single-delete-<?= (int) $client['id'] ?>"
                     class="admin-btn admin-btn-sm admin-btn-danger"
                     onclick="return confirm(<?= e(json_encode($deleteConfirm)) ?>);">Delete</button>
-                  <?php else: ?>
-                  <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="admin-btn admin-btn-sm">View</a>
                   <?php endif; ?>
                 </div>
               </td>
@@ -240,11 +255,11 @@ require __DIR__ . '/includes/layout-start.php';
         </tbody>
       </table>
       </div>
-    <?php if (Auth::can('clients.manage') && $partnerId === null): ?>
+    <?php if (Auth::can('clients.delete') && $partnerId === null): ?>
     </form>
     <?php endif; ?>
 
-    <?php if (Auth::can('clients.manage')): ?>
+    <?php if (Auth::can('clients.delete')): ?>
     <?php foreach ($clients as $client): ?>
       <form method="post" action="/admin/client-action" id="clients-single-delete-<?= (int) $client['id'] ?>" hidden>
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">

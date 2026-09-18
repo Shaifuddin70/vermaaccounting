@@ -347,7 +347,7 @@ function invoice_save_company_settings(array $data): void
 /** @return list<string> */
 function invoice_status_options(): array
 {
-    return ['draft', 'approved', 'sent'];
+    return ['draft', 'approved', 'sent', 'paid'];
 }
 
 function invoice_status_label(string $status): string
@@ -356,8 +356,8 @@ function invoice_status_label(string $status): string
         'draft' => 'Draft',
         'approved' => 'Approved',
         'sent' => 'Sent',
-        // Legacy values mapped for display until migration runs.
-        'paid' => 'Sent',
+        'paid' => 'Paid',
+        // Legacy value mapped for display until migration runs.
         'void' => 'Draft',
         default => ucfirst($status),
     };

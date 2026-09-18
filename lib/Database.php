@@ -169,6 +169,7 @@ final class Database
         $this->ensureClientsEmailUnsubscribedColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
+        $this->ensureClientPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
         $this->ensureUsersAvatarColumn();
         $this->ensureUsersPermissionsColumn();
@@ -261,6 +262,7 @@ final class Database
         $this->ensureClientsEmailUnsubscribedColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
+        $this->ensureClientPartnersTable();
         $this->ensureUsersReferenceCodeColumn();
         $this->ensureUsersAvatarColumn();
         $this->ensureUsersPermissionsColumn();
@@ -407,7 +409,7 @@ final class Database
                     total DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     amount_due DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     notes TEXT,
-                    status ENUM("draft", "approved", "sent") NOT NULL DEFAULT "draft",
+                    status ENUM("draft", "approved", "sent", "paid") NOT NULL DEFAULT "draft",
                     created_by_user_id INT UNSIGNED DEFAULT NULL,
                     created_by_name VARCHAR(191) DEFAULT NULL,
                     created_at DATETIME NOT NULL,
@@ -602,8 +604,7 @@ final class Database
 
     private function ensureInvoiceStatusColumns(): void
     {
-        // Remap legacy statuses before tightening the MySQL ENUM.
-        $this->pdo->exec("UPDATE invoices SET status = 'sent' WHERE status = 'paid'");
+        // Remap obsolete void; paid is a first-class status again.
         $this->pdo->exec("UPDATE invoices SET status = 'draft' WHERE status = 'void'");
 
         if ($this->driver !== 'mysql') {
@@ -613,11 +614,16 @@ final class Database
         $stmt = $this->pdo->query("SHOW COLUMNS FROM invoices LIKE 'status'");
         $col = $stmt ? $stmt->fetch() : false;
         $type = strtolower((string) ($col['Type'] ?? ''));
-        if ($type !== '' && str_contains($type, 'approved') && !str_contains($type, 'paid') && !str_contains($type, 'void')) {
+        if (
+            $type !== ''
+            && str_contains($type, 'approved')
+            && str_contains($type, 'paid')
+            && !str_contains($type, 'void')
+        ) {
             return;
         }
 
-        $this->pdo->exec('ALTER TABLE invoices MODIFY COLUMN status ENUM("draft", "approved", "sent") NOT NULL DEFAULT "draft"');
+        $this->pdo->exec('ALTER TABLE invoices MODIFY COLUMN status ENUM("draft", "approved", "sent", "paid") NOT NULL DEFAULT "draft"');
     }
 
     private function ensurePartnerRole(): void
@@ -662,6 +668,36 @@ final class Database
             )
         ');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_sp_user ON submission_partners(user_id)');
+    }
+
+    private function ensureClientPartnersTable(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS client_partners (
+                    client_id INT UNSIGNED NOT NULL,
+                    user_id INT UNSIGNED NOT NULL,
+                    PRIMARY KEY (client_id, user_id),
+                    KEY idx_cp_user (user_id),
+                    CONSTRAINT fk_cp_client
+                        FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+                    CONSTRAINT fk_cp_user
+                        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS client_partners (
+                client_id INTEGER NOT NULL,
+                user_id INTEGER NOT NULL,
+                PRIMARY KEY (client_id, user_id),
+                FOREIGN KEY (client_id) REFERENCES clients(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+            )
+        ');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_cp_user ON client_partners(user_id)');
     }
 
     private function ensureUsersReferenceCodeColumn(): void

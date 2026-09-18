@@ -169,7 +169,7 @@ function partner_user_id(): ?int
 }
 
 /**
- * Clients reachable via submissions linked to this partner.
+ * Clients reachable via submissions or direct partner assignment.
  *
  * @return list<int>
  */
@@ -180,7 +180,10 @@ function partner_accessible_client_ids(int $partnerId): array
         return [];
     }
 
-    $stmt = Database::instance()->pdo()->prepare('
+    $pdo = Database::instance()->pdo();
+    $ids = [];
+
+    $stmt = $pdo->prepare('
         SELECT DISTINCT cs.client_id
         FROM client_submissions cs
         INNER JOIN submission_partners sp
@@ -188,15 +191,39 @@ function partner_accessible_client_ids(int $partnerId): array
         WHERE cs.client_id IS NOT NULL
     ');
     $stmt->execute([$partnerId]);
-    $ids = [];
     foreach ($stmt->fetchAll() ?: [] as $row) {
         $id = (int) ($row['client_id'] ?? 0);
         if ($id > 0) {
-            $ids[] = $id;
+            $ids[$id] = true;
         }
     }
 
-    return $ids;
+    $stmt = $pdo->prepare('SELECT client_id FROM client_partners WHERE user_id = ?');
+    $stmt->execute([$partnerId]);
+    foreach ($stmt->fetchAll() ?: [] as $row) {
+        $id = (int) ($row['client_id'] ?? 0);
+        if ($id > 0) {
+            $ids[$id] = true;
+        }
+    }
+
+    return array_map('intval', array_keys($ids));
+}
+
+function link_client_to_partner(int $clientId, int $partnerId): void
+{
+    $clientId = max(0, $clientId);
+    $partnerId = max(0, $partnerId);
+    if ($clientId < 1 || $partnerId < 1) {
+        return;
+    }
+
+    $pdo = Database::instance()->pdo();
+    $driver = (string) $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+    $sql = $driver === 'sqlite'
+        ? 'INSERT OR IGNORE INTO client_partners (client_id, user_id) VALUES (?, ?)'
+        : 'INSERT IGNORE INTO client_partners (client_id, user_id) VALUES (?, ?)';
+    $pdo->prepare($sql)->execute([$clientId, $partnerId]);
 }
 
 function partner_has_client_access(int $clientId, ?int $partnerId = null): bool
@@ -210,7 +237,17 @@ function partner_has_client_access(int $clientId, ?int $partnerId = null): bool
         return true;
     }
 
-    $stmt = Database::instance()->pdo()->prepare('
+    $pdo = Database::instance()->pdo();
+
+    $stmt = $pdo->prepare('
+        SELECT 1 FROM client_partners WHERE client_id = ? AND user_id = ? LIMIT 1
+    ');
+    $stmt->execute([$clientId, $partnerId]);
+    if ($stmt->fetchColumn()) {
+        return true;
+    }
+
+    $stmt = $pdo->prepare('
         SELECT 1
         FROM client_submissions cs
         INNER JOIN submission_partners sp
@@ -266,7 +303,8 @@ function assert_invoice_access(array $invoice): void
 }
 
 /**
- * SQL fragment requiring client alias to be linked to the partner via submissions.
+ * SQL fragment requiring client alias to be linked to the partner
+ * via submissions or a direct client_partners assignment.
  *
  * @return array{0: string, 1: list<mixed>} AND-clause (no leading AND) + params
  */
@@ -278,14 +316,20 @@ function partner_client_scope_sql(?int $partnerUserId, string $clientAlias = 'c'
     $alias = preg_replace('/[^a-zA-Z0-9_]/', '', $clientAlias) ?: 'c';
 
     return [
-        'EXISTS (
-            SELECT 1
-            FROM client_submissions pcs
-            INNER JOIN submission_partners psp
-                ON psp.submission_id = pcs.submission_id AND psp.user_id = ?
-            WHERE pcs.client_id = ' . $alias . '.id
+        '(
+            EXISTS (
+                SELECT 1 FROM client_partners cp
+                WHERE cp.client_id = ' . $alias . '.id AND cp.user_id = ?
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM client_submissions pcs
+                INNER JOIN submission_partners psp
+                    ON psp.submission_id = pcs.submission_id AND psp.user_id = ?
+                WHERE pcs.client_id = ' . $alias . '.id
+            )
         )',
-        [$partnerUserId],
+        [$partnerUserId, $partnerUserId],
     ];
 }
 
@@ -302,14 +346,20 @@ function partner_invoice_scope_sql(?int $partnerUserId, string $invoiceAlias = '
     $alias = preg_replace('/[^a-zA-Z0-9_]/', '', $invoiceAlias) ?: 'i';
 
     return [
-        $alias . '.client_id IS NOT NULL AND EXISTS (
-            SELECT 1
-            FROM client_submissions pcs
-            INNER JOIN submission_partners psp
-                ON psp.submission_id = pcs.submission_id AND psp.user_id = ?
-            WHERE pcs.client_id = ' . $alias . '.client_id
+        $alias . '.client_id IS NOT NULL AND (
+            EXISTS (
+                SELECT 1 FROM client_partners cp
+                WHERE cp.client_id = ' . $alias . '.client_id AND cp.user_id = ?
+            )
+            OR EXISTS (
+                SELECT 1
+                FROM client_submissions pcs
+                INNER JOIN submission_partners psp
+                    ON psp.submission_id = pcs.submission_id AND psp.user_id = ?
+                WHERE pcs.client_id = ' . $alias . '.client_id
+            )
         )',
-        [$partnerUserId],
+        [$partnerUserId, $partnerUserId],
     ];
 }
 

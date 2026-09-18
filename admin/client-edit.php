@@ -3,12 +3,12 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('clients.manage');
 
 $clientRepo = new ClientRepository();
 $editId = isset($_GET['id']) ? (int) $_GET['id'] : null;
 $editClient = $editId ? $clientRepo->find($editId) : null;
 $isNew = ($editClient === null);
+Auth::requireCapability($isNew ? 'clients.create' : 'clients.edit');
 
 if ($editId && !$editClient) {
     header('Location: /admin/clients');
@@ -16,11 +16,6 @@ if ($editId && !$editClient) {
 }
 if ($editClient) {
     assert_client_access($editClient);
-}
-if ($isNew && partner_user_id() !== null) {
-    $_SESSION['flash_error'] = 'Partners can only work with clients linked to their submissions.';
-    header('Location: /admin/clients');
-    exit;
 }
 
 $errors = $_SESSION['client_edit_errors'] ?? [];

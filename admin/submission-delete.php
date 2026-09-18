@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('submissions.manage');
+Auth::requireCapability('submissions.delete');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /admin/reviewer-submissions');

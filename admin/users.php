@@ -111,7 +111,7 @@ require __DIR__ . '/includes/layout-start.php';
                 data-user-role="<?= e($u['role']) ?>"
                 data-user-status="<?= e($u['status']) ?>"
                 data-user-reference="<?= e($u['reference_code'] ?? '') ?>"
-                data-user-permissions="<?= e((string) ($u['permissions_json'] ?? '')) ?>">
+                data-user-permissions="<?= e((string) (permission_encode_for_storage(permission_parse_stored($u['permissions_json'] ?? null)) ?? '')) ?>">
                 Edit
               </button>
               <?php if ($u['status'] === 'active'): ?>
@@ -226,7 +226,7 @@ require __DIR__ . '/includes/layout-start.php';
             </button>
           </div>
           <p class="admin-field-hint" id="umodal-permissions-hint">
-            Check every area this member can use. Partners still only see submissions linked to their reference.
+            Check each action this member can use. Partners still only see data linked to their reference.
           </p>
           <input type="hidden" name="permissions_custom" id="umodal-permissions-custom" value="1">
           <div id="umodal-permissions-panel" class="umodal-permissions">
@@ -323,8 +323,8 @@ require __DIR__ . '/includes/layout-start.php';
     }
     if (permHint) {
       permHint.textContent = roleSelect.value === 'partner'
-        ? 'Check every area this partner can use. Submissions stay limited to their reference code.'
-        : 'Check every area this member can use. Unchecked areas stay hidden in the menu.';
+        ? 'Check each action this partner can use. Data stays limited to their reference code.'
+        : 'Check each action this member can use. Unchecked actions stay hidden.';
     }
   }
 

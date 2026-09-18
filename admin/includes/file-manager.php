@@ -8,6 +8,7 @@ declare(strict_types=1);
       <div class="fm-toolbar-main">
         <h2 id="fm-title" class="fm-title">All files</h2>
         <div class="fm-toolbar-actions">
+          <?php if (!empty($canManageFiles)): ?>
           <button type="button" class="fm-btn" id="fm-btn-new-folder" title="Create a new folder">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
             New folder
@@ -19,6 +20,7 @@ declare(strict_types=1);
           <button type="button" class="fm-btn" id="fm-btn-move" disabled title="Move selected files to another folder">Move</button>
           <button type="button" class="fm-btn" id="fm-btn-rename" disabled title="Rename selected item">Rename</button>
           <button type="button" class="fm-btn fm-btn-danger" id="fm-btn-delete" disabled title="Delete selected items">Delete</button>
+          <?php endif; ?>
           <button type="button" class="fm-btn fm-btn-primary" id="fm-btn-download" disabled title="Download selected files as ZIP">Download ZIP</button>
         </div>
       </div>
@@ -48,8 +50,10 @@ declare(strict_types=1);
       <div class="fm-empty" id="fm-empty" hidden>
         <p>This folder is empty.</p>
         <div class="fm-empty-actions">
+          <?php if (!empty($canManageFiles)): ?>
           <button type="button" class="fm-btn" id="fm-empty-folder">New folder</button>
           <button type="button" class="fm-btn fm-btn-primary" id="fm-empty-upload">Upload files</button>
+          <?php endif; ?>
         </div>
       </div>
       <div class="fm-grid" id="fm-grid" role="listbox" aria-multiselectable="true"></div>

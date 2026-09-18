@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('campaigns.manage');
+Auth::requireCapability('campaigns.view', 'campaigns.manage');
 
 $campaignId = (int) ($_GET['id'] ?? 0);
 $campaignRepo = new EmailCampaignRepository();

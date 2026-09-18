@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('invoices.manage');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /admin/invoices');
@@ -32,6 +31,7 @@ assert_invoice_access($invoice);
 $redirect = '/admin/invoice-view?id=' . $id;
 
 if ($action === 'delete') {
+    Auth::requireCapability('invoices.delete');
     $number = (string) ($invoice['invoice_number'] ?? '');
     $repo->delete($id);
     ActivityLog::record('invoice.deleted', 'invoice', $id, ['number' => $number]);
@@ -41,6 +41,7 @@ if ($action === 'delete') {
 }
 
 if ($action === 'status') {
+    Auth::requireCapability('invoices.edit');
     $status = trim((string) ($_POST['status'] ?? ''));
     if (!in_array($status, invoice_status_options(), true)) {
         $_SESSION['flash_error'] = 'Invalid status.';
@@ -55,6 +56,7 @@ if ($action === 'status') {
 }
 
 if ($action === 'send_email') {
+    Auth::requireCapability('invoices.send');
     $to = trim((string) ($_POST['to_email'] ?? ''));
     $message = trim((string) ($_POST['email_message'] ?? ''));
     $items = $repo->itemsForInvoice($id);

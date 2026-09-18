@@ -78,16 +78,21 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Invoice #<?= e((string) $invoice['invoice_number']) ?></h1>
   <div class="admin-header-actions">
+    <?php if (Auth::can('invoices.edit')): ?>
     <a href="/admin/invoice-edit?id=<?= $id ?>" class="admin-btn admin-btn-secondary">Edit</a>
+    <?php endif; ?>
     <a href="/admin/invoice-pdf?id=<?= $id ?>" class="admin-btn admin-btn-secondary">Download PDF</a>
     <a href="/admin/invoice-view?id=<?= $id ?>&print=1" class="admin-btn admin-btn-secondary" target="_blank">Print</a>
+    <?php if (Auth::can('invoices.send')): ?>
     <a href="#send-invoice" class="admin-btn admin-btn-primary">Send to client</a>
+    <?php endif; ?>
     <a href="/admin/invoices" class="admin-btn admin-btn-secondary">← All invoices</a>
   </div>
 </div>
 
 <div class="admin-card invoice-status-bar">
   <div class="invoice-view-meta">
+    <?php if (Auth::can('invoices.edit')): ?>
     <form method="post" action="/admin/invoice-action" class="invoice-status-form">
       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
       <input type="hidden" name="id" value="<?= $id ?>">
@@ -99,6 +104,12 @@ require __DIR__ . '/includes/layout-start.php';
         <?php endforeach; ?>
       </select>
     </form>
+    <?php else: ?>
+      <div class="invoice-status-form">
+        <span class="admin-field-hint">Status</span>
+        <strong><?= e(invoice_status_label($status)) ?></strong>
+      </div>
+    <?php endif; ?>
     <?php if ($clientName !== ''): ?>
       <div class="invoice-view-client">
         <span class="admin-field-hint">Client</span>
@@ -112,6 +123,7 @@ require __DIR__ . '/includes/layout-start.php';
   <p class="admin-field-hint" style="margin:0;">Download PDF or email it directly to the client.</p>
 </div>
 
+<?php if (Auth::can('invoices.send')): ?>
 <div class="admin-card" id="send-invoice">
   <h2 class="admin-card-title">Send invoice PDF to client</h2>
   <?php if (!$mailEnabled): ?>
@@ -148,6 +160,7 @@ require __DIR__ . '/includes/layout-start.php';
     </div>
   </form>
 </div>
+<?php endif; ?>
 
 <link rel="stylesheet" href="/admin/css/invoice-print.css?v=3">
 <div class="invoice-preview-frame">

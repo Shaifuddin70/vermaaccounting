@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('invoices.manage');
 
 $invoiceRepo = new InvoiceRepository();
 $serviceRepo = new InvoiceServiceRepository();
@@ -12,6 +11,7 @@ $partnerId = partner_user_id();
 
 $editId = isset($_GET['id']) ? (int) $_GET['id'] : null;
 $invoice = $editId ? $invoiceRepo->find($editId, $partnerId) : null;
+Auth::requireCapability($invoice ? 'invoices.edit' : 'invoices.create');
 
 if ($editId && !$invoice) {
     header('Location: /admin/invoices');

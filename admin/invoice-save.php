@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('invoices.manage');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: /admin/invoices');
@@ -19,6 +18,7 @@ if (!Auth::verifyCsrf($_POST['csrf_token'] ?? '')) {
 $editId = isset($_POST['id']) ? (int) $_POST['id'] : null;
 $repo = new InvoiceRepository();
 $existing = $editId ? $repo->find($editId) : null;
+Auth::requireCapability($existing ? 'invoices.edit' : 'invoices.create');
 
 if ($editId && !$existing) {
     $_SESSION['flash_error'] = 'Invoice not found.';

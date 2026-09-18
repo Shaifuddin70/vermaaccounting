@@ -4,7 +4,7 @@ declare(strict_types=1);
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
 
-Auth::requireCapability('forms.manage');
+Auth::requireCapability('forms.view', 'forms.manage');
 $repo = new FormRepository();
 $submissionCounts = $repo->submissionCountsByFormId();
 
@@ -27,10 +27,12 @@ require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>All forms</h1>
+  <?php if (Auth::can('forms.manage')): ?>
   <div class="admin-header-actions">
     <a href="/admin/form-builder?template=tax-intake" class="admin-btn admin-btn-secondary">Tax intake template</a>
     <a href="/admin/form-builder" class="admin-btn">+ New form</a>
   </div>
+  <?php endif; ?>
 </div>
 
 <div class="admin-card">
@@ -41,10 +43,12 @@ require __DIR__ . '/includes/layout-start.php';
       </span>
       <h2 class="admin-empty-state-title">No forms yet</h2>
       <p class="admin-empty-state-text">Build your first form to start collecting client information and documents.</p>
+      <?php if (Auth::can('forms.manage')): ?>
       <div class="admin-header-actions">
         <a href="/admin/form-builder?template=tax-intake" class="admin-btn">Start from tax intake</a>
         <a href="/admin/form-builder" class="admin-btn admin-btn-secondary">Blank form</a>
       </div>
+      <?php endif; ?>
     </div>
   <?php else: ?>
     <?php $paginationShow = 'per_page'; require __DIR__ . '/includes/pagination.php'; ?>
@@ -94,13 +98,20 @@ require __DIR__ . '/includes/layout-start.php';
             </td>
             <td>
               <div class="admin-table-actions">
+                <?php if (Auth::can('forms.manage')): ?>
                 <a href="/admin/form-builder?id=<?= $fid ?>" class="admin-btn admin-btn-sm">Edit</a>
+                <?php endif; ?>
+                <?php if (Auth::can('submissions.view')): ?>
                 <a href="/admin/submissions?form_id=<?= $fid ?>" class="admin-btn admin-btn-sm admin-btn-secondary">Responses</a>
+                <?php endif; ?>
+                <?php if (Auth::can('submissions.export')): ?>
                 <?php if ($subCount > 0): ?>
                   <a href="/admin/export-csv?form_id=<?= $fid ?>" class="admin-btn admin-btn-sm admin-btn-secondary">CSV</a>
                 <?php else: ?>
                   <span class="admin-btn admin-btn-sm admin-btn-disabled" title="No submissions yet">CSV</span>
                 <?php endif; ?>
+                <?php endif; ?>
+                <?php if (Auth::can('forms.manage')): ?>
                 <form method="post" action="/admin/form-action" class="inline-form"
                   onsubmit="return confirm(<?= e(json_encode($deleteConfirm)) ?>);">
                   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
@@ -108,6 +119,7 @@ require __DIR__ . '/includes/layout-start.php';
                   <input type="hidden" name="action" value="delete">
                   <button type="submit" class="admin-btn admin-btn-sm admin-btn-danger">Delete</button>
                 </form>
+                <?php endif; ?>
               </div>
             </td>
           </tr>

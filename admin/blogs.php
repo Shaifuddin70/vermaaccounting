@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('blogs.manage');
+Auth::requireCapability('blogs.view', 'blogs.manage');
 
 $repo = new BlogRepository();
 $client = new UpliftAiClient();
@@ -33,6 +33,7 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Blogs</h1>
   <div class="admin-header-actions">
+    <?php if (Auth::can('blogs.manage')): ?>
     <form method="post" action="/admin/blog-action" style="display:inline;">
       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
       <button type="submit" name="action" value="sync" class="admin-btn admin-btn-primary"
@@ -40,6 +41,7 @@ require __DIR__ . '/includes/layout-start.php';
         Sync from Uplift AI
       </button>
     </form>
+    <?php endif; ?>
     <a href="https://app.upliftai.co/" target="_blank" rel="noopener" class="admin-btn admin-btn-secondary">Open Uplift AI</a>
   </div>
 </div>
@@ -109,12 +111,14 @@ require __DIR__ . '/includes/layout-start.php';
                   <a href="/admin/blog?id=<?= $id ?>" class="admin-btn admin-btn-sm admin-btn-secondary">View</a>
                   <?php if ($local === 'published'): ?>
                     <a href="<?= e(blog_public_url($blog)) ?>" target="_blank" rel="noopener" class="admin-btn admin-btn-sm admin-btn-secondary">Open</a>
+                    <?php if (Auth::can('blogs.manage')): ?>
                     <form method="post" action="/admin/blog-action" style="display:inline;">
                       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                       <input type="hidden" name="id" value="<?= $id ?>">
                       <button type="submit" name="action" value="unpublish" class="admin-btn admin-btn-sm admin-btn-secondary">Unpublish</button>
                     </form>
-                  <?php else: ?>
+                    <?php endif; ?>
+                  <?php elseif (Auth::can('blogs.manage')): ?>
                     <form method="post" action="/admin/blog-action" style="display:inline;">
                       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                       <input type="hidden" name="id" value="<?= $id ?>">

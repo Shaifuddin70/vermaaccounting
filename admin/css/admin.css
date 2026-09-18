@@ -2066,6 +2066,11 @@ body.admin-body {
   color: #166534;
 }
 
+.admin-badge-paid {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
 .admin-badge-muted {
   background: #e2e8f0;
   color: #64748b;

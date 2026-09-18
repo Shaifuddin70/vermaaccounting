@@ -64,7 +64,10 @@ require __DIR__ . '/includes/layout-start.php';
   <h1><?= e($client['name']) ?></h1>
   <div class="admin-header-actions">
     <span class="client-id-badge">Client ID: <?= (int) $client['id'] ?></span>
+    <?php if (Auth::can('clients.edit')): ?>
     <a href="/admin/client-edit?id=<?= (int) $client['id'] ?>" class="admin-btn">Edit</a>
+    <?php endif; ?>
+    <?php if (Auth::can('clients.delete')): ?>
     <form method="post" action="/admin/client-action" class="inline-form"
       onsubmit="return confirm(<?= e(json_encode($deleteConfirm)) ?>);">
       <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
@@ -72,6 +75,7 @@ require __DIR__ . '/includes/layout-start.php';
       <input type="hidden" name="action" value="delete">
       <button type="submit" class="admin-btn admin-btn-danger">Delete</button>
     </form>
+    <?php endif; ?>
     <a href="/admin/clients" class="admin-btn admin-btn-secondary">← All clients</a>
   </div>
 </div>

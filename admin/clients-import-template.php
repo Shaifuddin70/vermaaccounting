@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('clients.manage');
+Auth::requireCapability('clients.import');
 
 if (partner_user_id() !== null) {
     $_SESSION['flash_error'] = 'This area is only available to admins.';

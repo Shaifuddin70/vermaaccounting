@@ -52,6 +52,7 @@ if ($action === 'delete') {
 }
 
 if ($action === 'purge_submissions') {
+    Auth::requireCapability('submissions.delete');
     $result = $repo->deleteAllSubmissionsForForm($formId);
     ActivityLog::record('submissions.purged', 'form', $formId, [
         'slug' => (string) ($form['slug'] ?? ''),

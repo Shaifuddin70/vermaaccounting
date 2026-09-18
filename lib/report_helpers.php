@@ -75,7 +75,7 @@ function report_format_range_label(string $from, string $to): string
 }
 
 /**
- * Income counts once an invoice is approved (approved + sent).
+ * Income counts once an invoice is approved (approved + sent + paid).
  */
 function report_invoice_counts_as_income(string $status): bool
 {
@@ -89,6 +89,7 @@ function report_invoice_counts_as_income(string $status): bool
  *   invoice_count: int,
  *   sent_count: int,
  *   approved_count: int,
+ *   paid_count: int,
  *   draft_count: int,
  *   income_count: int,
  *   income_due: float,
@@ -115,9 +116,7 @@ function report_summarize_invoices(array $rows): array
 
     foreach ($rows as $row) {
         $status = (string) ($row['status'] ?? 'draft');
-        if ($status === 'paid') {
-            $status = 'sent';
-        } elseif ($status === 'void') {
+        if ($status === 'void') {
             $status = 'draft';
         }
         if (!isset($byStatus[$status])) {
@@ -150,6 +149,7 @@ function report_summarize_invoices(array $rows): array
         'invoice_count' => count($rows),
         'sent_count' => (int) ($byStatus['sent']['count'] ?? 0),
         'approved_count' => (int) ($byStatus['approved']['count'] ?? 0),
+        'paid_count' => (int) ($byStatus['paid']['count'] ?? 0),
         'draft_count' => (int) ($byStatus['draft']['count'] ?? 0),
         'income_count' => $incomeCount,
         'income_due' => $incomeDue,

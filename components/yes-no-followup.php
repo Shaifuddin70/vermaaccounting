@@ -123,7 +123,7 @@ $label = (string) $pseudo['label'];
               data-dial="<?= e($meta['dial']) ?>"
               data-format="<?= e($meta['format']) ?>"
               <?= $code === $phone['country'] ? 'selected' : '' ?>>
-              <?= e($meta['dial'] . ' ' . $code) ?>
+              <?= e($meta['dial']) ?>
             </option>
           <?php endforeach; ?>
         </select>

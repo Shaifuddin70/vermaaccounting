@@ -33,7 +33,7 @@ $form = $repo->find($formId);
 
 if (!$form || is_file_manager_form($form)) {
     if ($allForms === []) {
-        header('Location: /admin/' . (Auth::can('forms.manage') ? 'forms' : 'reviewer-submissions'));
+        header('Location: /admin/' . (Auth::can('forms.view') ? 'forms' : 'reviewer-submissions'));
         exit;
     }
     header('Location: /admin/submissions?form_id=' . (int) $allForms[0]['id']);
@@ -88,7 +88,7 @@ function submissions_list_url(int $formId, string $tab, ?int $year, bool $includ
 }
 
 $pageTitle = 'Responses: ' . $form['title'];
-$activeNav = Auth::can('forms.manage') ? 'forms' : 'submissions';
+$activeNav = Auth::can('forms.view') ? 'forms' : 'submissions';
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
@@ -103,20 +103,16 @@ require __DIR__ . '/includes/layout-start.php';
       ?>
       <a href="/admin/export-csv?<?= e($exportQs) ?>" class="admin-btn admin-btn-secondary">Export CSV</a>
     <?php endif; ?>
-    <?php if (Auth::can('forms.manage') || Auth::can('submissions.manage')): ?>
-      <?php if ($counts['all'] > 0 && Auth::can('submissions.manage')): ?>
-        <form method="post" action="/admin/form-action" class="inline-form"
-          onsubmit="return confirm('Delete ALL <?= (int) $counts['all'] ?> submissions for this form? This cannot be undone.');">
-          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-          <input type="hidden" name="form_id" value="<?= $formId ?>">
-          <button type="submit" name="action" value="purge_submissions" class="admin-btn admin-btn-danger">Delete all submissions</button>
-        </form>
-      <?php endif; ?>
-      <?php if (Auth::can('forms.manage')): ?>
+    <?php if ($counts['all'] > 0 && Auth::can('submissions.delete') && Auth::can('forms.manage')): ?>
+      <form method="post" action="/admin/form-action" class="inline-form"
+        onsubmit="return confirm('Delete ALL <?= (int) $counts['all'] ?> submissions for this form? This cannot be undone.');">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+        <input type="hidden" name="form_id" value="<?= $formId ?>">
+        <button type="submit" name="action" value="purge_submissions" class="admin-btn admin-btn-danger">Delete all submissions</button>
+      </form>
+    <?php endif; ?>
+    <?php if (Auth::can('forms.manage')): ?>
       <a href="/admin/form-builder?id=<?= $formId ?>" class="admin-btn admin-btn-secondary">← Edit form</a>
-      <?php else: ?>
-      <a href="/admin/reviewer-submissions" class="admin-btn admin-btn-secondary">← All forms</a>
-      <?php endif; ?>
     <?php else: ?>
       <a href="/admin/reviewer-submissions" class="admin-btn admin-btn-secondary">← All forms</a>
     <?php endif; ?>
@@ -232,11 +228,11 @@ require __DIR__ . '/includes/layout-start.php';
             <?php endforeach; ?>
             <td class="admin-table-actions">
               <a href="/admin/submission?id=<?= (int) $sub['id'] ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
-              <?php if (Auth::can('submissions.manage') || Auth::can('invoices.manage')): ?>
-                <?php if (Auth::can('invoices.manage')): ?>
+              <?php if (Auth::can('submissions.edit') || Auth::can('invoices.create') || Auth::can('submissions.delete')): ?>
+                <?php if (Auth::can('invoices.create')): ?>
                 <a href="<?= e(invoice_edit_url_from_submission((int) $sub['id'], $formId)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Invoice</a>
                 <?php endif; ?>
-                <?php if (Auth::can('submissions.manage')): ?>
+                <?php if (Auth::can('submissions.delete')): ?>
                 <form method="post" action="/admin/submission-delete" class="inline-form"
                   onsubmit="return confirm('Delete submission #<?= (int) $sub['id'] ?>? This cannot be undone.');">
                   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">

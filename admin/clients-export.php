@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('clients.manage');
+Auth::requireCapability('clients.export');
 
 $clientRepo = new ClientRepository();
 $rows = $clientRepo->exportRows(partner_user_id());

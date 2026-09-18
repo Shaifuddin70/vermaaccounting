@@ -23,6 +23,7 @@ function permission_catalog(): array
             'description' => 'View business reports',
             'group' => 'Overview',
         ],
+
         'submissions.view' => [
             'label' => 'View submissions',
             'description' => 'Open and review form submissions',
@@ -34,53 +35,127 @@ function permission_catalog(): array
             'group' => 'Submissions',
         ],
         'submissions.export' => [
-            'label' => 'Export CSV',
-            'description' => 'Download submission exports',
+            'label' => 'Export submissions',
+            'description' => 'Download submission CSV exports',
             'group' => 'Submissions',
         ],
-        'submissions.manage' => [
-            'label' => 'Edit / delete submissions',
-            'description' => 'Edit submission data and delete records',
+        'submissions.edit' => [
+            'label' => 'Edit submissions',
+            'description' => 'Edit submission field data',
             'group' => 'Submissions',
         ],
+        'submissions.delete' => [
+            'label' => 'Delete submissions',
+            'description' => 'Permanently delete submissions',
+            'group' => 'Submissions',
+        ],
+
         'clients.view' => [
             'label' => 'View clients',
-            'description' => 'Browse client list and profiles',
-            'group' => 'Clients & billing',
+            'description' => 'Browse the client list and profiles',
+            'group' => 'Clients',
         ],
-        'clients.manage' => [
-            'label' => 'Manage clients',
-            'description' => 'Create, edit, import, export, and delete clients',
-            'group' => 'Clients & billing',
+        'clients.create' => [
+            'label' => 'Create clients',
+            'description' => 'Add new clients manually',
+            'group' => 'Clients',
         ],
+        'clients.edit' => [
+            'label' => 'Edit clients',
+            'description' => 'Update client details',
+            'group' => 'Clients',
+        ],
+        'clients.delete' => [
+            'label' => 'Delete clients',
+            'description' => 'Delete one or more clients',
+            'group' => 'Clients',
+        ],
+        'clients.import' => [
+            'label' => 'Import clients',
+            'description' => 'Import clients from CSV',
+            'group' => 'Clients',
+        ],
+        'clients.export' => [
+            'label' => 'Export clients',
+            'description' => 'Download the client directory as CSV',
+            'group' => 'Clients',
+        ],
+        'clients.sync' => [
+            'label' => 'Sync clients',
+            'description' => 'Sync clients from form submissions',
+            'group' => 'Clients',
+        ],
+
         'invoices.view' => [
             'label' => 'View invoices',
-            'description' => 'Browse and open invoices',
-            'group' => 'Clients & billing',
+            'description' => 'Browse and open invoices / PDFs',
+            'group' => 'Invoices',
         ],
-        'invoices.manage' => [
-            'label' => 'Manage invoices',
-            'description' => 'Create, edit, send, and configure invoices',
-            'group' => 'Clients & billing',
+        'invoices.create' => [
+            'label' => 'Create invoices',
+            'description' => 'Create new invoices',
+            'group' => 'Invoices',
+        ],
+        'invoices.edit' => [
+            'label' => 'Edit invoices',
+            'description' => 'Edit invoices and change status',
+            'group' => 'Invoices',
+        ],
+        'invoices.delete' => [
+            'label' => 'Delete invoices',
+            'description' => 'Permanently delete invoices',
+            'group' => 'Invoices',
+        ],
+        'invoices.send' => [
+            'label' => 'Send invoices',
+            'description' => 'Email invoice PDFs to clients',
+            'group' => 'Invoices',
+        ],
+        'invoices.settings' => [
+            'label' => 'Invoice settings',
+            'description' => 'Company details and invoice services',
+            'group' => 'Invoices',
+        ],
+
+        'forms.view' => [
+            'label' => 'View forms',
+            'description' => 'Browse public forms and their submissions',
+            'group' => 'Content',
         ],
         'forms.manage' => [
-            'label' => 'Forms',
-            'description' => 'Build and manage public forms',
+            'label' => 'Manage forms',
+            'description' => 'Build, publish, and delete forms',
+            'group' => 'Content',
+        ],
+        'blogs.view' => [
+            'label' => 'View blogs',
+            'description' => 'Browse blog posts in admin',
             'group' => 'Content',
         ],
         'blogs.manage' => [
-            'label' => 'Blogs',
-            'description' => 'Create and publish blog posts',
+            'label' => 'Manage blogs',
+            'description' => 'Create, edit, and publish blog posts',
+            'group' => 'Content',
+        ],
+        'files.view' => [
+            'label' => 'View files',
+            'description' => 'Browse uploaded files',
             'group' => 'Content',
         ],
         'files.manage' => [
-            'label' => 'Files',
-            'description' => 'Browse and manage uploaded files',
+            'label' => 'Manage files',
+            'description' => 'Upload, download zip, and delete files',
             'group' => 'Content',
         ],
+
+        'campaigns.view' => [
+            'label' => 'View campaigns',
+            'description' => 'Browse email campaigns',
+            'group' => 'Communications',
+        ],
         'campaigns.manage' => [
-            'label' => 'Campaigns',
-            'description' => 'Create and send email campaigns',
+            'label' => 'Manage campaigns',
+            'description' => 'Create, schedule, and send campaigns',
             'group' => 'Communications',
         ],
         'email.tracker' => [
@@ -103,6 +178,7 @@ function permission_catalog(): array
             'description' => 'Configure mail transport and templates',
             'group' => 'Communications',
         ],
+
         'team.manage' => [
             'label' => 'Team & permissions',
             'description' => 'Add team members and control their access',
@@ -112,6 +188,38 @@ function permission_catalog(): array
             'label' => 'Activity log',
             'description' => 'View admin activity history',
             'group' => 'Settings',
+        ],
+    ];
+}
+
+/**
+ * Legacy capability keys still accepted from stored JSON / older grants.
+ *
+ * @return array<string, list<string>>
+ */
+function permission_legacy_aliases(): array
+{
+    return [
+        'clients.manage' => [
+            'clients.view',
+            'clients.create',
+            'clients.edit',
+            'clients.delete',
+            'clients.import',
+            'clients.export',
+            'clients.sync',
+        ],
+        'invoices.manage' => [
+            'invoices.view',
+            'invoices.create',
+            'invoices.edit',
+            'invoices.delete',
+            'invoices.send',
+            'invoices.settings',
+        ],
+        'submissions.manage' => [
+            'submissions.edit',
+            'submissions.delete',
         ],
     ];
 }
@@ -167,6 +275,39 @@ function permission_defaults_for_role(string $role): array
 }
 
 /**
+ * Expand legacy aliases and drop unknown keys.
+ *
+ * @param list<string> $keys
+ * @return list<string>
+ */
+function permission_expand_keys(array $keys): array
+{
+    $allowed = array_flip(permission_all_keys());
+    $aliases = permission_legacy_aliases();
+    $out = [];
+
+    foreach ($keys as $item) {
+        $key = trim((string) $item);
+        if ($key === '') {
+            continue;
+        }
+        if (isset($aliases[$key])) {
+            foreach ($aliases[$key] as $expanded) {
+                if (isset($allowed[$expanded])) {
+                    $out[$expanded] = true;
+                }
+            }
+            continue;
+        }
+        if (isset($allowed[$key])) {
+            $out[$key] = true;
+        }
+    }
+
+    return array_keys($out);
+}
+
+/**
  * @param mixed $raw
  * @return list<string>|null null means “use role defaults”
  */
@@ -184,15 +325,9 @@ function permission_parse_stored($raw): ?array
         }
         $list = $decoded;
     }
-    $allowed = array_flip(permission_all_keys());
-    $out = [];
-    foreach ($list as $item) {
-        $key = trim((string) $item);
-        if ($key !== '' && isset($allowed[$key])) {
-            $out[$key] = true;
-        }
-    }
-    return array_keys($out);
+
+    $expanded = permission_expand_keys(array_map('strval', $list));
+    return $expanded === [] ? null : $expanded;
 }
 
 /**
@@ -224,6 +359,42 @@ function permission_resolve_for_user(?array $user): array
     return permission_defaults_for_role($role);
 }
 
+/**
+ * Capabilities that grant another capability (e.g. create implies view).
+ *
+ * @return array<string, list<string>>
+ */
+function permission_implies_map(): array
+{
+    return [
+        'clients.view' => [
+            'clients.create',
+            'clients.edit',
+            'clients.delete',
+            'clients.import',
+            'clients.export',
+            'clients.sync',
+        ],
+        'invoices.view' => [
+            'invoices.create',
+            'invoices.edit',
+            'invoices.delete',
+            'invoices.send',
+            'invoices.settings',
+        ],
+        'submissions.view' => [
+            'submissions.complete',
+            'submissions.export',
+            'submissions.edit',
+            'submissions.delete',
+        ],
+        'forms.view' => ['forms.manage'],
+        'blogs.view' => ['blogs.manage'],
+        'files.view' => ['files.manage'],
+        'campaigns.view' => ['campaigns.manage'],
+    ];
+}
+
 /** @param list<string> $capabilities */
 function permission_user_can(array $capabilities, string $capability): bool
 {
@@ -233,14 +404,29 @@ function permission_user_can(array $capabilities, string $capability): bool
     if (in_array($capability, $capabilities, true)) {
         return true;
     }
-    // Managing an area implies viewing it.
-    $implies = [
-        'clients.view' => 'clients.manage',
-        'invoices.view' => 'invoices.manage',
-    ];
-    if (isset($implies[$capability]) && in_array($implies[$capability], $capabilities, true)) {
+
+    // Legacy aliases still grant their expanded set.
+    $aliases = permission_legacy_aliases();
+    if (isset($aliases[$capability])) {
+        // Asking for a legacy key: treat as having it if any/all expanded? Prefer all for manage checks.
+        foreach ($aliases[$capability] as $needed) {
+            if (!permission_user_can($capabilities, $needed)) {
+                return false;
+            }
+        }
         return true;
     }
+
+    // Managing / mutating an area implies viewing it.
+    $implies = permission_implies_map();
+    if (isset($implies[$capability])) {
+        foreach ($implies[$capability] as $grantor) {
+            if (in_array($grantor, $capabilities, true)) {
+                return true;
+            }
+        }
+    }
+
     return false;
 }
 
@@ -252,14 +438,22 @@ function permission_encode_for_storage(?array $keys): ?string
     if ($keys === null) {
         return null;
     }
-    $clean = permission_parse_stored($keys) ?? [];
-    // Managing an area should include viewing it in the saved set too.
-    if (in_array('clients.manage', $clean, true) && !in_array('clients.view', $clean, true)) {
-        $clean[] = 'clients.view';
+    $clean = permission_expand_keys($keys);
+
+    // Ensure view accompanies any write permission in the same module.
+    foreach (permission_implies_map() as $viewKey => $writers) {
+        $hasWriter = false;
+        foreach ($writers as $writer) {
+            if (in_array($writer, $clean, true)) {
+                $hasWriter = true;
+                break;
+            }
+        }
+        if ($hasWriter && !in_array($viewKey, $clean, true)) {
+            $clean[] = $viewKey;
+        }
     }
-    if (in_array('invoices.manage', $clean, true) && !in_array('invoices.view', $clean, true)) {
-        $clean[] = 'invoices.view';
-    }
+
     if ($clean === []) {
         return null;
     }

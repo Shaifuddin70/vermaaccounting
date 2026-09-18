@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('clients.manage');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -17,6 +16,7 @@ if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
 
 $editId = isset($_POST['id']) && $_POST['id'] !== '' ? (int) $_POST['id'] : null;
 $isNew = ($editId === null);
+Auth::requireCapability($isNew ? 'clients.create' : 'clients.edit');
 
 $name = trim((string) ($_POST['name'] ?? ''));
 $email = strtolower(trim((string) ($_POST['email'] ?? '')));
@@ -27,9 +27,6 @@ $dob = trim((string) ($_POST['date_of_birth'] ?? ''));
 $notes = trim((string) ($_POST['notes'] ?? ''));
 
 $errors = [];
-if ($isNew && partner_user_id() !== null) {
-    $errors[] = 'Partners can only work with clients linked to their submissions.';
-}
 if (!$isNew) {
     $existing = (new ClientRepository())->find($editId);
     if (!$existing) {
@@ -53,15 +50,6 @@ if ($dob !== '') {
 }
 
 $clientRepo = new ClientRepository();
-
-if (!$isNew) {
-    $existing = $clientRepo->find((int) $editId);
-    if (!$existing) {
-        $_SESSION['flash_error'] = 'Client not found.';
-        header('Location: /admin/clients');
-        exit;
-    }
-}
 
 if ($sin !== '' && $clientRepo->sinExists($sin, $editId)) {
     $errors[] = 'That SIN is already used by another client.';
@@ -96,7 +84,14 @@ $data = [
 try {
     if ($isNew) {
         $id = $clientRepo->create($data, 'manual');
-        ActivityLog::record('client.created', 'client', $id, ['name' => $name]);
+        $partnerId = partner_user_id();
+        if ($partnerId !== null) {
+            link_client_to_partner($id, $partnerId);
+        }
+        ActivityLog::record('client.created', 'client', $id, [
+            'name' => $name,
+            'partner_id' => $partnerId,
+        ]);
         $_SESSION['flash_success'] = 'Client created.';
         header('Location: /admin/client?id=' . $id);
         exit;

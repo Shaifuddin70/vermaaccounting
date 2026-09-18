@@ -14,7 +14,7 @@ if (!Auth::verifyCsrf($_POST['csrf_token'] ?? null)) {
     exit('Invalid session.');
 }
 
-Auth::requireCapability('submissions.manage');
+Auth::requireCapability('submissions.edit');
 
 $submissionId = (int) ($_POST['submission_id'] ?? 0);
 $formId = (int) ($_POST['form_id'] ?? 0);

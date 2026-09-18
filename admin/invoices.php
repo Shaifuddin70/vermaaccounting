@@ -36,11 +36,11 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="admin-header">
   <h1>Invoices</h1>
   <div class="admin-header-actions">
-    <?php if ($partnerId === null && Auth::can('invoices.manage')): ?>
+    <?php if ($partnerId === null && Auth::can('invoices.settings')): ?>
     <a href="/admin/invoice-settings" class="admin-btn admin-btn-secondary">Company details</a>
     <a href="/admin/invoice-services" class="admin-btn admin-btn-secondary">Services (<?= (int) $serviceCount ?>)</a>
     <?php endif; ?>
-    <?php if (Auth::can('invoices.manage')): ?>
+    <?php if (Auth::can('invoices.create')): ?>
     <a href="/admin/invoice-edit" class="admin-btn admin-btn-primary">+ New invoice</a>
     <?php endif; ?>
   </div>
@@ -158,7 +158,7 @@ require __DIR__ . '/includes/layout-start.php';
                   $badge = match ($st) {
                       'approved' => 'admin-badge-success',
                       'sent' => 'admin-badge-info',
-                      'paid' => 'admin-badge-info',
+                      'paid' => 'admin-badge-paid',
                       default => '',
                   };
                 ?>
@@ -166,12 +166,16 @@ require __DIR__ . '/includes/layout-start.php';
               </td>
               <td class="admin-table-actions">
                 <a href="/admin/invoice-view?id=<?= (int) $inv['id'] ?>" class="admin-btn admin-btn-secondary admin-btn-sm">View</a>
+                <?php if (Auth::can('invoices.edit')): ?>
                 <a href="/admin/invoice-edit?id=<?= (int) $inv['id'] ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Edit</a>
+                <?php endif; ?>
+                <?php if (Auth::can('invoices.delete')): ?>
                 <form method="post" action="/admin/invoice-action" class="inline-form" onsubmit="return confirm('Delete invoice #<?= e((string) $inv['invoice_number']) ?>?');">
                   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                   <input type="hidden" name="id" value="<?= (int) $inv['id'] ?>">
                   <button type="submit" name="action" value="delete" class="admin-btn admin-btn-secondary admin-btn-sm">Delete</button>
                 </form>
+                <?php endif; ?>
               </td>
             </tr>
           <?php endforeach; ?>

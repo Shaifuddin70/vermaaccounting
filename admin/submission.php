@@ -6,14 +6,14 @@ Auth::requireLogin();
 
 $formId = (int) ($_GET['form_id'] ?? 0);
 $submissionId = (int) ($_GET['id'] ?? 0);
-$editMode = isset($_GET['edit']) && Auth::can('submissions.manage');
+$editMode = isset($_GET['edit']) && Auth::can('submissions.edit');
 
 $repo = new FormRepository();
 $form = $repo->find($formId);
 $submission = $repo->findSubmissionForForm($submissionId, $formId);
 
 if (!$form || !$submission) {
-    header('Location: /admin/' . (Auth::can('forms.manage') ? 'forms' : 'reviewer-submissions'));
+    header('Location: /admin/' . (Auth::can('forms.view') ? 'forms' : 'reviewer-submissions'));
     exit;
 }
 
@@ -29,17 +29,22 @@ $editErrors = $_SESSION['submission_edit_errors'] ?? [];
 unset($_SESSION['submission_edit_errors']);
 
 $pageTitle = 'Submission #' . $submissionId;
-$activeNav = Auth::can('forms.manage') ? 'forms' : 'submissions';
+$activeNav = Auth::can('forms.view') ? 'forms' : 'submissions';
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
   <h1>Submission #<?= $submissionId ?></h1>
   <div class="admin-header-actions">
-    <?php if (!$editMode && Auth::can('submissions.manage')): ?>
-      <?php if (Auth::can('invoices.manage')): ?>
+    <?php if ($editMode): ?>
+      <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
+    <?php else: ?>
+      <?php if (Auth::can('invoices.create')): ?>
       <a href="<?= e(invoice_edit_url_from_submission($submissionId, $formId)) ?>" class="admin-btn admin-btn-secondary">Create invoice</a>
       <?php endif; ?>
+      <?php if (Auth::can('submissions.edit')): ?>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>&edit=1" class="admin-btn admin-btn-primary">Edit</a>
+      <?php endif; ?>
+      <?php if (Auth::can('submissions.delete')): ?>
       <form method="post" action="/admin/submission-delete" class="inline-form"
         onsubmit="return confirm('Delete submission #<?= $submissionId ?>? This cannot be undone.');">
         <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
@@ -48,8 +53,7 @@ require __DIR__ . '/includes/layout-start.php';
         <input type="hidden" name="redirect" value="/admin/submissions?form_id=<?= $formId ?>">
         <button type="submit" class="admin-btn admin-btn-danger">Delete</button>
       </form>
-    <?php else: ?>
-      <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
+      <?php endif; ?>
     <?php endif; ?>
     <a href="/admin/submissions?form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">← All responses</a>
   </div>

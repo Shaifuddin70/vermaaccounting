@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../lib/bootstrap.php';
 Auth::requireLogin();
-Auth::requireCapability('files.manage');
+Auth::requireCapability('files.view', 'files.manage');
+$canManageFiles = Auth::can('files.manage');
 
 $uploadRepo = new UploadRepository();
 $stats = $uploadRepo->storageStats();

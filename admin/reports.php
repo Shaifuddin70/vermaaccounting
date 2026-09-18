@@ -100,7 +100,7 @@ require __DIR__ . '/includes/layout-start.php';
     <div class="md-kpi-body">
       <div class="md-kpi-value"><?= e(invoice_format_money($avgInvoice)) ?></div>
       <div class="md-kpi-label">Average invoice</div>
-      <div class="md-kpi-sub"><?= number_format($summary['approved_count']) ?> approved · <?= number_format($summary['sent_count']) ?> sent</div>
+      <div class="md-kpi-sub"><?= number_format($summary['approved_count']) ?> approved · <?= number_format($summary['sent_count']) ?> sent · <?= number_format($summary['paid_count']) ?> paid</div>
     </div>
   </div>
 </div>
@@ -109,7 +109,7 @@ require __DIR__ . '/includes/layout-start.php';
   <section class="admin-card reports-panel">
     <h2 class="admin-card-title">Income over time · <?= (int) $chartYear ?></h2>
     <?php if ($series === [] || $maxSeriesIncome <= 0): ?>
-      <p class="admin-empty-state-text">No approved or sent invoice income in <?= (int) $chartYear ?>.</p>
+      <p class="admin-empty-state-text">No approved, sent, or paid invoice income in <?= (int) $chartYear ?>.</p>
     <?php else: ?>
       <div class="reports-year-chart" role="img" aria-label="Monthly income for <?= (int) $chartYear ?>">
         <div class="reports-year-chart-plot">
@@ -145,6 +145,7 @@ require __DIR__ . '/includes/layout-start.php';
             <span class="admin-badge <?= e(match ($status) {
                 'approved' => 'admin-badge-success',
                 'sent' => 'admin-badge-info',
+                'paid' => 'admin-badge-paid',
                 default => '',
             }) ?>"><?= e(invoice_status_label($status)) ?></span>
             <strong><?= number_format((int) $row['count']) ?></strong>
