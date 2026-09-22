@@ -263,7 +263,7 @@ require __DIR__ . '/includes/layout-start.php';
     <section class="invoice-composer-panel">
       <div class="invoice-panel-head">
         <h2 class="invoice-panel-title">Customer</h2>
-        <p class="invoice-panel-hint">Link a saved client, or enter bill-to details. Walk-in customers are added to Clients when you save.</p>
+        <p class="invoice-panel-hint">Link a saved client, or enter bill-to details. New customers are added to your Clients list when you save.</p>
       </div>
 
       <div class="invoice-client-picker" id="invoice-client-picker">
@@ -340,7 +340,9 @@ require __DIR__ . '/includes/layout-start.php';
     <section class="invoice-composer-panel">
       <div class="invoice-lines-head">
         <h2>Line items</h2>
+        <?php if ($partnerId === null && Auth::can('invoices.settings')): ?>
         <a href="/admin/invoice-services" class="admin-btn admin-btn-secondary admin-btn-sm">Manage services</a>
+        <?php endif; ?>
       </div>
 
       <div class="invoice-add-bar">

@@ -86,18 +86,14 @@ if ($billToEmail !== '' && !filter_var($billToEmail, FILTER_VALIDATE_EMAIL)) {
 if ($clientId) {
     $client = (new ClientRepository())->find($clientId);
     if (!$client) {
-        $errors[] = 'Selected client was not found.';
         $clientId = null;
     } elseif (!partner_has_client_access((int) $clientId)) {
-        $errors[] = 'You can only invoice clients linked to your submissions.';
+        // Fall through to bill-to create/link instead of blocking the save.
         $clientId = null;
     }
 }
 
 $partnerId = partner_user_id();
-if ($partnerId !== null && (!$clientId || $clientId < 1)) {
-    $errors[] = 'Partners must select one of their linked clients for the invoice.';
-}
 
 if ($editId) {
     $existingInvoice = $repo->find($editId, $partnerId);
@@ -116,20 +112,26 @@ if ($errors !== []) {
     exit;
 }
 
-if ($partnerId !== null) {
-    // Keep the selected linked client; do not auto-create unscoped clients.
-    $clientLink = ['client_id' => $clientId, 'created' => false];
-} else {
-    $clientLink = invoice_ensure_client_from_bill_to(
-        $clientId,
-        $billToName,
-        $billToCompany,
-        $billToEmail,
-        $billToPhone
-    );
-}
+$clientLink = invoice_ensure_client_from_bill_to(
+    $clientId,
+    $billToName,
+    $billToCompany,
+    $billToEmail,
+    $billToPhone
+);
 $clientId = $clientLink['client_id'];
 $clientCreated = !empty($clientLink['created']);
+
+if ($partnerId !== null && $clientId !== null && $clientId > 0) {
+    link_client_to_partner($clientId, $partnerId);
+}
+
+if ($partnerId !== null && (!$clientId || $clientId < 1)) {
+    $_SESSION['invoice_edit_errors'] = ['Enter bill-to details so the client can be added to your directory.'];
+    $_SESSION['invoice_edit_old'] = $_POST;
+    header('Location: /admin/invoice-edit' . ($editId ? '?id=' . $editId : ''));
+    exit;
+}
 
 $user = Auth::currentUser();
 $data = [
