@@ -84,6 +84,28 @@ function report_invoice_counts_as_income(string $status): bool
 }
 
 /**
+ * Money figures for one invoice row. Income is everything the client owes for
+ * the invoice, including any advance they already paid before it was issued.
+ *
+ * @return array{income: float, advance: float, paid: float, collected: float, outstanding: float, total: float}
+ */
+function report_invoice_amounts(array $row): array
+{
+    $due = invoice_due_state($row);
+    $income = invoice_money($due['invoice_due'] + $due['advance_amount']);
+    $collected = invoice_money($due['advance_amount'] + $due['amount_paid']);
+
+    return [
+        'income' => $income,
+        'advance' => $due['advance_amount'],
+        'paid' => $due['amount_paid'],
+        'collected' => $collected,
+        'outstanding' => $due['amount_due'],
+        'total' => invoice_money((float) ($row['total'] ?? 0)),
+    ];
+}
+
+/**
  * @param list<array<string, mixed>> $rows
  * @return array{
  *   invoice_count: int,
@@ -92,26 +114,31 @@ function report_invoice_counts_as_income(string $status): bool
  *   paid_count: int,
  *   draft_count: int,
  *   income_count: int,
- *   income_due: float,
+ *   income: float,
  *   income_total: float,
  *   advance_total: float,
+ *   payments_total: float,
+ *   collected_total: float,
+ *   outstanding_total: float,
  *   clients_served: int,
  *   walk_in_invoices: int,
- *   by_status: array<string, array{count: int, amount_due: float, total: float}>
+ *   by_status: array<string, array{count: int, income: float, total: float}>
  * }
  */
 function report_summarize_invoices(array $rows): array
 {
     $byStatus = [];
     foreach (invoice_status_options() as $status) {
-        $byStatus[$status] = ['count' => 0, 'amount_due' => 0.0, 'total' => 0.0];
+        $byStatus[$status] = ['count' => 0, 'income' => 0.0, 'total' => 0.0];
     }
 
     $clientIds = [];
     $walkIn = 0;
-    $incomeDue = 0.0;
+    $income = 0.0;
     $incomeTotal = 0.0;
     $advanceTotal = 0.0;
+    $paymentsTotal = 0.0;
+    $outstandingTotal = 0.0;
     $incomeCount = 0;
 
     foreach ($rows as $row) {
@@ -120,23 +147,23 @@ function report_summarize_invoices(array $rows): array
             $status = 'draft';
         }
         if (!isset($byStatus[$status])) {
-            $byStatus[$status] = ['count' => 0, 'amount_due' => 0.0, 'total' => 0.0];
+            $byStatus[$status] = ['count' => 0, 'income' => 0.0, 'total' => 0.0];
         }
 
-        $amountDue = invoice_money((float) ($row['amount_due'] ?? $row['total'] ?? 0));
-        $total = invoice_money((float) ($row['total'] ?? 0));
-        $advance = invoice_money(max(0, (float) ($row['advance_amount'] ?? 0)));
+        $amounts = report_invoice_amounts($row);
 
         $byStatus[$status]['count']++;
-        $byStatus[$status]['amount_due'] = invoice_money($byStatus[$status]['amount_due'] + $amountDue);
-        $byStatus[$status]['total'] = invoice_money($byStatus[$status]['total'] + $total);
+        $byStatus[$status]['income'] = invoice_money($byStatus[$status]['income'] + $amounts['income']);
+        $byStatus[$status]['total'] = invoice_money($byStatus[$status]['total'] + $amounts['total']);
 
         $clientId = (int) ($row['client_id'] ?? 0);
         if (report_invoice_counts_as_income($status)) {
             $incomeCount++;
-            $incomeDue = invoice_money($incomeDue + $amountDue);
-            $incomeTotal = invoice_money($incomeTotal + $total);
-            $advanceTotal = invoice_money($advanceTotal + $advance);
+            $income = invoice_money($income + $amounts['income']);
+            $incomeTotal = invoice_money($incomeTotal + $amounts['total']);
+            $advanceTotal = invoice_money($advanceTotal + $amounts['advance']);
+            $paymentsTotal = invoice_money($paymentsTotal + $amounts['paid']);
+            $outstandingTotal = invoice_money($outstandingTotal + $amounts['outstanding']);
             if ($clientId > 0) {
                 $clientIds[$clientId] = true;
             } else {
@@ -152,9 +179,12 @@ function report_summarize_invoices(array $rows): array
         'paid_count' => (int) ($byStatus['paid']['count'] ?? 0),
         'draft_count' => (int) ($byStatus['draft']['count'] ?? 0),
         'income_count' => $incomeCount,
-        'income_due' => $incomeDue,
+        'income' => $income,
         'income_total' => $incomeTotal,
         'advance_total' => $advanceTotal,
+        'payments_total' => $paymentsTotal,
+        'collected_total' => invoice_money($advanceTotal + $paymentsTotal),
+        'outstanding_total' => $outstandingTotal,
         'clients_served' => count($clientIds),
         'walk_in_invoices' => $walkIn,
         'by_status' => $byStatus,
@@ -163,7 +193,7 @@ function report_summarize_invoices(array $rows): array
 
 /**
  * @param list<array<string, mixed>> $rows
- * @return list<array{key: string, label: string, income_due: float, income_total: float, invoice_count: int}>
+ * @return list<array{key: string, label: string, income: float, income_total: float, invoice_count: int}>
  */
 function report_build_series(array $rows, string $grain, ?string $from, ?string $to): array
 {
@@ -179,7 +209,7 @@ function report_build_series(array $rows, string $grain, ?string $from, ?string 
                 $buckets[$key] = [
                     'key' => $key,
                     'label' => report_bucket_label($cursor, $grain),
-                    'income_due' => 0.0,
+                    'income' => 0.0,
                     'income_total' => 0.0,
                     'invoice_count' => 0,
                 ];
@@ -206,14 +236,12 @@ function report_build_series(array $rows, string $grain, ?string $from, ?string 
             $buckets[$key] = [
                 'key' => $key,
                 'label' => report_bucket_label($dt, $grain),
-                'income_due' => 0.0,
+                'income' => 0.0,
                 'income_total' => 0.0,
                 'invoice_count' => 0,
             ];
         }
-        $buckets[$key]['income_due'] = invoice_money(
-            $buckets[$key]['income_due'] + (float) ($row['amount_due'] ?? $row['total'] ?? 0)
-        );
+        $buckets[$key]['income'] = invoice_money($buckets[$key]['income'] + report_invoice_amounts($row)['income']);
         $buckets[$key]['income_total'] = invoice_money(
             $buckets[$key]['income_total'] + (float) ($row['total'] ?? 0)
         );
@@ -245,7 +273,7 @@ function report_bucket_label(DateTimeImmutable $dt, string $grain): string
 
 /**
  * @param list<array<string, mixed>> $rows
- * @return list<array{client_id: ?int, name: string, invoice_count: int, income_due: float, income_total: float}>
+ * @return list<array{client_id: ?int, name: string, invoice_count: int, income: float, income_total: float}>
  */
 function report_top_clients(array $rows, int $limit = 8): array
 {
@@ -273,20 +301,18 @@ function report_top_clients(array $rows, int $limit = 8): array
                 'client_id' => $clientId > 0 ? $clientId : null,
                 'name' => $name,
                 'invoice_count' => 0,
-                'income_due' => 0.0,
+                'income' => 0.0,
                 'income_total' => 0.0,
             ];
         }
         $map[$key]['invoice_count']++;
-        $map[$key]['income_due'] = invoice_money(
-            $map[$key]['income_due'] + (float) ($row['amount_due'] ?? $row['total'] ?? 0)
-        );
+        $map[$key]['income'] = invoice_money($map[$key]['income'] + report_invoice_amounts($row)['income']);
         $map[$key]['income_total'] = invoice_money(
             $map[$key]['income_total'] + (float) ($row['total'] ?? 0)
         );
     }
 
-    usort($map, static fn (array $a, array $b): int => $b['income_due'] <=> $a['income_due']);
+    usort($map, static fn (array $a, array $b): int => $b['income'] <=> $a['income']);
 
     return array_slice(array_values($map), 0, max(1, $limit));
 }

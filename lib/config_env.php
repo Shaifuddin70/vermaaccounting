@@ -30,7 +30,10 @@ if (!function_exists('verma_resolve_environment')) {
                 return 'production';
             }
 
-            if (preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $host)) {
+            if (
+                preg_match('/^(localhost|127\.0\.0\.1)(:\d+)?$/', $host)
+                || preg_match('/\.(host|test)$/', $hostWithoutPort)
+            ) {
                 return 'local';
             }
 

@@ -19,7 +19,7 @@ final class EmailCampaignRepository
   /** @return list<array<string, mixed>> */
   public function all(int $limit = 50, int $offset = 0): array
   {
-    $limit = max(1, min(200, $limit));
+    $limit = max(1, min(1000, $limit));
     $offset = max(0, $offset);
     $stmt = $this->db->prepare('
       SELECT * FROM email_campaigns
@@ -150,7 +150,7 @@ final class EmailCampaignRepository
   /** @return list<array<string, mixed>> */
   public function recipients(int $campaignId, int $limit = 50, int $offset = 0, ?string $status = null): array
   {
-    $limit = max(1, min(200, $limit));
+    $limit = max(1, min(1000, $limit));
     $offset = max(0, $offset);
     $sql = 'SELECT * FROM email_campaign_recipients WHERE campaign_id = ?';
     $params = [$campaignId];

@@ -107,7 +107,8 @@ require __DIR__ . '/includes/layout-start.php';
   <div class="admin-card clients-import-guide-card">
     <h2 class="admin-card-title">Column guide</h2>
     <p class="clients-import-guide-intro">
-      Export your sheet as <strong>CSV</strong> from Excel or Google Sheets. The first row must be column headers.
+      Export your sheet as <strong>CSV</strong> from Excel, Google Sheets, or your tax software's client list
+      (e.g. TaxCycle). The first row must be column headers.
     </p>
     <div class="admin-table-wrap">
       <table class="admin-table clients-import-guide">
@@ -119,18 +120,20 @@ require __DIR__ . '/includes/layout-start.php';
           </tr>
         </thead>
         <tbody>
-          <tr><td>Name</td><td>Yes</td><td>Name, Full Name, Client Name</td></tr>
+          <tr><td>Name</td><td>Yes</td><td>Name, Full Name, Client Name, or First Name + Last Name</td></tr>
           <tr><td>SIN</td><td>No</td><td>SIN, Social Insurance Number</td></tr>
           <tr><td>Email</td><td>No</td><td>Email, Email Address</td></tr>
-          <tr><td>Phone</td><td>No</td><td>Phone, Mobile, Telephone</td></tr>
+          <tr><td>Phone</td><td>No</td><td>Phone, Cell / Home / Work Phone Number</td></tr>
           <tr><td>Company</td><td>No</td><td>Company, Business</td></tr>
-          <tr><td>Date of Birth</td><td>No</td><td>Date of Birth, DOB, Birthday (YYYY-MM-DD)</td></tr>
-          <tr><td>Notes</td><td>No</td><td>Notes, Comments</td></tr>
+          <tr><td>Address</td><td>No</td><td>Address, or Street + City + Province + Postal Code</td></tr>
+          <tr><td>Date of Birth</td><td>No</td><td>Date of Birth, DOB, Birth Date (YYYY-MM-DD)</td></tr>
+          <tr><td>Notes</td><td>No</td><td>Notes, Comments, Processing Status, Last Activity</td></tr>
         </tbody>
       </table>
     </div>
     <p class="admin-note clients-import-guide-note">
-      Rows with the same SIN or email are updated instead of duplicated. Each SIN must be unique.
+      Existing clients are updated instead of duplicated when the SIN matches, or when the name matches together
+      with the email or date of birth. Blank cells never erase data already on file. Each SIN must be unique.
     </p>
     <a href="/admin/clients-import-template" class="admin-btn admin-btn-secondary admin-btn-sm">Download sample CSV</a>
   </div>

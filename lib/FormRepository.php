@@ -47,7 +47,7 @@ final class FormRepository
 
     public function allPaginated(int $limit, int $offset): array
     {
-        $limit = max(1, min(200, $limit));
+        $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
         $stmt = $this->db->prepare('
             SELECT * FROM forms
@@ -310,7 +310,7 @@ final class FormRepository
         [$sql, $params] = $this->submissionFilterSql($formId, $status, $taxYear, $partnerUserId);
         $sql .= ' ORDER BY s.created_at DESC';
         if ($limit !== null) {
-            $limit = max(1, min(200, $limit));
+            $limit = max(1, min(1000, $limit));
             $offset = max(0, $offset ?? 0);
             $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
         }
@@ -703,7 +703,7 @@ final class FormRepository
      */
     public function listReviewerSubmissions(array $filters, int $limit = 50, int $offset = 0): array
     {
-        $limit = max(1, min(200, $limit));
+        $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
         [$fromWhere, $params] = $this->reviewerSubmissionFilterSql($filters);
         $sql = '

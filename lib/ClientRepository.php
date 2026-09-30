@@ -256,7 +256,7 @@ final class ClientRepository
      */
     public function allWithStats(?string $search = null, int $limit = 50, int $offset = 0, ?int $partnerUserId = null): array
     {
-        $limit = max(1, min(200, $limit));
+        $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
         [$where, $params] = $this->searchClause($search, $partnerUserId);
 
@@ -330,7 +330,7 @@ final class ClientRepository
         [$sql, $params] = $this->clientSubmissionSql($clientId, $year, $partnerUserId);
         $sql .= ' ORDER BY s.created_at DESC';
         if ($limit !== null) {
-            $limit = max(1, min(200, $limit));
+            $limit = max(1, min(1000, $limit));
             $offset = max(0, $offset ?? 0);
             $sql .= ' LIMIT ' . $limit . ' OFFSET ' . $offset;
         }
@@ -437,8 +437,8 @@ final class ClientRepository
     {
         $now = now_iso();
         $stmt = $this->db->prepare('
-            INSERT INTO clients (name, sin, email, phone, company, date_of_birth, notes, source, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clients (name, sin, email, phone, company, address, date_of_birth, notes, source, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         $stmt->execute([
             trim((string) ($data['name'] ?? '')),
@@ -446,6 +446,7 @@ final class ClientRepository
             $this->normalizeEmail($data['email'] ?? ''),
             trim((string) ($data['phone'] ?? '')),
             trim((string) ($data['company'] ?? '')),
+            trim((string) ($data['address'] ?? '')),
             $this->normalizeDob($data['date_of_birth'] ?? null),
             trim((string) ($data['notes'] ?? '')),
             $source,
@@ -463,7 +464,7 @@ final class ClientRepository
         }
         $stmt = $this->db->prepare('
             UPDATE clients
-            SET name = ?, sin = ?, email = ?, phone = ?, company = ?, date_of_birth = ?, notes = ?, updated_at = ?
+            SET name = ?, sin = ?, email = ?, phone = ?, company = ?, address = ?, date_of_birth = ?, notes = ?, updated_at = ?
             WHERE id = ?
         ');
         $dob = array_key_exists('date_of_birth', $data)
@@ -475,6 +476,7 @@ final class ClientRepository
             $this->normalizeEmail($data['email'] ?? $existing['email']),
             trim((string) ($data['phone'] ?? $existing['phone'] ?? '')),
             trim((string) ($data['company'] ?? $existing['company'] ?? '')),
+            trim((string) ($data['address'] ?? $existing['address'] ?? '')),
             $dob,
             trim((string) ($data['notes'] ?? $existing['notes'] ?? '')),
             now_iso(),
@@ -647,71 +649,114 @@ final class ClientRepository
         $skipped = 0;
         $errors = [];
 
-        foreach ($rows as $row) {
-            $name = trim((string) ($row['name'] ?? ''));
-            $sin = trim((string) ($row['sin'] ?? ''));
-            $email = strtolower(trim((string) ($row['email'] ?? '')));
-            $line = (int) ($row['_line'] ?? 0);
+        $this->db->beginTransaction();
+        try {
+            foreach ($rows as $row) {
+                $name = trim((string) ($row['name'] ?? ''));
+                $sin = trim((string) ($row['sin'] ?? ''));
+                $email = strtolower(trim((string) ($row['email'] ?? '')));
+                $dob = birthday_normalize_dob($row['date_of_birth'] ?? '');
+                $line = (int) ($row['_line'] ?? 0);
 
-            if ($name === '' && $email === '' && $sin === '') {
-                $skipped++;
-                continue;
-            }
-            if ($name === '') {
-                $errors[] = 'Line ' . $line . ': missing name.';
-                $skipped++;
-                continue;
-            }
-
-            $payload = [
-                'name' => $name,
-                'sin' => $sin,
-                'email' => $email,
-                'phone' => trim((string) ($row['phone'] ?? '')),
-                'company' => trim((string) ($row['company'] ?? '')),
-                'date_of_birth' => $row['date_of_birth'] ?? null,
-                'notes' => trim((string) ($row['notes'] ?? '')),
-            ];
-
-            $existing = null;
-            if ($sin !== '') {
-                $existing = $this->findBySin($sin);
-            }
-            if (!$existing && $email !== '') {
-                $existing = $this->findByEmail($email);
-            }
-
-            if ($existing) {
-                if ($sin !== '' && ($existing['sin'] ?? '') !== '' && $existing['sin'] !== $sin) {
-                    $errors[] = 'Line ' . $line . ': SIN conflicts with existing client.';
+                if ($name === '' && $email === '' && $sin === '') {
                     $skipped++;
                     continue;
                 }
-                $this->update((int) $existing['id'], array_merge($existing, $payload));
-                $updated++;
-                continue;
-            }
-
-            if ($sin !== '' && $this->findBySin($sin)) {
-                $errors[] = 'Line ' . $line . ': SIN already in use.';
-                $skipped++;
-                continue;
-            }
-
-            try {
-                $this->create($payload, 'import');
-                $imported++;
-            } catch (PDOException $e) {
-                if ($this->isDuplicateSinError($e)) {
-                    $errors[] = 'Line ' . $line . ': SIN already in use.';
+                if ($name === '') {
+                    $errors[] = 'Line ' . $line . ': missing name.';
                     $skipped++;
                     continue;
                 }
-                throw $e;
+
+                $payload = [
+                    'name' => $name,
+                    'sin' => $sin,
+                    'email' => $email,
+                    'phone' => trim((string) ($row['phone'] ?? '')),
+                    'company' => trim((string) ($row['company'] ?? '')),
+                    'address' => trim((string) ($row['address'] ?? '')),
+                    'date_of_birth' => $dob,
+                    'notes' => trim((string) ($row['notes'] ?? '')),
+                ];
+
+                $existing = $this->findImportMatch($name, $sin, $email, $dob);
+
+                if ($existing) {
+                    if ($sin !== '' && ($existing['sin'] ?? '') !== '' && $existing['sin'] !== $sin) {
+                        $errors[] = 'Line ' . $line . ': SIN conflicts with existing client.';
+                        $skipped++;
+                        continue;
+                    }
+                    // Blank cells never erase data already on file.
+                    $changes = array_filter(
+                        $payload,
+                        static fn ($v, string $k): bool => $k !== 'notes' && $v !== null && $v !== '',
+                        ARRAY_FILTER_USE_BOTH
+                    );
+                    $changes['notes'] = client_merge_import_notes((string) ($existing['notes'] ?? ''), $payload['notes']);
+                    $this->update((int) $existing['id'], array_merge($existing, $changes));
+                    $updated++;
+                    continue;
+                }
+
+                try {
+                    $this->create($payload, 'import');
+                    $imported++;
+                } catch (PDOException $e) {
+                    if ($this->isDuplicateSinError($e)) {
+                        $errors[] = 'Line ' . $line . ': SIN already in use.';
+                        $skipped++;
+                        continue;
+                    }
+                    throw $e;
+                }
             }
+            $this->db->commit();
+        } catch (Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
         }
 
         return compact('imported', 'updated', 'skipped', 'errors');
+    }
+
+    /**
+     * SIN is the strongest match. Without one, email alone is not enough because
+     * family members often share an address, so the name must match too.
+     */
+    private function findImportMatch(string $name, string $sin, string $email, ?string $dob): ?array
+    {
+        if ($sin !== '') {
+            $bySin = $this->findBySin($sin);
+            if ($bySin) {
+                return $bySin;
+            }
+        }
+
+        if ($email !== '') {
+            $stmt = $this->db->prepare('SELECT * FROM clients WHERE email = ? AND LOWER(name) = LOWER(?) LIMIT 1');
+            $stmt->execute([$email, $name]);
+            $row = $stmt->fetch();
+            if ($row && ($sin === '' || ($row['sin'] ?? '') === '' || $row['sin'] === $sin)) {
+                return $row;
+            }
+        }
+
+        if ($dob !== null) {
+            $stmt = $this->db->prepare('
+                SELECT * FROM clients
+                WHERE LOWER(name) = LOWER(?) AND date_of_birth = ?
+                  AND (sin IS NULL OR sin = \'\' OR ? = \'\')
+                LIMIT 1
+            ');
+            $stmt->execute([$name, $dob, $sin]);
+            $row = $stmt->fetch();
+            if ($row) {
+                return $row;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -728,6 +773,7 @@ final class ClientRepository
                 c.email,
                 c.phone,
                 c.company,
+                c.address,
                 c.date_of_birth,
                 c.notes,
                 c.source,
@@ -847,22 +893,14 @@ final class ClientRepository
         $search = trim((string) $search);
         if ($search !== '') {
             if (preg_match('/^\d+$/', $search)) {
-                $parts[] = '(c.id = ? OR c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)';
+                $parts[] = '(c.id = ? OR c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ? OR c.address LIKE ?)';
                 $params[] = (int) $search;
                 $like = '%' . $search . '%';
-                $params[] = $like;
-                $params[] = $like;
-                $params[] = $like;
-                $params[] = $like;
-                $params[] = $like;
+                array_push($params, $like, $like, $like, $like, $like, $like);
             } else {
                 $like = '%' . $search . '%';
-                $parts[] = '(c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ?)';
-                $params[] = $like;
-                $params[] = $like;
-                $params[] = $like;
-                $params[] = $like;
-                $params[] = $like;
+                $parts[] = '(c.name LIKE ? OR c.sin LIKE ? OR c.email LIKE ? OR c.phone LIKE ? OR c.company LIKE ? OR c.address LIKE ?)';
+                array_push($params, $like, $like, $like, $like, $like, $like);
             }
         }
         [$scopeSql, $scopeParams] = partner_client_scope_sql($partnerUserId, 'c');

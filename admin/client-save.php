@@ -21,10 +21,31 @@ Auth::requireCapability($isNew ? 'clients.create' : 'clients.edit');
 $name = trim((string) ($_POST['name'] ?? ''));
 $email = strtolower(trim((string) ($_POST['email'] ?? '')));
 $phone = trim((string) ($_POST['phone'] ?? ''));
+$otherPhone = trim((string) ($_POST['other_phone'] ?? ''));
 $company = trim((string) ($_POST['company'] ?? ''));
+$address = trim(preg_replace('/\s*\R\s*/', ', ', (string) ($_POST['address'] ?? '')) ?? '');
 $sin = trim((string) ($_POST['sin'] ?? ''));
 $dob = trim((string) ($_POST['date_of_birth'] ?? ''));
-$notes = trim((string) ($_POST['notes'] ?? ''));
+$status = trim((string) ($_POST['status'] ?? ''));
+$lastActivity = trim((string) ($_POST['last_activity'] ?? ''));
+$freeNotes = trim((string) ($_POST['notes'] ?? ''));
+$emailUnsubscribed = !empty($_POST['email_unsubscribed']);
+
+$oldInput = [
+    'name' => $name,
+    'email' => $email,
+    'phone' => $phone,
+    'other_phone' => $otherPhone,
+    'company' => $company,
+    'address' => $address,
+    'sin' => $sin,
+    'date_of_birth' => $dob,
+    'status' => $status,
+    'last_activity' => $lastActivity,
+    'notes' => $freeNotes,
+    'email_unsubscribed' => $emailUnsubscribed,
+];
+$back = $isNew ? '/admin/client-edit' : '/admin/client-edit?id=' . (int) $editId;
 
 $errors = [];
 if (!$isNew) {
@@ -57,16 +78,7 @@ if ($sin !== '' && $clientRepo->sinExists($sin, $editId)) {
 
 if ($errors !== []) {
     $_SESSION['client_edit_errors'] = $errors;
-    $_SESSION['client_edit_old'] = [
-        'name' => $name,
-        'email' => $email,
-        'phone' => $phone,
-        'company' => $company,
-        'sin' => $sin,
-        'date_of_birth' => $dob,
-        'notes' => $notes,
-    ];
-    $back = $isNew ? '/admin/client-edit' : '/admin/client-edit?id=' . (int) $editId;
+    $_SESSION['client_edit_old'] = $oldInput;
     header('Location: ' . $back);
     exit;
 }
@@ -76,14 +88,23 @@ $data = [
     'email' => $email,
     'phone' => $phone,
     'company' => $company,
+    'address' => $address,
     'sin' => $sin,
     'date_of_birth' => $dob !== '' ? $dob : null,
-    'notes' => $notes,
+    'notes' => client_compose_notes([
+        'notes' => $freeNotes,
+        'other_phone' => $otherPhone,
+        'status' => $status,
+        'last_activity' => $lastActivity,
+    ]),
 ];
 
 try {
     if ($isNew) {
         $id = $clientRepo->create($data, 'manual');
+        if ($emailUnsubscribed) {
+            $clientRepo->setEmailUnsubscribed($id, true);
+        }
         $partnerId = partner_user_id();
         if ($partnerId !== null) {
             link_client_to_partner($id, $partnerId);
@@ -98,6 +119,9 @@ try {
     }
 
     $clientRepo->update((int) $editId, $data);
+    if ($emailUnsubscribed !== $clientRepo->isEmailUnsubscribed((int) $editId)) {
+        $clientRepo->setEmailUnsubscribed((int) $editId, $emailUnsubscribed);
+    }
     ActivityLog::record('client.updated', 'client', (int) $editId, ['name' => $name]);
     $_SESSION['flash_success'] = 'Client updated.';
     header('Location: /admin/client?id=' . (int) $editId);
@@ -110,16 +134,7 @@ try {
         $message = 'Could not save this client.';
     }
     $_SESSION['client_edit_errors'] = [$message];
-    $_SESSION['client_edit_old'] = [
-        'name' => $name,
-        'email' => $email,
-        'phone' => $phone,
-        'company' => $company,
-        'sin' => $sin,
-        'date_of_birth' => $dob,
-        'notes' => $notes,
-    ];
-    $back = $isNew ? '/admin/client-edit' : '/admin/client-edit?id=' . (int) $editId;
+    $_SESSION['client_edit_old'] = $oldInput;
     header('Location: ' . $back);
     exit;
 }

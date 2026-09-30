@@ -58,7 +58,7 @@ final class ActivityLog
         ?int    $subjectId   = null,
         int     $offset      = 0
     ): array {
-        $limit = max(1, min(200, $limit));
+        $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
         [$where, $params] = self::filterClause($userId, $action, $subjectType, $subjectId);
 

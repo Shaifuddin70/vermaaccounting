@@ -58,12 +58,39 @@ function client_page_url(int $clientId, string $year = 'all', int $page = 1, ?in
     return pagination_url('/admin/client', $params, $page, $perPage);
 }
 
+function client_profile_date(?string $value, bool $withTime = false): string
+{
+    $value = trim((string) $value);
+    if ($value === '') {
+        return '';
+    }
+    try {
+        return (new DateTimeImmutable($value))->format($withTime ? 'M j, Y · g:i A' : 'M j, Y');
+    } catch (Throwable) {
+        return $value;
+    }
+}
+
+$meta = client_notes_meta($client['notes'] ?? '');
+$statusTone = client_status_tone($meta['status']);
+$source = (string) ($client['source'] ?? 'submission');
+$email = trim((string) ($client['email'] ?? ''));
+$phone = trim((string) ($client['phone'] ?? ''));
+$address = trim((string) ($client['address'] ?? ''));
+$sin = trim((string) ($client['sin'] ?? ''));
+$company = trim((string) ($client['company'] ?? ''));
+$locality = client_address_locality($address);
+$age = client_age($client['date_of_birth'] ?? null);
+$dobLabel = client_profile_date($client['date_of_birth'] ?? null);
+$isUnsubscribed = trim((string) ($client['email_unsubscribed_at'] ?? '')) !== '';
+$submissionCount = array_sum($yearCounts);
+$telHref = preg_replace('/[^\d+]/', '', $phone) ?? '';
+
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
-  <h1><?= e($client['name']) ?></h1>
+  <h1>Client profile</h1>
   <div class="admin-header-actions">
-    <span class="client-id-badge">Client ID: <?= (int) $client['id'] ?></span>
     <?php if (Auth::can('clients.edit')): ?>
     <a href="/admin/client-edit?id=<?= (int) $client['id'] ?>" class="admin-btn">Edit</a>
     <?php endif; ?>
@@ -80,45 +107,164 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 </div>
 
-<div class="admin-card client-profile-card">
-  <div class="client-profile-grid">
-    <div>
-      <span class="submission-meta-label">Client ID</span>
-      <strong class="client-id-value"><?= (int) $client['id'] ?></strong>
-      <p class="admin-field-hint" style="margin:0.35rem 0 0;">Share this number for document uploads. Clients can also use their email on file.</p>
-    </div>
-    <div>
-      <span class="submission-meta-label">SIN</span>
-      <strong><?= ($client['sin'] ?? '') !== '' ? e($client['sin']) : '—' ?></strong>
-    </div>
-    <div>
-      <span class="submission-meta-label">Email</span>
-      <strong><?= ($client['email'] ?? '') !== '' ? e($client['email']) : '—' ?></strong>
-    </div>
-    <div>
-      <span class="submission-meta-label">Phone</span>
-      <strong><?= ($client['phone'] ?? '') !== '' ? e($client['phone']) : '—' ?></strong>
-    </div>
-    <div>
-      <span class="submission-meta-label">Birthday</span>
-      <strong><?= !empty($client['date_of_birth']) ? e((string) $client['date_of_birth']) : '—' ?></strong>
-    </div>
-    <div>
-      <span class="submission-meta-label">Company</span>
-      <strong><?= ($client['company'] ?? '') !== '' ? e($client['company']) : '—' ?></strong>
-    </div>
-    <div>
-      <span class="submission-meta-label">Submissions</span>
-      <strong><?= array_sum($yearCounts) ?></strong>
-    </div>
-    <?php if (trim((string) ($client['notes'] ?? '')) !== ''): ?>
-      <div style="grid-column:1 / -1;">
-        <span class="submission-meta-label">Notes</span>
-        <strong style="white-space:pre-wrap;font-weight:500;"><?= e((string) $client['notes']) ?></strong>
+<section class="admin-card client-hero">
+  <div class="client-hero-main">
+    <span class="client-avatar client-avatar--lg" aria-hidden="true"><?= e(client_initials((string) $client['name'])) ?></span>
+    <div class="client-hero-text">
+      <h2 class="client-hero-name"><?= e($client['name']) ?></h2>
+      <div class="client-hero-chips">
+        <span class="client-id-badge">ID <?= (int) $client['id'] ?></span>
+        <?php if ($meta['status'] !== ''): ?>
+          <span class="client-status-badge client-status-badge--<?= e($statusTone) ?>"><?= e($meta['status']) ?></span>
+        <?php endif; ?>
+        <span class="clients-source-badge clients-source-badge--<?= e($source) ?>"><?= e(client_source_label($source)) ?></span>
+        <?php if ($isUnsubscribed): ?>
+          <span class="client-status-badge client-status-badge--muted">Unsubscribed from emails</span>
+        <?php endif; ?>
       </div>
-    <?php endif; ?>
+      <?php
+        $heroFacts = array_filter([
+            $age !== null ? $age . ' years old' : '',
+            $locality,
+            $company,
+        ], static fn (string $v): bool => $v !== '');
+      ?>
+      <?php if ($heroFacts): ?>
+        <p class="client-hero-facts"><?= e(implode(' · ', $heroFacts)) ?></p>
+      <?php endif; ?>
+    </div>
   </div>
+</section>
+
+<div class="client-detail-grid">
+  <section class="admin-card client-detail-card">
+    <h2 class="client-detail-title">Personal details</h2>
+    <dl class="client-detail-list">
+      <div>
+        <dt>Full name</dt>
+        <dd><?= e($client['name']) ?></dd>
+      </div>
+      <div>
+        <dt>Date of birth</dt>
+        <dd>
+          <?php if ($dobLabel !== ''): ?>
+            <?= e($dobLabel) ?><?php if ($age !== null): ?> <span class="client-detail-muted">(<?= $age ?> yrs)</span><?php endif; ?>
+          <?php else: ?>
+            <span class="client-detail-muted">Not provided</span>
+          <?php endif; ?>
+        </dd>
+      </div>
+      <div>
+        <dt>SIN</dt>
+        <dd>
+          <?php if ($sin !== ''): ?>
+            <span class="client-sin" data-sin="<?= e($sin) ?>" data-masked="<?= e(client_mask_sin($sin)) ?>"><?= e(client_mask_sin($sin)) ?></span>
+            <button type="button" class="client-sin-toggle" aria-pressed="false">Show</button>
+          <?php else: ?>
+            <span class="client-detail-muted">Not provided</span>
+          <?php endif; ?>
+        </dd>
+      </div>
+      <div>
+        <dt>Company</dt>
+        <dd><?= $company !== '' ? e($company) : '<span class="client-detail-muted">—</span>' ?></dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="admin-card client-detail-card">
+    <h2 class="client-detail-title">Contact</h2>
+    <dl class="client-detail-list">
+      <div>
+        <dt>Email</dt>
+        <dd>
+          <?php if ($email !== ''): ?>
+            <a href="mailto:<?= e($email) ?>"><?= e($email) ?></a>
+          <?php else: ?>
+            <span class="client-detail-muted">Not provided</span>
+          <?php endif; ?>
+        </dd>
+      </div>
+      <div>
+        <dt>Phone</dt>
+        <dd>
+          <?php if ($phone !== ''): ?>
+            <a href="tel:<?= e($telHref) ?>"><?= e($phone) ?></a>
+          <?php else: ?>
+            <span class="client-detail-muted">Not provided</span>
+          <?php endif; ?>
+        </dd>
+      </div>
+      <?php if ($meta['other_phone'] !== ''): ?>
+        <div>
+          <dt>Other phone</dt>
+          <dd><?= e($meta['other_phone']) ?></dd>
+        </div>
+      <?php endif; ?>
+      <div>
+        <dt>Address</dt>
+        <dd>
+          <?php if ($address !== ''): ?>
+            <?= e($address) ?>
+            <a class="client-detail-link" href="https://www.google.com/maps/search/?api=1&amp;query=<?= e(rawurlencode($address)) ?>" target="_blank" rel="noopener">Open map</a>
+          <?php else: ?>
+            <span class="client-detail-muted">Not provided</span>
+          <?php endif; ?>
+        </dd>
+      </div>
+    </dl>
+  </section>
+
+  <section class="admin-card client-detail-card">
+    <h2 class="client-detail-title">Account &amp; filing</h2>
+    <dl class="client-detail-list">
+      <div>
+        <dt>Filing status</dt>
+        <dd>
+          <?php if ($meta['status'] !== ''): ?>
+            <span class="client-status-badge client-status-badge--<?= e($statusTone) ?>"><?= e($meta['status']) ?></span>
+          <?php else: ?>
+            <span class="client-detail-muted">—</span>
+          <?php endif; ?>
+        </dd>
+      </div>
+      <div>
+        <dt>Last activity</dt>
+        <dd><?= $meta['last_activity'] !== '' ? e(client_profile_date($meta['last_activity'])) : '<span class="client-detail-muted">—</span>' ?></dd>
+      </div>
+      <div>
+        <dt>Submissions</dt>
+        <dd><?= (int) $submissionCount ?></dd>
+      </div>
+      <div>
+        <dt>Email marketing</dt>
+        <dd><?= $isUnsubscribed ? 'Unsubscribed' : ($email !== '' ? 'Subscribed' : '<span class="client-detail-muted">No email</span>') ?></dd>
+      </div>
+      <div>
+        <dt>Added</dt>
+        <dd><?= e(client_profile_date($client['created_at'] ?? null)) ?> <span class="client-detail-muted"><?= e(match ($source) {
+          'import' => 'via CSV import',
+          'manual' => 'added manually',
+          default => 'via form submission',
+        }) ?></span></dd>
+      </div>
+      <div>
+        <dt>Last updated</dt>
+        <dd><?= e(client_profile_date($client['updated_at'] ?? null, true)) ?></dd>
+      </div>
+    </dl>
+    <p class="client-detail-hint">Share client ID <strong><?= (int) $client['id'] ?></strong> for document uploads. Clients can also use their email on file.</p>
+  </section>
 </div>
+
+<?php if ($meta['notes'] !== ''): ?>
+  <section class="admin-card client-detail-card client-notes-card">
+    <h2 class="client-detail-title">Notes</h2>
+    <p class="client-notes-text"><?= e($meta['notes']) ?></p>
+  </section>
+<?php endif; ?>
+
+<h2 class="client-section-heading">Submissions</h2>
 
 <?php if ($yearCounts): ?>
   <form method="get" action="/admin/client" class="submissions-year-filter">
@@ -198,5 +344,18 @@ require __DIR__ . '/includes/layout-start.php';
     <?php $paginationShow = 'nav'; require __DIR__ . '/includes/pagination.php'; ?>
   <?php endif; ?>
 </div>
+
+<script>
+document.querySelectorAll('.client-sin-toggle').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var sin = btn.previousElementSibling;
+    if (!sin) return;
+    var show = btn.getAttribute('aria-pressed') !== 'true';
+    sin.textContent = show ? sin.dataset.sin : sin.dataset.masked;
+    btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+    btn.textContent = show ? 'Hide' : 'Show';
+  });
+});
+</script>
 
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

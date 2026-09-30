@@ -32,7 +32,7 @@ final class InvoiceRepository
         int $offset = 0,
         ?int $partnerUserId = null
     ): array {
-        $limit = max(1, min(200, $limit));
+        $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
         [$where, $params] = $this->filterClause($search, $status, $partnerUserId);
         $stmt = $this->db->prepare('
@@ -266,6 +266,86 @@ final class InvoiceRepository
         $stmt->execute([$id]);
     }
 
+    /** @return list<array<string, mixed>> */
+    public function payments(int $invoiceId): array
+    {
+        $stmt = $this->db->prepare('
+            SELECT * FROM invoice_payments
+            WHERE invoice_id = ?
+            ORDER BY payment_date DESC, id DESC
+        ');
+        $stmt->execute([$invoiceId]);
+        return $stmt->fetchAll();
+    }
+
+    public function findPayment(int $paymentId, int $invoiceId): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM invoice_payments WHERE id = ? AND invoice_id = ?');
+        $stmt->execute([$paymentId, $invoiceId]);
+        return $stmt->fetch() ?: null;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     * @return float New total paid on the invoice.
+     */
+    public function addPayment(int $invoiceId, array $data): float
+    {
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare('
+                INSERT INTO invoice_payments (
+                    invoice_id, amount, payment_date, method, reference, note,
+                    recorded_by_user_id, recorded_by_name, created_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ');
+            $stmt->execute([
+                $invoiceId,
+                invoice_money((float) ($data['amount'] ?? 0)),
+                (string) ($data['payment_date'] ?? date('Y-m-d')),
+                ($data['method'] ?? '') !== '' ? (string) $data['method'] : null,
+                ($data['reference'] ?? '') !== '' ? (string) $data['reference'] : null,
+                ($data['note'] ?? '') !== '' ? (string) $data['note'] : null,
+                $data['recorded_by_user_id'] ?? null,
+                (string) ($data['recorded_by_name'] ?? ''),
+                now_iso(),
+            ]);
+            $paid = $this->syncAmountPaid($invoiceId);
+            $this->db->commit();
+            return $paid;
+        } catch (Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    /** @return float New total paid on the invoice. */
+    public function deletePayment(int $paymentId, int $invoiceId): float
+    {
+        $this->db->beginTransaction();
+        try {
+            $stmt = $this->db->prepare('DELETE FROM invoice_payments WHERE id = ? AND invoice_id = ?');
+            $stmt->execute([$paymentId, $invoiceId]);
+            $paid = $this->syncAmountPaid($invoiceId);
+            $this->db->commit();
+            return $paid;
+        } catch (Throwable $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+    private function syncAmountPaid(int $invoiceId): float
+    {
+        $sum = $this->db->prepare('SELECT COALESCE(SUM(amount), 0) FROM invoice_payments WHERE invoice_id = ?');
+        $sum->execute([$invoiceId]);
+        $paid = invoice_money((float) $sum->fetchColumn());
+
+        $stmt = $this->db->prepare('UPDATE invoices SET amount_paid = ?, updated_at = ? WHERE id = ?');
+        $stmt->execute([$paid, now_iso(), $invoiceId]);
+        return $paid;
+    }
+
     public function invoiceNumberExists(string $number, ?int $excludeId = null): bool
     {
         if ($excludeId) {
@@ -362,7 +442,7 @@ final class InvoiceRepository
 
         $stmt = $this->db->prepare('
             SELECT i.id, i.invoice_number, i.client_id, i.invoice_date, i.due_date, i.status,
-                   i.subtotal, i.discount_amount, i.total, i.amount_due, i.advance_amount, i.due_adjustment,
+                   i.subtotal, i.discount_amount, i.total, i.amount_due, i.amount_paid, i.advance_amount, i.due_adjustment,
                    i.bill_to_name, i.bill_to_company,
                    c.name AS client_name, c.company AS client_company
             FROM invoices i

@@ -5,7 +5,7 @@ declare(strict_types=1);
 /** @return list<int> */
 function admin_per_page_options(): array
 {
-    return [10, 20, 50, 100];
+    return [10, 20, 50, 100, 250, 500, 1000];
 }
 
 function pagination_default_per_page(): int

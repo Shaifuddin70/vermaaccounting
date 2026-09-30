@@ -110,6 +110,7 @@ require __DIR__ . '/includes/layout-start.php';
             <th>Date</th>
             <th>Due</th>
             <th>Total</th>
+            <th>Balance</th>
             <th>Status</th>
             <th></th>
           </tr>
@@ -152,9 +153,19 @@ require __DIR__ . '/includes/layout-start.php';
               <td><?= e(invoice_format_date((string) ($inv['invoice_date'] ?? ''))) ?></td>
               <td><?= e(invoice_format_date((string) ($inv['due_date'] ?? ''))) ?></td>
               <td><strong><?= e(invoice_format_money($inv['total'] ?? 0)) ?></strong></td>
+              <?php
+                $invDue = invoice_due_state($inv);
+                $st = (string) ($inv['status'] ?? 'draft');
+                $isPartial = $invDue['amount_paid'] > 0 && $invDue['amount_due'] > 0;
+              ?>
+              <td>
+                <?= e(invoice_format_money($invDue['amount_due'])) ?>
+                <?php if ($invDue['amount_paid'] > 0): ?>
+                  <span class="invoices-balance-paid"><?= e(invoice_format_money($invDue['amount_paid'])) ?> paid</span>
+                <?php endif; ?>
+              </td>
               <td>
                 <?php
-                  $st = (string) ($inv['status'] ?? 'draft');
                   $badge = match ($st) {
                       'approved' => 'admin-badge-success',
                       'sent' => 'admin-badge-info',
@@ -163,6 +174,9 @@ require __DIR__ . '/includes/layout-start.php';
                   };
                 ?>
                 <span class="admin-badge <?= e($badge) ?>"><?= e(invoice_status_label($st)) ?></span>
+                <?php if ($isPartial && $st !== 'paid'): ?>
+                  <span class="admin-badge admin-badge-partial">Partial</span>
+                <?php endif; ?>
               </td>
               <td class="admin-table-actions">
                 <a href="/admin/invoice-view?id=<?= (int) $inv['id'] ?>" class="admin-btn admin-btn-secondary admin-btn-sm">View</a>

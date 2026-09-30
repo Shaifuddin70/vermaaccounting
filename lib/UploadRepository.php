@@ -95,7 +95,7 @@ final class UploadRepository
      */
     public function listFiles(?int $formId = null, string $search = '', int $limit = 50, int $offset = 0): array
     {
-        $limit = max(1, min(200, $limit));
+        $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
         [$where, $params] = $this->buildFilters($formId, $search);
 

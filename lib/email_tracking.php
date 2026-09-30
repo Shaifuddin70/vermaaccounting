@@ -193,7 +193,7 @@ function email_tracking_opens_for_campaign(int $campaignId, int $limit = 100): a
  */
 function email_tracking_recent(int $limit = 50, int $offset = 0): array
 {
-    $limit = max(1, min(200, $limit));
+    $limit = max(1, min(1000, $limit));
     $offset = max(0, $offset);
     $stmt = Database::instance()->pdo()->prepare('
         SELECT *
@@ -296,7 +296,7 @@ function email_tracking_filter_sql(array $filters, string $alias = 's'): array
  */
 function email_tracking_batches(array $filters = [], int $limit = 20, int $offset = 0): array
 {
-    $limit = max(1, min(100, $limit));
+    $limit = max(1, min(1000, $limit));
     $offset = max(0, $offset);
     [$where, $params] = email_tracking_filter_sql($filters, 's');
     $dayExpr = email_tracking_sent_day_sql('s');
@@ -448,7 +448,7 @@ function email_tracking_batch_detail_filter_sql(array $filters): array
  */
 function email_tracking_batch_sends(array $filters, int $limit = 50, int $offset = 0): array
 {
-    $limit = max(1, min(100, $limit));
+    $limit = max(1, min(1000, $limit));
     $offset = max(0, $offset);
     [$where, $params] = email_tracking_batch_detail_filter_sql($filters);
     $stmt = Database::instance()->pdo()->prepare('

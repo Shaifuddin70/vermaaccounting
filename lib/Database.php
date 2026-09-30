@@ -167,6 +167,7 @@ final class Database
         $this->ensureClientsBirthdayColumns();
         $this->ensureClientsManualSource();
         $this->ensureClientsEmailUnsubscribedColumn();
+        $this->ensureClientsAddressColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureClientPartnersTable();
@@ -184,6 +185,7 @@ final class Database
         $this->ensureInvoiceBillToContactColumns();
         $this->ensureInvoiceAdvanceColumns();
         $this->ensureInvoiceStatusColumns();
+        $this->ensureInvoicePaymentsTable();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -260,6 +262,7 @@ final class Database
         $this->ensureClientsBirthdayColumns();
         $this->ensureClientsManualSource();
         $this->ensureClientsEmailUnsubscribedColumn();
+        $this->ensureClientsAddressColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureClientPartnersTable();
@@ -277,6 +280,7 @@ final class Database
         $this->ensureInvoiceBillToContactColumns();
         $this->ensureInvoiceAdvanceColumns();
         $this->ensureInvoiceStatusColumns();
+        $this->ensureInvoicePaymentsTable();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -602,6 +606,55 @@ final class Database
         }
     }
 
+    private function ensureInvoicePaymentsTable(): void
+    {
+        if (!$this->columnExists('invoices', 'amount_paid')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN amount_paid DECIMAL(12, 2) NOT NULL DEFAULT 0.00 AFTER amount_due');
+            } else {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN amount_paid REAL NOT NULL DEFAULT 0');
+            }
+        }
+
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('
+                CREATE TABLE IF NOT EXISTS invoice_payments (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    invoice_id INT UNSIGNED NOT NULL,
+                    amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    payment_date DATE NOT NULL,
+                    method VARCHAR(64) DEFAULT NULL,
+                    reference VARCHAR(191) DEFAULT NULL,
+                    note TEXT,
+                    recorded_by_user_id INT UNSIGNED DEFAULT NULL,
+                    recorded_by_name VARCHAR(191) DEFAULT NULL,
+                    created_at VARCHAR(32) NOT NULL,
+                    KEY idx_invoice_payments_invoice (invoice_id),
+                    CONSTRAINT fk_invoice_payments_invoice
+                        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ');
+            return;
+        }
+
+        $this->pdo->exec('
+            CREATE TABLE IF NOT EXISTS invoice_payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                invoice_id INTEGER NOT NULL,
+                amount REAL NOT NULL DEFAULT 0,
+                payment_date TEXT NOT NULL,
+                method TEXT,
+                reference TEXT,
+                note TEXT,
+                recorded_by_user_id INTEGER,
+                recorded_by_name TEXT,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+            )
+        ');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_invoice_payments_invoice ON invoice_payments(invoice_id)');
+    }
+
     private function ensureInvoiceStatusColumns(): void
     {
         // Remap obsolete void; paid is a first-class status again.
@@ -869,6 +922,20 @@ final class Database
         $type = (string) ($col['Type'] ?? '');
         if ($type !== '' && !str_contains($type, 'manual')) {
             $this->pdo->exec("ALTER TABLE clients MODIFY source ENUM('import', 'submission', 'manual') NOT NULL DEFAULT 'submission'");
+        }
+    }
+
+    private function ensureClientsAddressColumn(): void
+    {
+        if ($this->driver === 'mysql') {
+            if (!$this->columnExists('clients', 'address')) {
+                $this->pdo->exec('ALTER TABLE clients ADD COLUMN address VARCHAR(500) DEFAULT NULL AFTER company');
+            }
+            return;
+        }
+
+        if (!$this->sqliteColumnExists('clients', 'address')) {
+            $this->pdo->exec('ALTER TABLE clients ADD COLUMN address TEXT');
         }
     }
 

@@ -32,7 +32,7 @@ $series = report_build_series($yearRows, 'month', $yearFrom, $yearTo);
 
 $maxSeriesIncome = 0.0;
 foreach ($series as $bucket) {
-    $maxSeriesIncome = max($maxSeriesIncome, (float) $bucket['income_due']);
+    $maxSeriesIncome = max($maxSeriesIncome, (float) $bucket['income']);
 }
 
 $recentIncome = array_values(array_filter(
@@ -46,7 +46,7 @@ usort($recentIncome, static function (array $a, array $b): int {
 $recentIncome = array_slice($recentIncome, 0, 10);
 
 $avgInvoice = $summary['income_count'] > 0
-    ? invoice_money($summary['income_due'] / $summary['income_count'])
+    ? invoice_money($summary['income'] / $summary['income_count'])
     : 0.0;
 
 $pageTitle = 'Business reports';
@@ -77,16 +77,16 @@ require __DIR__ . '/includes/layout-start.php';
 <div class="md-kpi-row reports-kpi-row">
   <div class="md-kpi-card">
     <div class="md-kpi-body">
-      <div class="md-kpi-value"><?= e(invoice_format_money($summary['income_due'])) ?></div>
-      <div class="md-kpi-label">Income (amount due)</div>
-      <div class="md-kpi-sub">From <?= number_format($summary['income_count']) ?> approved/sent invoice<?= $summary['income_count'] === 1 ? '' : 's' ?></div>
+      <div class="md-kpi-value"><?= e(invoice_format_money($summary['income'])) ?></div>
+      <div class="md-kpi-label">Income</div>
+      <div class="md-kpi-sub">Incl. advances · <?= number_format($summary['income_count']) ?> approved/sent/paid invoice<?= $summary['income_count'] === 1 ? '' : 's' ?></div>
     </div>
   </div>
   <div class="md-kpi-card">
     <div class="md-kpi-body">
-      <div class="md-kpi-value"><?= e(invoice_format_money($summary['income_total'])) ?></div>
-      <div class="md-kpi-label">Gross billed</div>
-      <div class="md-kpi-sub">Invoice totals before advances</div>
+      <div class="md-kpi-value"><?= e(invoice_format_money($summary['collected_total'])) ?></div>
+      <div class="md-kpi-label">Collected</div>
+      <div class="md-kpi-sub">Advances + payments · <?= e(invoice_format_money($summary['outstanding_total'])) ?> outstanding</div>
     </div>
   </div>
   <div class="md-kpi-card">
@@ -114,17 +114,17 @@ require __DIR__ . '/includes/layout-start.php';
       <div class="reports-year-chart" role="img" aria-label="Monthly income for <?= (int) $chartYear ?>">
         <div class="reports-year-chart-plot">
           <?php foreach ($series as $bucket):
-            $pct = $maxSeriesIncome > 0 ? max(2, round(((float) $bucket['income_due'] / $maxSeriesIncome) * 100)) : 0;
-            if ((float) $bucket['income_due'] <= 0) {
+            $pct = $maxSeriesIncome > 0 ? max(2, round(((float) $bucket['income'] / $maxSeriesIncome) * 100)) : 0;
+            if ((float) $bucket['income'] <= 0) {
                 $pct = 0;
             }
-            $monthLabel = DateTimeImmutable::createFromFormat('Y-m', $bucket['key']);
+            $monthLabel = DateTimeImmutable::createFromFormat('!Y-m', $bucket['key']);
             $short = $monthLabel ? $monthLabel->format('M') : $bucket['label'];
             ?>
-            <div class="reports-year-col" title="<?= e($bucket['label'] . ': ' . invoice_format_money($bucket['income_due']) . ' · ' . (int) $bucket['invoice_count'] . ' invoice(s)') ?>">
-              <div class="reports-year-col-value"><?= (float) $bucket['income_due'] > 0 ? e(invoice_format_money($bucket['income_due'])) : '' ?></div>
+            <div class="reports-year-col" title="<?= e($bucket['label'] . ': ' . invoice_format_money($bucket['income']) . ' · ' . (int) $bucket['invoice_count'] . ' invoice(s)') ?>">
+              <div class="reports-year-col-value"><?= (float) $bucket['income'] > 0 ? e(invoice_format_money($bucket['income'])) : '' ?></div>
               <div class="reports-year-col-bar-wrap">
-                <div class="reports-year-col-bar<?= (float) $bucket['income_due'] > 0 ? ' is-active' : '' ?>" style="height: <?= (int) $pct ?>%;"></div>
+                <div class="reports-year-col-bar<?= (float) $bucket['income'] > 0 ? ' is-active' : '' ?>" style="height: <?= (int) $pct ?>%;"></div>
               </div>
               <div class="reports-year-col-label"><?= e($short) ?></div>
             </div>
@@ -138,7 +138,7 @@ require __DIR__ . '/includes/layout-start.php';
     <h2 class="admin-card-title">Invoice status</h2>
     <ul class="reports-status-list">
       <?php foreach (invoice_status_options() as $status):
-        $row = $summary['by_status'][$status] ?? ['count' => 0, 'amount_due' => 0.0, 'total' => 0.0];
+        $row = $summary['by_status'][$status] ?? ['count' => 0, 'income' => 0.0, 'total' => 0.0];
         ?>
         <li>
           <div class="reports-status-head">
@@ -151,7 +151,7 @@ require __DIR__ . '/includes/layout-start.php';
             <strong><?= number_format((int) $row['count']) ?></strong>
           </div>
           <div class="reports-status-meta">
-            Amount due <?= e(invoice_format_money($row['amount_due'])) ?>
+            Income <?= e(invoice_format_money($row['income'])) ?>
             · Gross <?= e(invoice_format_money($row['total'])) ?>
           </div>
         </li>
@@ -159,8 +159,16 @@ require __DIR__ . '/includes/layout-start.php';
     </ul>
     <div class="reports-side-stats">
       <div>
-        <span class="admin-field-hint">Advances applied</span>
+        <span class="admin-field-hint">Advances received</span>
         <strong><?= e(invoice_format_money($summary['advance_total'])) ?></strong>
+      </div>
+      <div>
+        <span class="admin-field-hint">Payments recorded</span>
+        <strong><?= e(invoice_format_money($summary['payments_total'])) ?></strong>
+      </div>
+      <div>
+        <span class="admin-field-hint">Outstanding</span>
+        <strong><?= e(invoice_format_money($summary['outstanding_total'])) ?></strong>
       </div>
       <div>
         <span class="admin-field-hint">Walk-in invoices</span>
@@ -218,7 +226,7 @@ require __DIR__ . '/includes/layout-start.php';
                   <?php endif; ?>
                 </td>
                 <td><?= number_format((int) $client['invoice_count']) ?></td>
-                <td><strong><?= e(invoice_format_money($client['income_due'])) ?></strong></td>
+                <td><strong><?= e(invoice_format_money($client['income'])) ?></strong></td>
               </tr>
             <?php endforeach; ?>
           </tbody>
@@ -244,8 +252,9 @@ require __DIR__ . '/includes/layout-start.php';
             <th>Client</th>
             <th>Date</th>
             <th>Status</th>
-            <th>Total</th>
-            <th>Amount due</th>
+            <th>Income</th>
+            <th>Received</th>
+            <th>Balance</th>
           </tr>
         </thead>
         <tbody>
@@ -258,14 +267,16 @@ require __DIR__ . '/includes/layout-start.php';
                 $name = trim((string) ($inv['bill_to_company'] ?? '')) ?: '—';
             }
             $st = (string) ($inv['status'] ?? 'draft');
+            $amounts = report_invoice_amounts($inv);
             ?>
             <tr>
               <td><a href="/admin/invoice-view?id=<?= (int) $inv['id'] ?>">#<?= e((string) $inv['invoice_number']) ?></a></td>
               <td><?= e($name) ?></td>
               <td><?= e(invoice_format_date((string) ($inv['invoice_date'] ?? ''))) ?></td>
               <td><?= e(invoice_status_label($st)) ?></td>
-              <td><?= e(invoice_format_money($inv['total'] ?? 0)) ?></td>
-              <td><strong><?= e(invoice_format_money($inv['amount_due'] ?? $inv['total'] ?? 0)) ?></strong></td>
+              <td><strong><?= e(invoice_format_money($amounts['income'])) ?></strong></td>
+              <td><?= e(invoice_format_money($amounts['collected'])) ?></td>
+              <td><?= e(invoice_format_money($amounts['outstanding'])) ?></td>
             </tr>
           <?php endforeach; ?>
         </tbody>

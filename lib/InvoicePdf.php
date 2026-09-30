@@ -295,6 +295,14 @@ final class InvoicePdf extends FPDF
                 false
             );
         }
+        if (($this->dueState['amount_paid'] ?? 0) > 0) {
+            $this->drawTotalRow(
+                $totalsX,
+                'Payments Received:',
+                '(' . invoice_format_money($this->dueState['amount_paid']) . ')',
+                false
+            );
+        }
 
         $this->SetDrawColor(226, 232, 240);
         $lineY = $this->GetY() + 1;

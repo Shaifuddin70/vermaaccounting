@@ -24,7 +24,7 @@ final class UserRepository
 
     public function allPaginated(int $limit, int $offset): array
     {
-        $limit = max(1, min(200, $limit));
+        $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
         $stmt = $this->db->query(
             'SELECT id, name, email, reference_code, avatar_path, role, permissions_json, status, created_at, updated_at FROM users ORDER BY name ASC LIMIT '

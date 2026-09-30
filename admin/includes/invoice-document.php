@@ -149,6 +149,12 @@ $amountDue = isset($amountDue) ? (float) $amountDue : (float) $dueState['amount_
             <td><?= e(invoice_format_adjustment_money($dueState['due_adjustment'])) ?></td>
           </tr>
         <?php endif; ?>
+        <?php if (($dueState['amount_paid'] ?? 0) > 0): ?>
+          <tr>
+            <th>Payments Received:</th>
+            <td>(<?= e(invoice_format_money($dueState['amount_paid'])) ?>)</td>
+          </tr>
+        <?php endif; ?>
         <tr class="invoice-doc-totals-due">
           <th>Amount Due (<?= e($currency) ?>):</th>
           <td><?= e(invoice_format_money($amountDue)) ?></td>

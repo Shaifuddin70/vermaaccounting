@@ -261,7 +261,12 @@ function invoice_due_adjustment_label(array $invoice): string
     return invoice_default_due_adjustment_label();
 }
 
-/** @return array{advance_amount: float, due_adjustment: float, amount_due: float, advance_label: string, due_adjustment_label: string} */
+/**
+ * amount_due is the outstanding balance after recorded payments;
+ * invoice_due is the amount owed before any payments.
+ *
+ * @return array{advance_amount: float, due_adjustment: float, invoice_due: float, amount_paid: float, amount_due: float, advance_label: string, due_adjustment_label: string}
+ */
 function invoice_due_state(array $invoice): array
 {
     $total = invoice_money((float) ($invoice['total'] ?? 0));
@@ -270,14 +275,17 @@ function invoice_due_state(array $invoice): array
     $storedDue = array_key_exists('amount_due', $invoice)
         ? invoice_money((float) $invoice['amount_due'])
         : null;
-    $amountDue = $storedDue !== null
+    $invoiceDue = $storedDue !== null
         ? $storedDue
         : invoice_money(max(0, $total - $advance + $adjustment));
+    $paid = invoice_money(max(0, (float) ($invoice['amount_paid'] ?? 0)));
 
     return [
         'advance_amount' => $advance,
         'due_adjustment' => $adjustment,
-        'amount_due' => $amountDue,
+        'invoice_due' => $invoiceDue,
+        'amount_paid' => $paid,
+        'amount_due' => invoice_money(max(0, $invoiceDue - $paid)),
         'advance_label' => invoice_advance_label($invoice),
         'due_adjustment_label' => invoice_due_adjustment_label($invoice),
     ];
@@ -342,6 +350,26 @@ function invoice_save_company_settings(array $data): void
         $clean[$key] = $value !== '' ? $value : $default;
     }
     (new SettingsRepository())->set('invoice_company', $clean);
+}
+
+/** @return array<string, string> */
+function invoice_payment_methods(): array
+{
+    return [
+        'e_transfer' => 'Interac e-Transfer',
+        'cash' => 'Cash',
+        'cheque' => 'Cheque',
+        'debit' => 'Debit card',
+        'credit_card' => 'Credit card',
+        'bank_transfer' => 'Bank transfer',
+        'other' => 'Other',
+    ];
+}
+
+function invoice_payment_method_label(?string $method): string
+{
+    $method = (string) $method;
+    return invoice_payment_methods()[$method] ?? ($method !== '' ? ucfirst(str_replace('_', ' ', $method)) : '—');
 }
 
 /** @return list<string> */

@@ -14,7 +14,7 @@ final class BlogRepository
     /** @return list<array<string, mixed>> */
     public function all(?string $localStatus = null, int $limit = 50, int $offset = 0): array
     {
-        $limit = max(1, min(200, $limit));
+        $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
         $sql = 'SELECT * FROM blogs';
         $params = [];

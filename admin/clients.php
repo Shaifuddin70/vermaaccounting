@@ -62,15 +62,6 @@ function clients_page_url(string $search, int $page = 1, ?int $perPage = null): 
     return pagination_url('/admin/clients', $params, $page, $perPage);
 }
 
-function client_source_label(string $source): string
-{
-    return match ($source) {
-        'import' => 'Imported',
-        'manual' => 'Manual',
-        default => 'Form',
-    };
-}
-
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
@@ -112,7 +103,7 @@ require __DIR__ . '/includes/layout-start.php';
     <?php endif; ?>
     <div class="admin-field clients-filter-field clients-filter-field--search">
       <label for="clients-search">Search</label>
-      <input type="search" id="clients-search" name="q" value="<?= e($search) ?>" placeholder="Client ID, name, SIN, email, phone, or company…">
+      <input type="search" id="clients-search" name="q" value="<?= e($search) ?>" placeholder="Client ID, name, SIN, email, phone, company, or city…">
     </div>
     <div class="clients-filter-actions">
       <button type="submit" class="admin-btn admin-btn-secondary">Search</button>
@@ -184,21 +175,20 @@ require __DIR__ . '/includes/layout-start.php';
               <input type="checkbox" id="clients-select-all-head" aria-label="Select all clients on this page">
             </th>
             <?php endif; ?>
-            <th>Client ID</th>
-            <th>Name</th>
-            <th>SIN</th>
-            <th>Email</th>
-            <th>Phone</th>
-            <th>Company</th>
-            <th>Submissions</th>
-            <th>Last activity</th>
-            <th>Source</th>
-            <th>Actions</th>
+            <th>Client</th>
+            <th>Contact</th>
+            <th>Location</th>
+            <th>Filing status</th>
+            <th class="clients-col-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
           <?php foreach ($clients as $client):
             $source = (string) ($client['source'] ?? 'submission');
+            $meta = client_notes_meta($client['notes'] ?? '');
+            $locality = client_address_locality($client['address'] ?? '');
+            $email = (string) ($client['email'] ?? '');
+            $phone = (string) ($client['phone'] ?? '');
             $deleteConfirm = 'Delete “' . $client['name'] . '”? Linked form submissions stay in the system, but this client record will be removed. This cannot be undone.';
           ?>
             <tr>
@@ -209,39 +199,45 @@ require __DIR__ . '/includes/layout-start.php';
                   aria-label="Select <?= e($client['name']) ?>">
               </td>
               <?php endif; ?>
-              <td class="clients-col-id"><?= (int) $client['id'] ?></td>
               <td>
-                <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="clients-name-link">
-                  <strong><?= e($client['name']) ?></strong>
+                <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="clients-person">
+                  <span class="client-avatar" aria-hidden="true"><?= e(client_initials((string) $client['name'])) ?></span>
+                  <span class="clients-person-text">
+                    <strong class="clients-person-name"><?= e($client['name']) ?></strong>
+                    <span class="clients-person-sub">
+                      ID <?= (int) $client['id'] ?>
+                      <span class="clients-source-badge clients-source-badge--<?= e($source) ?>"><?= e(client_source_label($source)) ?></span>
+                    </span>
+                  </span>
                 </a>
               </td>
-              <td class="clients-col-sin">
-                <?= ($client['sin'] ?? '') !== '' ? e($client['sin']) : '—' ?>
-              </td>
-              <td><?= ($client['email'] ?? '') !== '' ? e($client['email']) : '—' ?></td>
-              <td><?= ($client['phone'] ?? '') !== '' ? e($client['phone']) : '—' ?></td>
-              <td><?= ($client['company'] ?? '') !== '' ? e($client['company']) : '—' ?></td>
-              <td class="clients-col-num">
-                <?php $subCount = (int) ($client['submission_count'] ?? 0); ?>
-                <?php if ($subCount > 0): ?>
-                  <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="clients-submission-link"><?= $subCount ?></a>
+              <td class="clients-col-contact">
+                <?php if ($email === '' && $phone === ''): ?>
+                  <span class="clients-muted">—</span>
                 <?php else: ?>
-                  <?= $subCount ?>
+                  <?php if ($email !== ''): ?>
+                    <a href="mailto:<?= e($email) ?>" class="clients-contact-line"><?= e($email) ?></a>
+                  <?php endif; ?>
+                  <?php if ($phone !== ''): ?>
+                    <span class="clients-contact-line clients-muted"><?= e($phone) ?></span>
+                  <?php endif; ?>
                 <?php endif; ?>
               </td>
-              <td class="clients-col-date">
-                <?= !empty($client['last_submission_at']) ? e(substr((string) $client['last_submission_at'], 0, 10)) : '—' ?>
+              <td class="clients-col-location">
+                <?= $locality !== '' ? e($locality) : '<span class="clients-muted">—</span>' ?>
               </td>
               <td>
-                <span class="clients-source-badge clients-source-badge--<?= e($source) ?>">
-                  <?= e(client_source_label($source)) ?>
-                </span>
+                <?php if ($meta['status'] !== ''): ?>
+                  <span class="client-status-badge client-status-badge--<?= e(client_status_tone($meta['status'])) ?>"><?= e($meta['status']) ?></span>
+                <?php else: ?>
+                  <span class="clients-muted">—</span>
+                <?php endif; ?>
               </td>
-              <td>
+              <td class="clients-col-actions">
                 <div class="admin-table-actions">
-                  <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="admin-btn admin-btn-sm">View</a>
+                  <a href="/admin/client?id=<?= (int) $client['id'] ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
                   <?php if (Auth::can('clients.edit')): ?>
-                  <a href="/admin/client-edit?id=<?= (int) $client['id'] ?>" class="admin-btn admin-btn-sm">Edit</a>
+                  <a href="/admin/client-edit?id=<?= (int) $client['id'] ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Edit</a>
                   <?php endif; ?>
                   <?php if (Auth::can('clients.delete')): ?>
                   <button type="submit" form="clients-single-delete-<?= (int) $client['id'] ?>"

@@ -55,6 +55,102 @@ if ($action === 'status') {
     exit;
 }
 
+if ($action === 'record_payment') {
+    Auth::requireCapability('invoices.edit');
+    $balance = invoice_amount_due($invoice);
+    $amountRaw = str_replace([',', '$', ' '], '', (string) ($_POST['amount'] ?? ''));
+    $amount = is_numeric($amountRaw) ? invoice_money((float) $amountRaw) : 0.0;
+    $paymentDate = trim((string) ($_POST['payment_date'] ?? ''));
+    $method = trim((string) ($_POST['method'] ?? ''));
+    $reference = mb_substr(trim((string) ($_POST['reference'] ?? '')), 0, 191);
+    $note = mb_substr(trim((string) ($_POST['note'] ?? '')), 0, 2000);
+
+    $error = null;
+    $date = DateTimeImmutable::createFromFormat('!Y-m-d', $paymentDate);
+    if ($amount <= 0) {
+        $error = 'Enter a payment amount greater than zero.';
+    } elseif ($amount - $balance > 0.004) {
+        $error = 'Payment of ' . invoice_format_money($amount) . ' is more than the balance due ('
+            . invoice_format_money($balance) . ').';
+    } elseif (!$date || $date->format('Y-m-d') !== $paymentDate) {
+        $error = 'Enter a valid payment date.';
+    } elseif ($method !== '' && !array_key_exists($method, invoice_payment_methods())) {
+        $error = 'Choose a valid payment method.';
+    }
+
+    if ($error !== null) {
+        $_SESSION['flash_error'] = $error;
+        $_SESSION['invoice_payment_old'] = [
+            'amount' => (string) ($_POST['amount'] ?? ''),
+            'payment_date' => $paymentDate,
+            'method' => $method,
+            'reference' => $reference,
+            'note' => $note,
+        ];
+        header('Location: ' . $redirect . '#payments');
+        exit;
+    }
+
+    $user = Auth::currentUser();
+    $paid = $repo->addPayment($id, [
+        'amount' => $amount,
+        'payment_date' => $paymentDate,
+        'method' => $method,
+        'reference' => $reference,
+        'note' => $note,
+        'recorded_by_user_id' => $user['id'] ?? null,
+        'recorded_by_name' => (string) ($user['name'] ?? 'Admin'),
+    ]);
+    $newBalance = invoice_amount_due(array_merge($invoice, ['amount_paid' => $paid]));
+
+    $statusNote = '';
+    if ($newBalance <= 0 && ($invoice['status'] ?? '') !== 'paid') {
+        $repo->updateStatus($id, 'paid');
+        $statusNote = ' Invoice is now fully paid.';
+    }
+
+    ActivityLog::record('invoice.payment_recorded', 'invoice', $id, [
+        'number' => (string) ($invoice['invoice_number'] ?? ''),
+        'amount' => $amount,
+        'method' => $method,
+        'balance' => $newBalance,
+    ]);
+    $_SESSION['flash_success'] = 'Payment of ' . invoice_format_money($amount) . ' recorded. Balance due: '
+        . invoice_format_money($newBalance) . '.' . $statusNote;
+    header('Location: ' . $redirect . '#payments');
+    exit;
+}
+
+if ($action === 'delete_payment') {
+    Auth::requireCapability('invoices.edit');
+    $paymentId = (int) ($_POST['payment_id'] ?? 0);
+    $payment = $paymentId > 0 ? $repo->findPayment($paymentId, $id) : null;
+    if (!$payment) {
+        $_SESSION['flash_error'] = 'Payment not found.';
+        header('Location: ' . $redirect . '#payments');
+        exit;
+    }
+
+    $paid = $repo->deletePayment($paymentId, $id);
+    $newBalance = invoice_amount_due(array_merge($invoice, ['amount_paid' => $paid]));
+
+    $statusNote = '';
+    if ($newBalance > 0 && ($invoice['status'] ?? '') === 'paid') {
+        $repo->updateStatus($id, 'sent');
+        $statusNote = ' Status changed from Paid to Sent.';
+    }
+
+    ActivityLog::record('invoice.payment_deleted', 'invoice', $id, [
+        'number' => (string) ($invoice['invoice_number'] ?? ''),
+        'amount' => (float) $payment['amount'],
+        'balance' => $newBalance,
+    ]);
+    $_SESSION['flash_success'] = 'Payment of ' . invoice_format_money((float) $payment['amount'])
+        . ' removed. Balance due: ' . invoice_format_money($newBalance) . '.' . $statusNote;
+    header('Location: ' . $redirect . '#payments');
+    exit;
+}
+
 if ($action === 'send_email') {
     Auth::requireCapability('invoices.send');
     $to = trim((string) ($_POST['to_email'] ?? ''));
