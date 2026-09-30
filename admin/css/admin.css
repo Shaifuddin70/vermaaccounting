@@ -8184,36 +8184,133 @@ a.clients-contact-line:hover {
   }
 }
 
-/* Invoice payments */
-.invoice-payments-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1rem;
+/* Invoice view layout */
+.invoice-view-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 1.25rem;
+  align-items: start;
 }
 
-.invoice-payments-head .admin-card-title {
+.invoice-view-main .invoice-preview-frame {
   margin: 0;
 }
 
-.invoice-payments-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.75rem;
-}
-
-.invoice-payments-stat {
+.invoice-view-aside {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  padding: 0.85rem 1rem;
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-sm);
-  background: var(--admin-surface-variant);
+  gap: 1rem;
 }
 
-.invoice-payments-stat span {
+.invoice-view-aside .admin-card {
+  margin: 0;
+}
+
+.invoice-side-card {
+  padding: 1.1rem 1.25rem;
+}
+
+.invoice-side-title {
+  margin: 0 0 0.85rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--admin-secondary);
+}
+
+.invoice-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.invoice-side-head .invoice-side-title {
+  margin: 0;
+}
+
+.invoice-side-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  margin-left: 0.3rem;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--admin-secondary-container);
+  font-size: 0.7rem;
+  letter-spacing: 0;
+}
+
+.invoice-side-link {
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--admin-primary-dark);
+  cursor: pointer;
+}
+
+.invoice-side-link:hover {
+  text-decoration: underline;
+}
+
+.invoice-side-btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.invoice-side-empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--admin-muted);
+}
+
+.invoice-side-notice {
+  margin: 0 0 0.85rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--admin-radius-sm);
+  background: #eff6ff;
+  font-size: 0.8125rem;
+  color: #1e40af;
+}
+
+/* Summary card */
+.invoice-summary-card {
+  border-top: 4px solid var(--admin-border);
+}
+
+.invoice-summary-card--due {
+  border-top-color: var(--admin-primary);
+}
+
+.invoice-summary-card--overdue {
+  border-top-color: var(--admin-danger);
+}
+
+.invoice-summary-card--settled {
+  border-top-color: #14b8a6;
+}
+
+.invoice-summary-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.invoice-badge-overdue {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.invoice-summary-balance span {
+  display: block;
   font-size: 0.75rem;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -8221,36 +8318,35 @@ a.clients-contact-line:hover {
   color: var(--admin-muted);
 }
 
-.invoice-payments-stat strong {
-  font-size: 1.25rem;
+.invoice-summary-balance strong {
+  display: block;
+  margin-top: 0.15rem;
+  font-size: 2rem;
+  line-height: 1.15;
   color: #0f172a;
 }
 
-.invoice-payments-stat--paid strong {
-  color: #0f766e;
+.invoice-summary-balance small {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--admin-muted);
 }
 
-.invoice-payments-stat--due {
-  border-color: var(--admin-primary-border);
-  background: var(--admin-primary-container);
-}
-
-.invoice-payments-stat--due strong {
+.invoice-summary-card--due .invoice-summary-balance strong {
   color: var(--admin-primary-dark);
 }
 
-.invoice-payments-stat--settled {
-  border-color: #99f6e4;
-  background: #f0fdfa;
+.invoice-summary-card--overdue .invoice-summary-balance strong {
+  color: #b91c1c;
 }
 
-.invoice-payments-stat--settled strong {
+.invoice-summary-card--settled .invoice-summary-balance strong {
   color: #0f766e;
 }
 
 .invoice-payments-progress {
   height: 8px;
-  margin-top: 1rem;
+  margin-top: 0.85rem;
   border-radius: 999px;
   background: var(--admin-border);
   overflow: hidden;
@@ -8263,21 +8359,193 @@ a.clients-contact-line:hover {
   background: linear-gradient(90deg, #14b8a6, #0f766e);
 }
 
-.invoice-payments-progress-label {
-  margin: 0.45rem 0 0;
+.invoice-summary-figures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin: 0.85rem 0 1rem;
 }
 
-.invoice-payments-table {
-  margin-top: 1rem;
+.invoice-summary-figures dt {
+  font-size: 0.75rem;
+  color: var(--admin-muted);
 }
 
-.invoice-payments-table .invoice-payments-amount {
+.invoice-summary-figures dd {
+  margin: 0.1rem 0 0;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.invoice-summary-figures dd.is-paid {
+  color: #0f766e;
+}
+
+.invoice-summary-settled {
+  margin: 0;
+  padding: 0.55rem;
+  border-radius: var(--admin-radius-sm);
+  background: #f0fdfa;
+  text-align: center;
+  font-weight: 700;
+  color: #0f766e;
+}
+
+/* Details card */
+.invoice-side-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0 0 0.85rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.invoice-side-status select {
+  min-width: 9.5rem;
+}
+
+.invoice-side-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.invoice-side-list > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.invoice-side-list dt {
+  flex-shrink: 0;
+  color: var(--admin-muted);
+}
+
+.invoice-side-list dd {
+  margin: 0;
   text-align: right;
-  white-space: nowrap;
+  font-weight: 600;
+  color: #0f172a;
 }
 
-.invoice-payments-table td:first-child {
-  white-space: nowrap;
+.invoice-side-list dd .admin-field-hint {
+  display: block;
+  margin: 0;
+  font-weight: 400;
+}
+
+.invoice-side-list dd.is-overdue {
+  color: #b91c1c;
+}
+
+.invoice-side-list dd a {
+  color: var(--admin-secondary);
+  text-decoration: none;
+}
+
+.invoice-side-list dd a:hover {
+  color: var(--admin-primary-dark);
+  text-decoration: underline;
+}
+
+.invoice-view-aside .invoice-send-form label .admin-field-hint {
+  display: inline;
+  font-weight: 400;
+}
+
+/* Payments card */
+.invoice-payment-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.invoice-payment-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--admin-border);
+}
+
+.invoice-payment-item:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.invoice-payment-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--admin-muted);
+}
+
+.invoice-payment-item-main strong {
+  font-size: 0.95rem;
+  color: #0f766e;
+}
+
+.invoice-payment-item-ref {
+  color: var(--admin-text);
+}
+
+.invoice-payment-item-note {
+  font-style: italic;
+  overflow-wrap: anywhere;
+}
+
+.invoice-payment-item-by {
+  font-size: 0.75rem;
+}
+
+.invoice-payment-item form {
+  margin: 0;
+}
+
+.invoice-payment-remove {
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--admin-muted);
+  cursor: pointer;
+}
+
+.invoice-payment-remove:hover {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* Send card */
+.invoice-view-aside .invoice-send-form .admin-field {
+  margin-bottom: 0.75rem;
+}
+
+@media (max-width: 1100px) {
+  .invoice-view-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .invoice-view-aside {
+    order: -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    align-items: start;
+  }
 }
 
 .invoice-payment-dialog {
@@ -8326,10 +8594,4 @@ a.clients-contact-line:hover {
   display: block;
   font-size: 0.75rem;
   color: #0f766e;
-}
-
-@media (max-width: 640px) {
-  .invoice-payments-summary {
-    grid-template-columns: 1fr;
-  }
 }

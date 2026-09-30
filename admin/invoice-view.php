@@ -44,6 +44,15 @@ $paidPercent = $invoiceDue > 0 ? (int) min(100, round($amountPaid / $invoiceDue 
 $canRecordPayment = Auth::can('invoices.edit');
 $paymentOld = $_SESSION['invoice_payment_old'] ?? null;
 unset($_SESSION['invoice_payment_old']);
+$dueDate = (string) ($invoice['due_date'] ?? '');
+$isOverdue = $amountDue > 0 && $status !== 'draft' && $dueDate !== '' && $dueDate < date('Y-m-d');
+$balanceTone = $amountDue <= 0 ? ($amountPaid > 0 || $status === 'paid' ? 'settled' : 'neutral') : ($isOverdue ? 'overdue' : 'due');
+$statusBadge = match ($status) {
+    'approved' => 'admin-badge-success',
+    'sent' => 'admin-badge-info',
+    'paid' => 'admin-badge-paid',
+    default => 'admin-badge-muted',
+};
 $paymentForm = [
     'amount' => (string) ($paymentOld['amount'] ?? ($amountDue > 0 ? number_format($amountDue, 2, '.', '') : '')),
     'payment_date' => (string) ($paymentOld['payment_date'] ?? date('Y-m-d')),
@@ -88,6 +97,12 @@ $pageTitle = 'Invoice #' . $invoice['invoice_number'];
 $activeNav = 'invoices';
 $clientName = trim((string) ($invoice['client_name'] ?? ''));
 $clientCompany = trim((string) ($invoice['client_company'] ?? ''));
+$clientId = (int) ($invoice['client_id'] ?? 0);
+$billName = $clientName !== '' ? $clientName : trim((string) ($invoice['bill_to_name'] ?? ''));
+if ($billName === '') {
+    $billName = trim((string) ($invoice['bill_to_company'] ?? ''));
+}
+$createdBy = trim((string) ($invoice['created_by_name'] ?? ''));
 require __DIR__ . '/includes/layout-start.php';
 ?>
 <div class="admin-header">
@@ -96,136 +111,173 @@ require __DIR__ . '/includes/layout-start.php';
     <?php if (Auth::can('invoices.edit')): ?>
     <a href="/admin/invoice-edit?id=<?= $id ?>" class="admin-btn admin-btn-secondary">Edit</a>
     <?php endif; ?>
-    <?php if ($canRecordPayment && $amountDue > 0): ?>
-    <button type="button" class="admin-btn admin-btn-primary" data-open-payment>Record payment</button>
-    <?php endif; ?>
     <a href="/admin/invoice-pdf?id=<?= $id ?>" class="admin-btn admin-btn-secondary">Download PDF</a>
     <a href="/admin/invoice-view?id=<?= $id ?>&print=1" class="admin-btn admin-btn-secondary" target="_blank">Print</a>
-    <?php if (Auth::can('invoices.send')): ?>
-    <a href="#send-invoice" class="admin-btn admin-btn-primary">Send to client</a>
-    <?php endif; ?>
     <a href="/admin/invoices" class="admin-btn admin-btn-secondary">← All invoices</a>
   </div>
 </div>
 
-<div class="admin-card invoice-status-bar">
-  <div class="invoice-view-meta">
-    <?php if (Auth::can('invoices.edit')): ?>
-    <form method="post" action="/admin/invoice-action" class="invoice-status-form">
-      <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-      <input type="hidden" name="id" value="<?= $id ?>">
-      <input type="hidden" name="action" value="status">
-      <label for="status-change">Status</label>
-      <select id="status-change" name="status" onchange="this.form.submit()">
-        <?php foreach (invoice_status_options() as $opt): ?>
-          <option value="<?= e($opt) ?>" <?= $status === $opt ? 'selected' : '' ?>><?= e(invoice_status_label($opt)) ?></option>
-        <?php endforeach; ?>
-      </select>
-    </form>
-    <?php else: ?>
-      <div class="invoice-status-form">
-        <span class="admin-field-hint">Status</span>
-        <strong><?= e(invoice_status_label($status)) ?></strong>
-      </div>
-    <?php endif; ?>
-    <?php if ($clientName !== ''): ?>
-      <div class="invoice-view-client">
-        <span class="admin-field-hint">Client</span>
-        <strong><?= e($clientName) ?></strong>
-        <?php if ($clientCompany !== '' && strcasecmp($clientCompany, $clientName) !== 0): ?>
-          <span class="admin-field-hint"><?= e($clientCompany) ?></span>
+<div class="invoice-view-layout">
+  <div class="invoice-view-main">
+    <link rel="stylesheet" href="/admin/css/invoice-print.css?v=3">
+    <div class="invoice-preview-frame">
+      <?php require __DIR__ . '/includes/invoice-document.php'; ?>
+    </div>
+  </div>
+
+  <aside class="invoice-view-aside">
+    <section class="admin-card invoice-side-card invoice-summary-card invoice-summary-card--<?= e($balanceTone) ?>">
+      <div class="invoice-summary-top">
+        <span class="admin-badge <?= e($statusBadge) ?>"><?= e(invoice_status_label($status)) ?></span>
+        <?php if ($isOverdue): ?>
+          <span class="admin-badge invoice-badge-overdue">Overdue</span>
+        <?php elseif ($amountPaid > 0 && $amountDue > 0): ?>
+          <span class="admin-badge admin-badge-partial">Partially paid</span>
         <?php endif; ?>
       </div>
-    <?php endif; ?>
-  </div>
-  <p class="admin-field-hint" style="margin:0;">Download PDF or email it directly to the client.</p>
-</div>
+      <div class="invoice-summary-balance">
+        <span>Balance due</span>
+        <strong><?= e(invoice_format_money($amountDue)) ?> <small><?= e($currency) ?></small></strong>
+      </div>
+      <div class="invoice-payments-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= $paidPercent ?>">
+        <span style="width: <?= $paidPercent ?>%"></span>
+      </div>
+      <dl class="invoice-summary-figures">
+        <div>
+          <dt>Invoice amount</dt>
+          <dd><?= e(invoice_format_money($invoiceDue)) ?></dd>
+        </div>
+        <div>
+          <dt>Paid</dt>
+          <dd class="is-paid"><?= e(invoice_format_money($amountPaid)) ?></dd>
+        </div>
+      </dl>
+      <?php if ($canRecordPayment && $amountDue > 0): ?>
+        <button type="button" class="admin-btn admin-btn-primary invoice-side-btn" data-open-payment>Record payment</button>
+      <?php elseif ($amountDue <= 0 && ($amountPaid > 0 || $status === 'paid')): ?>
+        <p class="invoice-summary-settled">Paid in full</p>
+      <?php endif; ?>
+    </section>
 
-<div class="admin-card invoice-payments" id="payments">
-  <div class="invoice-payments-head">
-    <h2 class="admin-card-title">Payments</h2>
-    <?php if ($canRecordPayment && $amountDue > 0): ?>
-      <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" data-open-payment>+ Record payment</button>
-    <?php endif; ?>
-  </div>
+    <section class="admin-card invoice-side-card">
+      <h2 class="invoice-side-title">Details</h2>
+      <?php if (Auth::can('invoices.edit')): ?>
+        <form method="post" action="/admin/invoice-action" class="invoice-status-form invoice-side-status">
+          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+          <input type="hidden" name="id" value="<?= $id ?>">
+          <input type="hidden" name="action" value="status">
+          <label for="status-change">Status</label>
+          <select id="status-change" name="status" onchange="this.form.submit()">
+            <?php foreach (invoice_status_options() as $opt): ?>
+              <option value="<?= e($opt) ?>" <?= $status === $opt ? 'selected' : '' ?>><?= e(invoice_status_label($opt)) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </form>
+      <?php endif; ?>
+      <dl class="invoice-side-list">
+        <div>
+          <dt>Client</dt>
+          <dd>
+            <?php if ($clientId > 0 && Auth::can('clients.view')): ?>
+              <a href="/admin/client?id=<?= $clientId ?>"><?= e($billName) ?></a>
+            <?php else: ?>
+              <?= e($billName !== '' ? $billName : '—') ?>
+            <?php endif; ?>
+            <?php if ($clientCompany !== '' && strcasecmp($clientCompany, $billName) !== 0): ?>
+              <span class="admin-field-hint"><?= e($clientCompany) ?></span>
+            <?php endif; ?>
+          </dd>
+        </div>
+        <div>
+          <dt>Invoice date</dt>
+          <dd><?= e(invoice_format_date((string) ($invoice['invoice_date'] ?? ''))) ?></dd>
+        </div>
+        <div>
+          <dt>Payment due</dt>
+          <dd class="<?= $isOverdue ? 'is-overdue' : '' ?>"><?= e(invoice_format_date($dueDate)) ?></dd>
+        </div>
+        <?php if ($createdBy !== ''): ?>
+        <div>
+          <dt>Created by</dt>
+          <dd><?= e($createdBy) ?></dd>
+        </div>
+        <?php endif; ?>
+      </dl>
+    </section>
 
-  <div class="invoice-payments-summary">
-    <div class="invoice-payments-stat">
-      <span>Invoice amount</span>
-      <strong><?= e(invoice_format_money($invoiceDue)) ?></strong>
-    </div>
-    <div class="invoice-payments-stat invoice-payments-stat--paid">
-      <span>Paid</span>
-      <strong><?= e(invoice_format_money($amountPaid)) ?></strong>
-    </div>
-    <div class="invoice-payments-stat <?= $amountDue > 0 ? 'invoice-payments-stat--due' : 'invoice-payments-stat--settled' ?>">
-      <span>Balance due</span>
-      <strong><?= e(invoice_format_money($amountDue)) ?></strong>
-    </div>
-  </div>
-  <div class="invoice-payments-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= $paidPercent ?>">
-    <span style="width: <?= $paidPercent ?>%"></span>
-  </div>
-  <p class="admin-field-hint invoice-payments-progress-label">
-    <?php if ($amountDue <= 0 && $amountPaid > 0): ?>
-      Fully paid.
-    <?php elseif ($amountPaid > 0): ?>
-      <?= $paidPercent ?>% paid across <?= count($payments) ?> payment<?= count($payments) === 1 ? '' : 's' ?>.
-    <?php else: ?>
-      No payments recorded yet.
-    <?php endif; ?>
-  </p>
-
-  <?php if ($payments !== []): ?>
-  <div class="admin-table-scroll">
-    <table class="admin-table invoice-payments-table">
-      <thead>
-        <tr>
-          <th>Date</th>
-          <th>Method</th>
-          <th>Reference / note</th>
-          <th>Recorded by</th>
-          <th class="invoice-payments-amount">Amount</th>
-          <?php if ($canRecordPayment): ?><th></th><?php endif; ?>
-        </tr>
-      </thead>
-      <tbody>
-        <?php foreach ($payments as $payment): ?>
-          <?php
+    <section class="admin-card invoice-side-card" id="payments">
+      <div class="invoice-side-head">
+        <h2 class="invoice-side-title">Payments<?php if ($payments !== []): ?> <span class="invoice-side-count"><?= count($payments) ?></span><?php endif; ?></h2>
+        <?php if ($canRecordPayment && $amountDue > 0): ?>
+          <button type="button" class="invoice-side-link" data-open-payment>+ Add</button>
+        <?php endif; ?>
+      </div>
+      <?php if ($payments === []): ?>
+        <p class="invoice-side-empty">No payments recorded yet.</p>
+      <?php else: ?>
+        <ul class="invoice-payment-list">
+          <?php foreach ($payments as $payment):
             $ref = trim((string) ($payment['reference'] ?? ''));
             $note = trim((string) ($payment['note'] ?? ''));
-          ?>
-          <tr>
-            <td><?= e(invoice_format_date((string) $payment['payment_date'])) ?></td>
-            <td><?= e(invoice_payment_method_label($payment['method'] ?? null)) ?></td>
-            <td>
-              <?php if ($ref === '' && $note === ''): ?>
-                <span class="admin-field-hint">—</span>
-              <?php else: ?>
-                <?php if ($ref !== ''): ?><div><?= e($ref) ?></div><?php endif; ?>
-                <?php if ($note !== ''): ?><div class="admin-field-hint"><?= e($note) ?></div><?php endif; ?>
+            $by = trim((string) ($payment['recorded_by_name'] ?? ''));
+            ?>
+            <li class="invoice-payment-item">
+              <div class="invoice-payment-item-main">
+                <strong><?= e(invoice_format_money((float) $payment['amount'])) ?></strong>
+                <span><?= e(invoice_format_date((string) $payment['payment_date'])) ?> · <?= e(invoice_payment_method_label($payment['method'] ?? null)) ?></span>
+                <?php if ($ref !== ''): ?><span class="invoice-payment-item-ref">Ref: <?= e($ref) ?></span><?php endif; ?>
+                <?php if ($note !== ''): ?><span class="invoice-payment-item-note"><?= e($note) ?></span><?php endif; ?>
+                <?php if ($by !== ''): ?><span class="invoice-payment-item-by">Recorded by <?= e($by) ?></span><?php endif; ?>
+              </div>
+              <?php if ($canRecordPayment): ?>
+                <form method="post" action="/admin/invoice-action"
+                  onsubmit="return confirm('Remove this payment of <?= e(invoice_format_money((float) $payment['amount'])) ?>?');">
+                  <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                  <input type="hidden" name="id" value="<?= $id ?>">
+                  <input type="hidden" name="action" value="delete_payment">
+                  <input type="hidden" name="payment_id" value="<?= (int) $payment['id'] ?>">
+                  <button type="submit" class="invoice-payment-remove" aria-label="Remove payment" title="Remove payment">&times;</button>
+                </form>
               <?php endif; ?>
-            </td>
-            <td><?= e((string) ($payment['recorded_by_name'] ?? '') ?: '—') ?></td>
-            <td class="invoice-payments-amount"><strong><?= e(invoice_format_money((float) $payment['amount'])) ?></strong></td>
-            <?php if ($canRecordPayment): ?>
-            <td class="admin-table-actions">
-              <form method="post" action="/admin/invoice-action"
-                onsubmit="return confirm('Remove this payment of <?= e(invoice_format_money((float) $payment['amount'])) ?>?');">
-                <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-                <input type="hidden" name="id" value="<?= $id ?>">
-                <input type="hidden" name="action" value="delete_payment">
-                <input type="hidden" name="payment_id" value="<?= (int) $payment['id'] ?>">
-                <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm">Remove</button>
-              </form>
-            </td>
-            <?php endif; ?>
-          </tr>
-        <?php endforeach; ?>
-      </tbody>
-    </table>
-  </div>
-  <?php endif; ?>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
+    </section>
+
+    <?php if (Auth::can('invoices.send')): ?>
+    <section class="admin-card invoice-side-card" id="send-invoice">
+      <h2 class="invoice-side-title">Email to client</h2>
+      <?php if (!$mailEnabled): ?>
+        <p class="invoice-side-notice">
+          Email is disabled. Enable it in <a href="/admin/email-settings">Email settings</a> to send.
+        </p>
+      <?php endif; ?>
+      <form method="post" action="/admin/invoice-action" class="invoice-send-form">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+        <input type="hidden" name="id" value="<?= $id ?>">
+        <input type="hidden" name="action" value="send_email">
+        <div class="admin-field">
+          <label for="to-email">Client email <span class="required">*</span></label>
+          <input type="email" id="to-email" name="to_email" required value="<?= e($defaultTo) ?>"
+            placeholder="client@example.com" <?= $mailEnabled ? '' : 'disabled' ?>>
+          <?php if ($defaultTo === ''): ?>
+            <small class="admin-field-hint">No client email on file — enter one to send.</small>
+          <?php endif; ?>
+        </div>
+        <div class="admin-field">
+          <label for="email-message">Message <span class="admin-field-hint">(optional)</span></label>
+          <textarea id="email-message" name="email_message" rows="3" placeholder="Add a short note for the client…"
+            <?= $mailEnabled ? '' : 'disabled' ?>><?= e($defaultMessage) ?></textarea>
+        </div>
+        <button type="submit" class="admin-btn admin-btn-secondary invoice-side-btn" <?= $mailEnabled ? '' : 'disabled' ?>
+          onclick="return confirm('Send invoice #<?= e((string) $invoice['invoice_number']) ?> PDF to this email?');">
+          Send PDF by email
+        </button>
+      </form>
+    </section>
+    <?php endif; ?>
+  </aside>
 </div>
 
 <?php if ($canRecordPayment): ?>
@@ -301,47 +353,4 @@ require __DIR__ . '/includes/layout-start.php';
 </script>
 <?php endif; ?>
 
-<?php if (Auth::can('invoices.send')): ?>
-<div class="admin-card" id="send-invoice">
-  <h2 class="admin-card-title">Send invoice PDF to client</h2>
-  <?php if (!$mailEnabled): ?>
-    <div class="admin-alert admin-alert-info">
-      Email is currently disabled. Enable it in
-      <a href="/admin/email-settings">Email settings</a>
-      (or use production mail config) before sending.
-    </div>
-  <?php endif; ?>
-  <form method="post" action="/admin/invoice-action" class="invoice-send-form">
-    <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-    <input type="hidden" name="id" value="<?= $id ?>">
-    <input type="hidden" name="action" value="send_email">
-    <div class="admin-fields-2col">
-      <div class="admin-field">
-        <label for="to-email">Client email <span class="required">*</span></label>
-        <input type="email" id="to-email" name="to_email" required value="<?= e($defaultTo) ?>"
-          placeholder="client@example.com" <?= $mailEnabled ? '' : 'disabled' ?>>
-        <small class="admin-field-hint">
-          <?= $defaultTo !== '' ? 'Prefilled from the linked client record.' : 'No client email on file — enter one to send.' ?>
-        </small>
-      </div>
-      <div class="admin-field">
-        <label for="email-message">Optional message</label>
-        <textarea id="email-message" name="email_message" rows="3" placeholder="Add a short note for the client…"
-          <?= $mailEnabled ? '' : 'disabled' ?>><?= e($defaultMessage) ?></textarea>
-      </div>
-    </div>
-    <div class="admin-form-actions">
-      <button type="submit" class="admin-btn admin-btn-primary" <?= $mailEnabled ? '' : 'disabled' ?>
-        onclick="return confirm('Send invoice #<?= e((string) $invoice['invoice_number']) ?> PDF to this email?');">
-        Send PDF by email
-      </button>
-    </div>
-  </form>
-</div>
-<?php endif; ?>
-
-<link rel="stylesheet" href="/admin/css/invoice-print.css?v=3">
-<div class="invoice-preview-frame">
-  <?php require __DIR__ . '/includes/invoice-document.php'; ?>
-</div>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>
