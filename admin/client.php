@@ -85,6 +85,7 @@ $dobLabel = client_profile_date($client['date_of_birth'] ?? null);
 $isUnsubscribed = trim((string) ($client['email_unsubscribed_at'] ?? '')) !== '';
 $submissionCount = array_sum($yearCounts);
 $telHref = preg_replace('/[^\d+]/', '', $phone) ?? '';
+$isActive = (int) ($client['is_active'] ?? 1) === 1;
 
 require __DIR__ . '/includes/layout-start.php';
 ?>
@@ -93,6 +94,13 @@ require __DIR__ . '/includes/layout-start.php';
   <div class="admin-header-actions">
     <?php if (Auth::can('clients.edit')): ?>
     <a href="/admin/client-edit?id=<?= (int) $client['id'] ?>" class="admin-btn">Edit</a>
+    <form method="post" action="/admin/client-action" class="inline-form">
+      <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+      <input type="hidden" name="id" value="<?= (int) $client['id'] ?>">
+      <input type="hidden" name="action" value="set_active">
+      <input type="hidden" name="status" value="<?= $isActive ? 'inactive' : 'active' ?>">
+      <button type="submit" class="admin-btn admin-btn-secondary"><?= $isActive ? 'Mark inactive' : 'Mark active' ?></button>
+    </form>
     <?php endif; ?>
     <?php if (Auth::can('clients.delete')): ?>
     <form method="post" action="/admin/client-action" class="inline-form"
@@ -107,13 +115,14 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 </div>
 
-<section class="admin-card client-hero">
+<section class="admin-card client-hero<?= $isActive ? '' : ' client-hero--inactive' ?>">
   <div class="client-hero-main">
     <span class="client-avatar client-avatar--lg" aria-hidden="true"><?= e(client_initials((string) $client['name'])) ?></span>
     <div class="client-hero-text">
       <h2 class="client-hero-name"><?= e($client['name']) ?></h2>
       <div class="client-hero-chips">
         <span class="client-id-badge">ID <?= (int) $client['id'] ?></span>
+        <span class="client-active-badge client-active-badge--<?= $isActive ? 'on' : 'off' ?>"><?= $isActive ? 'Active' : 'Inactive' ?></span>
         <?php if ($meta['status'] !== ''): ?>
           <span class="client-status-badge client-status-badge--<?= e($statusTone) ?>"><?= e($meta['status']) ?></span>
         <?php endif; ?>

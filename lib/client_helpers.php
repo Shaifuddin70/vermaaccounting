@@ -89,6 +89,78 @@ function client_source_label(string $source): string
     };
 }
 
+/** Filing statuses that mean the client no longer works with the firm. */
+function client_status_implies_inactive(string $status): bool
+{
+    $s = strtolower(trim($status));
+    return $s !== '' && (str_contains($s, 'no longer a client') || str_contains($s, 'inactive'));
+}
+
+/** @return array<string, string> */
+function client_provinces(): array
+{
+    return [
+        'ON' => 'Ontario',
+        'QC' => 'Quebec',
+        'BC' => 'British Columbia',
+        'AB' => 'Alberta',
+        'MB' => 'Manitoba',
+        'SK' => 'Saskatchewan',
+        'NS' => 'Nova Scotia',
+        'NB' => 'New Brunswick',
+        'NL' => 'Newfoundland and Labrador',
+        'PE' => 'Prince Edward Island',
+        'YT' => 'Yukon',
+        'NT' => 'Northwest Territories',
+        'NU' => 'Nunavut',
+    ];
+}
+
+/** @return array<string, string> */
+function client_contact_filters(): array
+{
+    return [
+        'has_email' => 'Has email',
+        'no_email' => 'Missing email',
+        'no_phone' => 'Missing phone',
+        'unsubscribed' => 'Unsubscribed',
+    ];
+}
+
+/** @return array<string, string> */
+function client_sort_options(): array
+{
+    return [
+        'name' => 'Name (A–Z)',
+        'name_desc' => 'Name (Z–A)',
+        'newest' => 'Newest added',
+        'oldest' => 'Oldest added',
+        'updated' => 'Recently updated',
+    ];
+}
+
+/**
+ * Client list filters from the query string; invalid values are dropped.
+ *
+ * @return array{status: string, filing: string, province: string, contact: string, source: string, sort: string}
+ */
+function client_list_filters_from_request(array $query): array
+{
+    $pick = static function (string $key, array $allowed) use ($query): string {
+        $value = trim((string) ($query[$key] ?? ''));
+        return in_array($value, $allowed, true) ? $value : '';
+    };
+
+    return [
+        'status' => $pick('status', ['active', 'inactive']),
+        'filing' => $pick('filing', array_merge(client_known_statuses(), ['none'])),
+        'province' => $pick('province', array_keys(client_provinces())),
+        'contact' => $pick('contact', array_keys(client_contact_filters())),
+        'source' => $pick('source', ['submission', 'import', 'manual']),
+        'sort' => $pick('sort', array_keys(client_sort_options())),
+    ];
+}
+
 function client_initials(string $name): string
 {
     $parts = preg_split('/\s+/', trim($name)) ?: [];

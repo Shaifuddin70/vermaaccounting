@@ -11,12 +11,55 @@ final class ClientRepository
         $this->db = Database::instance()->pdo();
     }
 
-    public function count(?string $search = null, ?int $partnerUserId = null): int
+    public function count(?string $search = null, ?int $partnerUserId = null, array $filters = []): int
     {
-        [$where, $params] = $this->searchClause($search, $partnerUserId);
+        [$where, $params] = $this->searchClause($search, $partnerUserId, $filters);
         $stmt = $this->db->prepare('SELECT COUNT(*) FROM clients c ' . $where);
         $stmt->execute($params);
         return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Totals for the All / Active / Inactive tabs, honouring every other filter.
+     *
+     * @return array{all: int, active: int, inactive: int}
+     */
+    public function statusCounts(?string $search = null, ?int $partnerUserId = null, array $filters = []): array
+    {
+        $filters['status'] = '';
+        [$where, $params] = $this->searchClause($search, $partnerUserId, $filters);
+        $stmt = $this->db->prepare('
+            SELECT COUNT(*) AS total,
+                   COALESCE(SUM(CASE WHEN c.is_active = 1 THEN 1 ELSE 0 END), 0) AS active
+            FROM clients c ' . $where
+        );
+        $stmt->execute($params);
+        $row = $stmt->fetch() ?: ['total' => 0, 'active' => 0];
+        $all = (int) $row['total'];
+        $active = (int) $row['active'];
+        return ['all' => $all, 'active' => $active, 'inactive' => $all - $active];
+    }
+
+    /**
+     * @param list<int> $ids
+     * @return int Number of clients whose status changed
+     */
+    public function setActive(array $ids, bool $active): int
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map(static fn ($id): int => (int) $id, $ids),
+            static fn (int $id): bool => $id > 0
+        )));
+        if ($ids === []) {
+            return 0;
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $this->db->prepare(
+            'UPDATE clients SET is_active = ?, updated_at = ? WHERE is_active <> ? AND id IN (' . $placeholders . ')'
+        );
+        $flag = $active ? 1 : 0;
+        $stmt->execute(array_merge([$flag, now_iso(), $flag], $ids));
+        return $stmt->rowCount();
     }
 
     public function countWithEmail(): int
@@ -254,11 +297,23 @@ final class ClientRepository
     /**
      * @return list<array>
      */
-    public function allWithStats(?string $search = null, int $limit = 50, int $offset = 0, ?int $partnerUserId = null): array
-    {
+    public function allWithStats(
+        ?string $search = null,
+        int $limit = 50,
+        int $offset = 0,
+        ?int $partnerUserId = null,
+        array $filters = []
+    ): array {
         $limit = max(1, min(1000, $limit));
         $offset = max(0, $offset);
-        [$where, $params] = $this->searchClause($search, $partnerUserId);
+        [$where, $params] = $this->searchClause($search, $partnerUserId, $filters);
+        $orderBy = match ((string) ($filters['sort'] ?? '')) {
+            'name_desc' => 'c.name DESC',
+            'newest' => 'c.created_at DESC, c.id DESC',
+            'oldest' => 'c.created_at ASC, c.id ASC',
+            'updated' => 'c.updated_at DESC, c.id DESC',
+            default => 'c.name ASC',
+        };
 
         $sql = '
             SELECT
@@ -270,7 +325,7 @@ final class ClientRepository
             LEFT JOIN submissions s ON s.id = cs.submission_id
             ' . $where . '
             GROUP BY c.id
-            ORDER BY c.name ASC
+            ORDER BY ' . $orderBy . '
             LIMIT ' . $limit . ' OFFSET ' . $offset;
 
         $stmt = $this->db->prepare($sql);
@@ -437,8 +492,8 @@ final class ClientRepository
     {
         $now = now_iso();
         $stmt = $this->db->prepare('
-            INSERT INTO clients (name, sin, email, phone, company, address, date_of_birth, notes, source, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clients (name, sin, email, phone, company, address, is_active, date_of_birth, notes, source, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         $stmt->execute([
             trim((string) ($data['name'] ?? '')),
@@ -447,6 +502,7 @@ final class ClientRepository
             trim((string) ($data['phone'] ?? '')),
             trim((string) ($data['company'] ?? '')),
             trim((string) ($data['address'] ?? '')),
+            array_key_exists('is_active', $data) ? ((int) (bool) $data['is_active']) : 1,
             $this->normalizeDob($data['date_of_birth'] ?? null),
             trim((string) ($data['notes'] ?? '')),
             $source,
@@ -464,9 +520,10 @@ final class ClientRepository
         }
         $stmt = $this->db->prepare('
             UPDATE clients
-            SET name = ?, sin = ?, email = ?, phone = ?, company = ?, address = ?, date_of_birth = ?, notes = ?, updated_at = ?
+            SET name = ?, sin = ?, email = ?, phone = ?, company = ?, address = ?, is_active = ?, date_of_birth = ?, notes = ?, updated_at = ?
             WHERE id = ?
         ');
+        $isActive = array_key_exists('is_active', $data) ? $data['is_active'] : ($existing['is_active'] ?? 1);
         $dob = array_key_exists('date_of_birth', $data)
             ? $this->normalizeDob($data['date_of_birth'])
             : $this->normalizeDob($existing['date_of_birth'] ?? null);
@@ -477,6 +534,7 @@ final class ClientRepository
             trim((string) ($data['phone'] ?? $existing['phone'] ?? '')),
             trim((string) ($data['company'] ?? $existing['company'] ?? '')),
             trim((string) ($data['address'] ?? $existing['address'] ?? '')),
+            (int) (bool) $isActive,
             $dob,
             trim((string) ($data['notes'] ?? $existing['notes'] ?? '')),
             now_iso(),
@@ -678,6 +736,10 @@ final class ClientRepository
                     'date_of_birth' => $dob,
                     'notes' => trim((string) ($row['notes'] ?? '')),
                 ];
+                $importStatus = client_notes_meta($payload['notes'])['status'];
+                if ($importStatus !== '') {
+                    $payload['is_active'] = !client_status_implies_inactive($importStatus);
+                }
 
                 $existing = $this->findImportMatch($name, $sin, $email, $dob);
 
@@ -886,7 +948,7 @@ final class ClientRepository
     }
 
     /** @return array{0: string, 1: list<mixed>} */
-    private function searchClause(?string $search, ?int $partnerUserId = null): array
+    private function searchClause(?string $search, ?int $partnerUserId = null, array $filters = []): array
     {
         $parts = [];
         $params = [];
@@ -903,6 +965,50 @@ final class ClientRepository
                 array_push($params, $like, $like, $like, $like, $like, $like);
             }
         }
+
+        $status = (string) ($filters['status'] ?? '');
+        if ($status === 'active' || $status === 'inactive') {
+            $parts[] = 'c.is_active = ?';
+            $params[] = $status === 'active' ? 1 : 0;
+        }
+
+        $filing = (string) ($filters['filing'] ?? '');
+        if ($filing === 'none') {
+            $parts[] = "(c.notes IS NULL OR c.notes NOT LIKE '%Processing status: %')";
+        } elseif ($filing !== '') {
+            $parts[] = '(c.notes LIKE ? OR c.notes LIKE ?)';
+            $params[] = '%Processing status: ' . $filing . "\n%";
+            $params[] = '%Processing status: ' . $filing;
+        }
+
+        $province = (string) ($filters['province'] ?? '');
+        if ($province !== '') {
+            $parts[] = '(c.address LIKE ? OR c.address LIKE ?)';
+            $params[] = '%, ' . $province . ' %';
+            $params[] = '%, ' . $province;
+        }
+
+        switch ((string) ($filters['contact'] ?? '')) {
+            case 'has_email':
+                $parts[] = "(c.email IS NOT NULL AND TRIM(c.email) <> '')";
+                break;
+            case 'no_email':
+                $parts[] = "(c.email IS NULL OR TRIM(c.email) = '')";
+                break;
+            case 'no_phone':
+                $parts[] = "(c.phone IS NULL OR TRIM(c.phone) = '')";
+                break;
+            case 'unsubscribed':
+                $parts[] = 'c.email_unsubscribed_at IS NOT NULL';
+                break;
+        }
+
+        $source = (string) ($filters['source'] ?? '');
+        if ($source !== '') {
+            $parts[] = 'c.source = ?';
+            $params[] = $source;
+        }
+
         [$scopeSql, $scopeParams] = partner_client_scope_sql($partnerUserId, 'c');
         if ($scopeSql !== '') {
             $parts[] = $scopeSql;

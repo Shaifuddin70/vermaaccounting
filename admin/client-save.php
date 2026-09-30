@@ -30,6 +30,7 @@ $status = trim((string) ($_POST['status'] ?? ''));
 $lastActivity = trim((string) ($_POST['last_activity'] ?? ''));
 $freeNotes = trim((string) ($_POST['notes'] ?? ''));
 $emailUnsubscribed = !empty($_POST['email_unsubscribed']);
+$isActive = (string) ($_POST['is_active'] ?? '1') !== '0';
 
 $oldInput = [
     'name' => $name,
@@ -44,6 +45,7 @@ $oldInput = [
     'last_activity' => $lastActivity,
     'notes' => $freeNotes,
     'email_unsubscribed' => $emailUnsubscribed,
+    'is_active' => $isActive,
 ];
 $back = $isNew ? '/admin/client-edit' : '/admin/client-edit?id=' . (int) $editId;
 
@@ -89,6 +91,7 @@ $data = [
     'phone' => $phone,
     'company' => $company,
     'address' => $address,
+    'is_active' => $isActive,
     'sin' => $sin,
     'date_of_birth' => $dob !== '' ? $dob : null,
     'notes' => client_compose_notes([

@@ -37,6 +37,10 @@ $unsubscribed = array_key_exists('email_unsubscribed', $old)
     ? (bool) $old['email_unsubscribed']
     : trim((string) ($editClient['email_unsubscribed_at'] ?? '')) !== '';
 
+$isActive = array_key_exists('is_active', $old)
+    ? (bool) $old['is_active']
+    : ($isNew || (int) ($editClient['is_active'] ?? 1) === 1);
+
 $lastActivity = $value('last_activity');
 $lastActivityIsDate = $lastActivity === '' || preg_match('/^\d{4}-\d{2}-\d{2}$/', $lastActivity) === 1;
 $statuses = client_known_statuses();
@@ -151,8 +155,24 @@ require __DIR__ . '/includes/layout-start.php';
     <section class="admin-card client-detail-card">
       <h2 class="client-detail-title">Account &amp; filing</h2>
       <div class="admin-field">
+        <span class="client-field-label" id="ce-active-label">Client status</span>
+        <div class="client-active-toggle" role="radiogroup" aria-labelledby="ce-active-label">
+          <label>
+            <input type="radio" name="is_active" value="1" <?= $isActive ? 'checked' : '' ?>>
+            <span><i class="client-active-dot client-active-dot--on" aria-hidden="true"></i>Active</span>
+          </label>
+          <label>
+            <input type="radio" name="is_active" value="0" <?= $isActive ? '' : 'checked' ?>>
+            <span><i class="client-active-dot" aria-hidden="true"></i>Inactive</span>
+          </label>
+        </div>
+      </div>
+      <div class="admin-field">
         <label for="ce-status">Filing status</label>
-        <select id="ce-status" name="status">
+        <select id="ce-status" name="status" data-inactive-statuses="<?= e(json_encode(array_values(array_filter(
+            $statuses,
+            'client_status_implies_inactive'
+        )))) ?>">
           <option value="">— None —</option>
           <?php foreach ($statuses as $status): ?>
             <option value="<?= e($status) ?>" <?= $status === $currentStatus ? 'selected' : '' ?>><?= e($status) ?></option>
@@ -202,6 +222,16 @@ require __DIR__ . '/includes/layout-start.php';
     avatar.textContent = parts.length
       ? (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase()
       : <?= json_encode($isNew ? '+' : client_initials($displayName)) ?>;
+  });
+})();
+
+(function () {
+  var select = document.getElementById('ce-status');
+  var inactive = document.querySelector('input[name="is_active"][value="0"]');
+  if (!select || !inactive) return;
+  var statuses = JSON.parse(select.getAttribute('data-inactive-statuses') || '[]');
+  select.addEventListener('change', function () {
+    if (statuses.indexOf(select.value) !== -1) inactive.checked = true;
   });
 })();
 </script>

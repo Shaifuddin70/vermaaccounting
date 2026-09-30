@@ -168,6 +168,7 @@ final class Database
         $this->ensureClientsManualSource();
         $this->ensureClientsEmailUnsubscribedColumn();
         $this->ensureClientsAddressColumn();
+        $this->ensureClientsActiveColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureClientPartnersTable();
@@ -263,6 +264,7 @@ final class Database
         $this->ensureClientsManualSource();
         $this->ensureClientsEmailUnsubscribedColumn();
         $this->ensureClientsAddressColumn();
+        $this->ensureClientsActiveColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
         $this->ensureClientPartnersTable();
@@ -937,6 +939,32 @@ final class Database
         if (!$this->sqliteColumnExists('clients', 'address')) {
             $this->pdo->exec('ALTER TABLE clients ADD COLUMN address TEXT');
         }
+    }
+
+    private function ensureClientsActiveColumn(): void
+    {
+        $exists = $this->driver === 'mysql'
+            ? $this->columnExists('clients', 'is_active')
+            : $this->sqliteColumnExists('clients', 'is_active');
+        if ($exists) {
+            return;
+        }
+
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec('ALTER TABLE clients ADD COLUMN is_active TINYINT(1) NOT NULL DEFAULT 1 AFTER address');
+            $this->pdo->exec('ALTER TABLE clients ADD INDEX idx_clients_active (is_active)');
+        } else {
+            $this->pdo->exec('ALTER TABLE clients ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1');
+            $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_clients_active ON clients(is_active)');
+        }
+
+        // TaxCycle filing statuses that already mean the client has left.
+        $this->pdo->exec("
+            UPDATE clients SET is_active = 0
+            WHERE notes LIKE '%Processing status: No longer a client%'
+               OR notes LIKE '%Processing status: Inactive file%'
+               OR notes LIKE '%Processing status: Inactive by user%'
+        ");
     }
 
     private function ensureClientsEmailUnsubscribedColumn(): void
