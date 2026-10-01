@@ -488,6 +488,23 @@ final class ClientRepository
         return $stmt->fetch() ?: null;
     }
 
+    public function findByDobAndSin(string $dob, string $sin): ?array
+    {
+        $digits = preg_replace('/\D+/', '', $sin) ?? '';
+        $dob = trim($dob);
+        if (strlen($digits) !== 9 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $dob)) {
+            return null;
+        }
+        $stmt = $this->db->prepare("
+            SELECT * FROM clients
+            WHERE date_of_birth = ?
+              AND REPLACE(REPLACE(sin, '-', ''), ' ', '') = ?
+            LIMIT 1
+        ");
+        $stmt->execute([$dob, $digits]);
+        return $stmt->fetch() ?: null;
+    }
+
     public function create(array $data, string $source = 'import'): int
     {
         $now = now_iso();

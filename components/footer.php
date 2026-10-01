@@ -309,11 +309,12 @@ if (!function_exists('asset')) {
      }, 3000);
    }
 
-   function showPartnerSlide(n) {
-     const track = document.getElementById('partnerTrack');
-     const dots = document.querySelectorAll('.dot');
+  function showPartnerSlide(n) {
+    const track = document.getElementById('partnerTrack');
+    const dots = document.querySelectorAll('.dot');
+    if (!track || !dots[n - 1]) return;
 
-     // Update active dot
+    // Update active dot
      dots.forEach(dot => dot.classList.remove('active'));
      dots[n - 1].classList.add('active');
 
@@ -335,8 +336,8 @@ if (!function_exists('asset')) {
    }
 
    // Auto-advance slides every 3 seconds (only when not in manual control)
-   setInterval(() => {
-     if (!isManualControl) {
+  if (document.getElementById('partnerTrack')) setInterval(() => {
+    if (!isManualControl) {
        currentPartnerSlide = currentPartnerSlide >= totalPartnerSlides ? 1 : currentPartnerSlide + 1;
        showPartnerSlide(currentPartnerSlide);
      }

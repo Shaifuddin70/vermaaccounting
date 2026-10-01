@@ -427,11 +427,7 @@ final class FormRepository
             $data = json_decode($sub['data_json'], true) ?: [];
             $matches = true;
             foreach ($matchCriteria as $name => $expected) {
-                $actual = $data[$name] ?? '';
-                if (is_array($actual)) {
-                    $actual = implode(',', $actual);
-                }
-                if (strcasecmp(trim((string) $actual), trim((string) $expected)) !== 0) {
+                if (form_data_match_normalize($data[$name] ?? '') !== form_data_match_normalize($expected)) {
                     $matches = false;
                     break;
                 }
@@ -914,6 +910,21 @@ final class FormRepository
     {
         $stmt = $this->db->query("SELECT id, slug, title FROM forms WHERE status = 'published' ORDER BY title ASC");
         return $stmt->fetchAll();
+    }
+
+    /** Published forms ticked "Show under Submit Documents" in the builder. */
+    public function submitMenuForms(): array
+    {
+        $stmt = $this->db->query("SELECT id, slug, title, schema_json FROM forms WHERE status = 'published' ORDER BY title ASC");
+        $out = [];
+        foreach ($stmt->fetchAll() as $form) {
+            $schema = json_decode((string) $form['schema_json'], true);
+            if (!empty($schema['settings']['showInSubmitMenu'])) {
+                unset($form['schema_json']);
+                $out[] = $form;
+            }
+        }
+        return $out;
     }
 
     public function uniqueSlug(string $base, ?int $excludeId = null): string

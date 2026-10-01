@@ -21,7 +21,7 @@ $seoDescription = 'Securely upload personal or business tax documents to Verma A
 
 include __DIR__ . '/components/header.php';
 ?>
-<link rel="stylesheet" href="/css/custom-form.css?v=19">
+<link rel="stylesheet" href="/css/custom-form.css?v=20">
 <main class="main-content vf-page doc-submit-page">
   <div class="vf-container">
     <div class="vf-layout">
@@ -33,7 +33,7 @@ include __DIR__ . '/components/header.php';
             </a>
             <div class="vf-card-header-text">
               <h1 class="vf-card-title"><?= e($form['title']) ?></h1>
-              <p class="vf-card-desc">Choose your tax service type, enter your customer ID, and upload your files securely.</p>
+              <p class="vf-card-desc">Enter your customer ID and upload your files securely.</p>
             </div>
           </header>
           <div class="vf-card-body">
@@ -61,14 +61,10 @@ include __DIR__ . '/components/header.php';
           <ol class="vf-steps">
             <li class="vf-step">
               <span class="vf-step-num">1</span>
-              <span class="vf-step-text"><strong>Choose service type</strong><br>Personal tax or business tax.</span>
-            </li>
-            <li class="vf-step">
-              <span class="vf-step-num">2</span>
               <span class="vf-step-text"><strong>Enter client ID or email</strong><br>Use the client ID number or email address on your account.</span>
             </li>
             <li class="vf-step">
-              <span class="vf-step-num">3</span>
+              <span class="vf-step-num">2</span>
               <span class="vf-step-text"><strong>Upload files</strong><br>Submit PDFs, photos, or ZIP archives.</span>
             </li>
           </ol>
@@ -86,6 +82,6 @@ include __DIR__ . '/components/header.php';
 <script>
   window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/components/js/custom-form.js?v=22"></script>
-<script src="/components/js/document-submission.js?v=2"></script>
+<script src="/components/js/custom-form.js?v=24"></script>
+<script src="/components/js/document-submission.js?v=4"></script>
 <?php include __DIR__ . '/components/footer.php'; ?>

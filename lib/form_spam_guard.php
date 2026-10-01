@@ -328,7 +328,7 @@ function form_spam_guard_fields_html(): string
     $now = time();
     $token = form_spam_make_token($now);
 
-    return '<div class="form-spam-guard" aria-hidden="true">'
+    return '<div class="form-spam-guard" aria-hidden="true" inert>'
         . '<label for="' . e($hp) . '">Website</label>'
         . '<input type="text" id="' . e($hp) . '" name="' . e($hp) . '" value="" tabindex="-1" autocomplete="off">'
         . '<input type="hidden" name="' . e($tsName) . '" value="' . e((string) $now) . '">'

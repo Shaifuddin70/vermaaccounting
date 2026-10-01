@@ -2,50 +2,6 @@
   var app = document.getElementById('custom-form-app');
   if (!app || app.getAttribute('data-document-submission') !== '1') return;
 
-  var serviceStep = document.getElementById('doc-service-step');
-  var form = document.getElementById('custom-form');
-  var serviceInput = document.getElementById('tax-service-type-input');
-  var serviceBar = document.getElementById('doc-service-selected-bar');
-  var serviceLabel = document.getElementById('doc-service-selected-label');
-  var changeBtn = document.getElementById('doc-service-change-btn');
-
-  var serviceLabels = {
-    personal: 'Personal tax',
-    business: 'Business tax',
-  };
-
-  function showServiceStep() {
-    if (serviceStep) serviceStep.hidden = false;
-    if (form) form.hidden = true;
-    if (serviceBar) serviceBar.hidden = true;
-    if (serviceInput) serviceInput.value = '';
-  }
-
-  function showForm(serviceType) {
-    if (!serviceType || !serviceLabels[serviceType]) return;
-    if (serviceInput) serviceInput.value = serviceType;
-    if (serviceLabel) serviceLabel.textContent = serviceLabels[serviceType];
-    if (serviceStep) serviceStep.hidden = true;
-    if (serviceBar) serviceBar.hidden = false;
-    if (form) {
-      form.hidden = false;
-      var firstInput = form.querySelector('input:not([type="hidden"]), textarea, select, button');
-      if (firstInput && typeof firstInput.focus === 'function') {
-        firstInput.focus();
-      }
-    }
-  }
-
-  app.querySelectorAll('[data-service-type]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      showForm(btn.getAttribute('data-service-type'));
-    });
-  });
-
-  if (changeBtn) {
-    changeBtn.addEventListener('click', showServiceStep);
-  }
-
   var customerField = document.querySelector('[data-field-name="customer_id"] input, #cf-doc_customer_id');
   if (customerField) {
     var hint = document.createElement('p');

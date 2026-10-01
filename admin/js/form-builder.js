@@ -1572,6 +1572,7 @@
     state.schema.settings.submitLabel = el('submit-label').value.trim() || 'Submit';
     state.schema.settings.successMessage =
       el('success-message').value.trim() || 'Thank you! Your response has been received.';
+    state.schema.settings.showInSubmitMenu = !!el('form-submit-menu')?.checked;
     const taxYear = syncTaxYearSettings();
     const dataMatch = syncDataMatchSettings();
     if (dataMatch.enabled && (dataMatch.fieldIds || []).length < 2) {
@@ -1624,6 +1625,11 @@
         msg += ' This form is linked on the homepage and header.';
       } else if (el('form-site-cta')?.checked && state.status !== 'published') {
         msg += ' Publish the form to show it on the homepage and header.';
+      }
+      if (state.schema.settings.showInSubmitMenu) {
+        msg += state.status === 'published'
+          ? ' Listed under Submit Document in the header.'
+          : ' Publish the form to list it under Submit Document.';
       }
       showStatus(msg, true);
     } catch (err) {

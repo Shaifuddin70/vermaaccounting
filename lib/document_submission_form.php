@@ -45,6 +45,7 @@ function document_submission_default_schema(): array
         ],
         'settings' => [
             'submitLabel' => 'Submit documents',
+            'showInSubmitMenu' => true,
             'successMessage' => 'Your documents have been submitted successfully. Our team will review them shortly.',
         ],
     ];
@@ -142,11 +143,6 @@ function document_submission_resolve_client(string $reference): ?array
  */
 function document_submission_validate(array $data, array &$errors): void
 {
-    $service = trim((string) ($data['tax_service_type'] ?? ''));
-    if (!in_array($service, ['personal', 'business'], true)) {
-        $errors[] = 'Please select Personal or Business tax service.';
-    }
-
     $reference = trim((string) ($data['customer_id'] ?? ''));
     if ($reference === '') {
         $errors[] = 'Please enter your client ID or email.';

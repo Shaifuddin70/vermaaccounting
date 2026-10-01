@@ -102,7 +102,7 @@ if ($canonicalPath !== '/') {
   <script type="application/ld+json"><?= json_encode($homeFaqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
   <?php endif; endif; ?>
 
-  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=83" />
+  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=84" />
 </head>
 
 <body>
@@ -180,6 +180,26 @@ if ($canonicalPath !== '/') {
               <a href="https://owningottawa.com/" class="verma-submenu-link" target="_blank" rel="noopener">Real Estate</a>
             </div>
           </div>
+          <?php $submitMenuForms = site_submit_menu_forms(); ?>
+          <?php if ($submitMenuForms): ?>
+          <div class="verma-submenu">
+            <a
+              href="<?= e($submitMenuForms[0]['url']) ?>"
+              class="verma-link verma-toggle"
+              data-page="submit-documents"
+              aria-expanded="false"
+              aria-haspopup="true">
+              <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-cloud-upload-alt"></i></span>
+              <span class="verma-link-text">Submit Document</span>
+              <i class="fas fa-chevron-down verma-arrow" aria-hidden="true"></i>
+            </a>
+            <div class="verma-submenu-items">
+              <?php foreach ($submitMenuForms as $menuForm): ?>
+                <a href="<?= e($menuForm['url']) ?>" class="verma-submenu-link"><?= e($menuForm['title']) ?></a>
+              <?php endforeach; ?>
+            </div>
+          </div>
+          <?php endif; ?>
           <a href="/resources" class="verma-link" data-page="resources">
             <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-book-open"></i></span>
             <span class="verma-link-text">Resources</span>

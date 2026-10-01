@@ -1291,6 +1291,105 @@ function field_name_by_id(array $schema, string $fieldId): ?string
     return null;
 }
 
+/** Comparable form of a match value: case-insensitive, ignoring spaces, dashes and brackets. */
+function form_data_match_normalize(mixed $value): string
+{
+    if (is_array($value)) {
+        $value = implode(',', $value);
+    }
+    return preg_replace('/[\s\-()\/.]+/', '', strtolower(trim((string) $value))) ?? '';
+}
+
+/**
+ * Pull date of birth and SIN out of the lookup criteria, if they are among the match fields.
+ *
+ * @param array<string, mixed> $schema
+ * @param array<string, string> $criteria field name => entered value
+ * @return array{dob: string, sin: string}
+ */
+function form_data_match_dob_sin(array $schema, array $criteria): array
+{
+    $dob = '';
+    $sin = '';
+    foreach ($schema['fields'] ?? [] as $field) {
+        $name = (string) ($field['name'] ?? '');
+        if ($name === '' || !isset($criteria[$name])) {
+            continue;
+        }
+        $blob = strtolower($name . ' ' . ($field['id'] ?? '') . ' ' . ($field['label'] ?? ''));
+        if (($field['type'] ?? '') === 'date' && $dob === '') {
+            $dob = $criteria[$name];
+        } elseif ($sin === '' && preg_match('/(?:^|[^a-z0-9])sin(?:[^a-z0-9]|$)|social insurance/', $blob)) {
+            $sin = $criteria[$name];
+        }
+    }
+    return ['dob' => $dob, 'sin' => $sin];
+}
+
+/**
+ * Map a client record onto a form's (non-sensitive) fields for autofill.
+ *
+ * @param array<string, mixed> $schema
+ * @param array<string, mixed> $client
+ * @return array<string, string>
+ */
+function form_client_prefill(array $schema, array $client): array
+{
+    $name = trim((string) ($client['name'] ?? ''));
+    $nameParts = $name !== '' ? preg_split('/\s+/', $name) : [];
+    $first = $nameParts ? (string) array_shift($nameParts) : '';
+    $last = implode(' ', $nameParts);
+
+    $street = '';
+    $city = '';
+    $province = '';
+    $postal = '';
+    $address = trim((string) ($client['address'] ?? ''));
+    if ($address !== '') {
+        $parts = array_map('trim', explode(',', $address));
+        $street = (string) array_shift($parts);
+        if (count($parts) >= 2) {
+            $city = (string) array_shift($parts);
+        }
+        $tail = implode(', ', $parts);
+        if (preg_match('/\b([A-Z]{2})\b\s*([A-Z]\d[A-Z]\s?\d[A-Z]\d)?/i', $tail, $m)) {
+            $code = strtoupper($m[1]);
+            $province = client_provinces()[$code] ?? '';
+            $postal = strtoupper(trim($m[2] ?? ''));
+        } elseif ($city === '' && $tail !== '') {
+            $city = $tail;
+        }
+    }
+
+    $candidates = [
+        'first_name' => $first,
+        'last_name' => $last,
+        'name' => $name,
+        'full_name' => $name,
+        'email' => (string) ($client['email'] ?? ''),
+        'phone' => (string) ($client['phone'] ?? ''),
+        'company' => (string) ($client['company'] ?? ''),
+        'address' => $street,
+        'street_address' => $street,
+        'city' => $city,
+        'province' => $province,
+        'postal_code' => $postal,
+    ];
+
+    $out = [];
+    foreach ($schema['fields'] ?? [] as $field) {
+        if (!is_array($field) || form_data_match_field_is_sensitive($field)) {
+            continue;
+        }
+        $fieldName = (string) ($field['name'] ?? '');
+        $value = trim($candidates[$fieldName] ?? '');
+        if ($value !== '') {
+            $out[$fieldName] = $value;
+        }
+    }
+    return $out;
+}
+
 /**
  * Site-wide CTA form (homepage hero + header). Falls back to /contact when unset.
  *
@@ -1342,6 +1441,40 @@ function site_cta_hero_label(): string
 function site_cta_nav_label(): string
 {
     return site_cta_resolve()['nav_label'];
+}
+
+/** Public URL for a form; the tax intake and document forms have dedicated pages. */
+function form_public_url(string $slug): string
+{
+    return match ($slug) {
+        'tax-intake' => '/tax-intake',
+        'submit-documents' => '/submit-documents',
+        default => '/form/' . rawurlencode($slug),
+    };
+}
+
+/** @return list<array{title: string, url: string}> */
+function site_submit_menu_forms(): array
+{
+    static $items = null;
+    if ($items !== null) {
+        return $items;
+    }
+    $items = [];
+    try {
+        if (!class_exists('FormRepository', false)) {
+            require_once __DIR__ . '/bootstrap.php';
+        }
+        foreach ((new FormRepository())->submitMenuForms() as $form) {
+            $items[] = [
+                'title' => (string) $form['title'],
+                'url' => form_public_url((string) $form['slug']),
+            ];
+        }
+    } catch (Throwable) {
+        // Hide the menu if DB unavailable
+    }
+    return $items;
 }
 
 function file_manager_form_slug(): string

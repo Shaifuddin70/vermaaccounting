@@ -81,7 +81,7 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 </div>
 
-<div class="fb-page">
+<div class="form-builder-page">
   <section class="admin-card fb-essentials" aria-label="Form essentials">
     <div class="fb-essentials-grid">
       <div class="admin-field fb-field-title">
@@ -120,6 +120,13 @@ require __DIR__ . '/includes/layout-start.php';
           <span>Show on website</span>
         </label>
         <small class="admin-field-hint">Homepage hero &amp; header. Must be published.</small>
+      </div>
+      <div class="admin-field fb-field-cta">
+        <label class="admin-checkbox-label fb-checkbox-compact">
+          <input type="checkbox" id="form-submit-menu" <?= !empty($schema['settings']['showInSubmitMenu']) ? 'checked' : '' ?>>
+          <span>Show under Submit Document</span>
+        </label>
+        <small class="admin-field-hint">Header menu. Must be published.</small>
       </div>
     </div>
     <div class="admin-field fb-cta-label-wrap" id="form-cta-label-wrap">
@@ -285,5 +292,5 @@ require __DIR__ . '/includes/layout-start.php';
     activePartners: <?= json_encode((new UserRepository())->activePartners(), JSON_UNESCAPED_UNICODE) ?>
   };
 </script>
-<script src="/admin/js/form-builder.js?v=21"></script>
+<script src="/admin/js/form-builder.js?v=23"></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

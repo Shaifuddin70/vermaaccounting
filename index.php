@@ -55,14 +55,6 @@
               <span><?= e(site_cta_hero_label()) ?></span>
               <i class="fas fa-arrow-right"></i>
             </a>
-            <a href="/tax-intake" class="cta-button secondary">
-              <i class="fas fa-file-invoice-dollar"></i>
-              <span>File Your Taxes</span>
-            </a>
-            <a href="/submit-documents" class="cta-button secondary">
-              <i class="fas fa-cloud-upload-alt"></i>
-              <span>Submit Documents</span>
-            </a>
             <a href="/services" class="cta-button secondary">
               <i class="fas fa-calculator"></i>
               <span>Explore Services</span>

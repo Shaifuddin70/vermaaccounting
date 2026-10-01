@@ -80,22 +80,6 @@ function tax_intake_default_schema(): array
                 'required' => false,
             ],
             [
-                'id' => 'ti_first_name',
-                'type' => 'text',
-                'label' => 'First name',
-                'name' => 'first_name',
-                'required' => true,
-                'placeholder' => 'Enter exactly as it appears on your SIN or passport',
-            ],
-            [
-                'id' => 'ti_last_name',
-                'type' => 'text',
-                'label' => 'Last name',
-                'name' => 'last_name',
-                'required' => true,
-                'placeholder' => 'Enter your last name',
-            ],
-            [
                 'id' => 'ti_dob',
                 'type' => 'date',
                 'label' => 'Date of birth',
@@ -110,8 +94,24 @@ function tax_intake_default_schema(): array
                 'name' => 'sin',
                 'required' => false,
                 'placeholder' => '###-###-###',
-                'helpText' => 'Optional for now — we may ask for it later to file with CRA.',
+                'helpText' => 'Returning clients: enter your date of birth and SIN to fill in your details automatically.',
                 'numberFormat' => '###-###-###',
+            ],
+            [
+                'id' => 'ti_first_name',
+                'type' => 'text',
+                'label' => 'First name',
+                'name' => 'first_name',
+                'required' => true,
+                'placeholder' => 'Enter exactly as it appears on your SIN or passport',
+            ],
+            [
+                'id' => 'ti_last_name',
+                'type' => 'text',
+                'label' => 'Last name',
+                'name' => 'last_name',
+                'required' => true,
+                'placeholder' => 'Enter your last name',
             ],
             [
                 'id' => 'ti_email',
@@ -729,6 +729,7 @@ function tax_intake_default_schema(): array
         ],
         'settings' => [
             'submitLabel' => 'Submit tax intake',
+            'showInSubmitMenu' => true,
             'successMessage' => 'Thank you — your tax information has been submitted. Our team will review everything and prepare your return. We\'ll reach out if we need anything else.',
             'firstPageTitle' => 'About you',
             'taxYear' => [
@@ -738,8 +739,8 @@ function tax_intake_default_schema(): array
                 'years' => [],
             ],
             'dataMatch' => [
-                'enabled' => false,
-                'fieldIds' => ['ti_email', 'ti_phone'],
+                'enabled' => true,
+                'fieldIds' => ['ti_dob', 'ti_sin'],
                 'title' => 'We found your information',
                 'message' => 'A previous submission matches what you entered. Would you like to fill this form with that saved information?',
                 'confirmLabel' => 'Yes, fill the form',

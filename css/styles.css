@@ -668,6 +668,30 @@ body {
   }
 }
 
+@media (min-width: 992px) and (max-width: 1199px) {
+  .verma-logo-img {
+    width: 120px;
+  }
+
+  .verma-menu {
+    gap: 0.6rem;
+  }
+
+  .verma-link,
+  .verma-phone-link {
+    font-size: 0.9rem;
+  }
+
+  .verma-book-link {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+
 @media (min-width: 1281px) {
   .verma-container {
     padding: 1.2rem 2.5rem;
@@ -691,6 +715,17 @@ body {
 
   .verma-book-link {
     font-size: 0.95rem;
+  }
+}
+
+@media (min-width: 1281px) and (max-width: 1439px) {
+  .verma-menu {
+    gap: 1.15rem;
+  }
+
+  .verma-link,
+  .verma-phone-link {
+    font-size: 1.05rem;
   }
 }
 

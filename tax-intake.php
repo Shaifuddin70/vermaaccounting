@@ -21,7 +21,7 @@ $seoDescription = 'Start your personal tax filing with Verma Accounting. Answer 
 
 include __DIR__ . '/components/header.php';
 ?>
-<link rel="stylesheet" href="/css/custom-form.css?v=19">
+<link rel="stylesheet" href="/css/custom-form.css?v=20">
 <main class="main-content vf-page doc-submit-page">
   <div class="vf-container">
     <div class="vf-layout">
@@ -87,5 +87,5 @@ include __DIR__ . '/components/header.php';
 <script>
   window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/components/js/custom-form.js?v=22"></script>
+<script src="/components/js/custom-form.js?v=24"></script>
 <?php include __DIR__ . '/components/footer.php'; ?>

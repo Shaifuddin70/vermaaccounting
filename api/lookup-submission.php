@@ -7,13 +7,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_response(['error' => 'Method not allowed'], 405);
 }
 
-// Throttle enumeration / guessing of match fields (email + phone, etc.).
-$lookupLimit = 10;
+// Throttle enumeration / guessing of match fields (DOB + SIN, email + phone, etc.).
+$lookupLimit = 30;
 $lookupWindow = 3600;
 if (form_spam_action_is_limited('lookup-submission', $lookupLimit, $lookupWindow)) {
     json_response(['error' => 'Too many lookup attempts. Please try again later.'], 429);
 }
-form_spam_action_record('lookup-submission', $lookupWindow);
 
 $input = json_decode(file_get_contents('php://input') ?: '{}', true);
 if (!is_array($input)) {
@@ -64,9 +63,29 @@ if (form_tax_year_enabled($schema)) {
     }
 }
 
+form_spam_action_record('lookup-submission', $lookupWindow);
+
 $submission = $repo->findSubmissionByMatch((int) $form['id'], $criteria, $taxYear);
+if (!$submission && $taxYear !== null) {
+    // Returning clients filing a new year: fall back to their most recent earlier submission.
+    $submission = $repo->findSubmissionByMatch((int) $form['id'], $criteria, null);
+}
+
 if (!$submission) {
-    json_response(['found' => false]);
+    $keys = form_data_match_dob_sin($schema, $criteria);
+    $client = ($keys['dob'] !== '' && $keys['sin'] !== '')
+        ? (new ClientRepository())->findByDobAndSin($keys['dob'], $keys['sin'])
+        : null;
+    if (!$client) {
+        json_response(['found' => false]);
+    }
+    json_response([
+        'found' => true,
+        'source' => 'client',
+        'submitted_at' => null,
+        'tax_year' => null,
+        'data' => form_client_prefill($schema, $client),
+    ]);
 }
 
 $data = json_decode((string) ($submission['data_json'] ?? ''), true);
@@ -76,6 +95,7 @@ if (!is_array($data)) {
 
 json_response([
     'found' => true,
+    'source' => 'submission',
     'submitted_at' => $submission['created_at'],
     'tax_year' => $submission['tax_year'] ?? null,
     // Strip SIN / DOB / files / etc. — returning visitors who know match keys can still autofill the rest.

@@ -797,7 +797,13 @@
     if (taxYearBar) taxYearBar.hidden = false;
     if (taxYearStep) taxYearStep.hidden = true;
     form.hidden = false;
-    const first = form.querySelector('input:not([type="hidden"]), select, textarea');
+    focusFirstField();
+  }
+
+  function focusFirstField() {
+    const first = form.querySelector(
+      ':is(input:not([type="hidden"]), select, textarea):not([tabindex="-1"]):not(.form-spam-guard *)'
+    );
     if (first) first.focus();
   }
 
@@ -891,8 +897,7 @@
       statusEl.textContent = '';
       statusEl.className = 'custom-form-status';
     }
-    const first = form.querySelector('input:not([type="hidden"]), select, textarea');
-    if (first) first.focus();
+    focusFirstField();
     requestAnimationFrame(() => scrollFormToTop());
   }
 
@@ -1240,10 +1245,12 @@
       const json = await res.json();
       if (generation !== lookupGeneration) return;
       // Prefill safe fields only (API already strips sensitive values).
-      if (json.found && json.data && typeof json.data === 'object') {
-        showPrefillModal(json.data, json.submitted_at || '');
-      } else if (json.found) {
-        showPrefillModal({}, json.submitted_at || '');
+      if (json.found) {
+        const data = json.data && typeof json.data === 'object' ? json.data : {};
+        showPrefillModal(data, json.submitted_at || '');
+        if (json.source === 'client' && prefillMeta) {
+          prefillMeta.textContent = 'From your client file with Verma Accounting.';
+        }
       }
     } catch (err) {
       /* silent */

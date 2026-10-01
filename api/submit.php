@@ -127,10 +127,6 @@ foreach ($schema['fields'] as $field) {
     }
 }
 
-if ($slug === document_submission_form_slug()) {
-    $data['tax_service_type'] = trim((string) ($_POST['tax_service_type'] ?? ''));
-}
-
 $taxYear = null;
 $taxYearCfg = $schema['settings']['taxYear'] ?? [];
 if (!empty($taxYearCfg['enabled'])) {
