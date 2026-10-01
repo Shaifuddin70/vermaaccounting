@@ -915,7 +915,7 @@ final class FormRepository
     /** Published forms ticked "Show under Submit Documents" in the builder. */
     public function submitMenuForms(): array
     {
-        $stmt = $this->db->query("SELECT id, slug, title, schema_json FROM forms WHERE status = 'published' ORDER BY title ASC");
+        $stmt = $this->db->query("SELECT id, slug, title, description, schema_json FROM forms WHERE status = 'published' ORDER BY title ASC");
         $out = [];
         foreach ($stmt->fetchAll() as $form) {
             $schema = json_decode((string) $form['schema_json'], true);

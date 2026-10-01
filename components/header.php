@@ -102,155 +102,150 @@ if ($canonicalPath !== '/') {
   <script type="application/ld+json"><?= json_encode($homeFaqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
   <?php endif; endif; ?>
 
-  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=84" />
+  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=85" />
+  <link rel="stylesheet" href="<?= asset('css/header.css') ?>?v=3" />
 </head>
 
-<body>
-  <!-- Header Placeholder -->
-  <div id="header-placeholder"></div>
+<?php
+$siteServiceMenu = [
+  ['url' => '/accounting', 'title' => 'Accounting', 'desc' => 'Financial statements & year-end', 'icon' => 'fa-calculator'],
+  ['url' => '/bookkeeping', 'title' => 'Bookkeeping', 'desc' => 'Clean, reconciled monthly books', 'icon' => 'fa-book-open'],
+  ['url' => '/payroll', 'title' => 'Payroll', 'desc' => 'Pay runs, remittances & T4s', 'icon' => 'fa-money-check-dollar'],
+  ['url' => '/personal-tax', 'title' => 'Personal Tax', 'desc' => 'T1 returns that maximize refunds', 'icon' => 'fa-user-tie'],
+  ['url' => '/corporate-tax', 'title' => 'Corporate Tax', 'desc' => 'T2 filing & tax planning', 'icon' => 'fa-building'],
+  ['url' => '/business-registration', 'title' => 'Business Registration', 'desc' => 'BN, GST/HST & incorporation', 'icon' => 'fa-file-signature'],
+  ['url' => '/loan', 'title' => 'Business Loans', 'desc' => 'Financing support for growth', 'icon' => 'fa-hand-holding-dollar'],
+  ['url' => 'https://owningottawa.com/', 'title' => 'Real Estate', 'desc' => 'Buying & selling in Ottawa', 'icon' => 'fa-house', 'external' => true],
+];
+$siteSubmitMenu = site_submit_menu_forms();
 
-  <!-- Navigation Header -->
-  <header class="verma-header">
-    <nav class="verma-nav">
-      <div class="verma-container">
-        <!-- Logo Section -->
-        <div class="verma-logo">
-          <a href="/">
-            <img
-              src="<?= asset('images/verma-accounting-logo.png') ?>"
-              alt="Verma Accounting & Financial Services"
-              class="verma-logo-img" />
-          </a>
-        </div>
-        <a href="tel:+16133186478" class="cta-button orange d-lg-none phone-icon-button" aria-label="Call +1 613-318-6478">
-          <i class="fas fa-phone" aria-hidden="true"></i>
+$siteNav = [
+  ['type' => 'link', 'url' => '/', 'label' => 'Home', 'icon' => 'fa-house'],
+  [
+    'type' => 'mega', 'id' => 'services', 'label' => 'Our Services', 'icon' => 'fa-briefcase',
+    'items' => $siteServiceMenu,
+    'all' => ['url' => '/services', 'label' => 'View all services'],
+  ],
+];
+if ($siteSubmitMenu) {
+  $siteNav[] = [
+    'type' => 'mega', 'id' => 'submit', 'label' => 'Submit Document', 'icon' => 'fa-cloud-arrow-up',
+    'compact' => true,
+    'items' => array_map(static fn (array $f): array => [
+      'url' => $f['url'], 'title' => $f['title'], 'desc' => $f['description'], 'icon' => $f['icon'],
+    ], $siteSubmitMenu),
+  ];
+}
+$siteNav[] = ['type' => 'link', 'url' => '/resources', 'label' => 'Resources', 'icon' => 'fa-book-open-reader'];
+$siteNav[] = ['type' => 'link', 'url' => '/blog', 'label' => 'Blog', 'icon' => 'fa-newspaper'];
+$siteNav[] = ['type' => 'link', 'url' => '/about', 'label' => 'About Us', 'icon' => 'fa-users'];
+if ($siteCta['nav_label'] !== '') {
+  $siteNav[] = ['type' => 'link', 'url' => $siteCta['url'], 'label' => $siteCta['nav_label'], 'icon' => 'fa-file-lines'];
+}
+
+$sitePhoneHref = 'tel:+16133186478';
+$sitePhoneLabel = '+1 (613) 318-6478';
+$siteLinkAttrs = static fn (array $item): string => !empty($item['external']) ? ' target="_blank" rel="noopener"' : '';
+?>
+<body class="<?= $canonicalPath === '/' ? 'is-home' : '' ?>">
+  <header class="sh" id="siteHeader">
+    <div class="sh-bar">
+      <a href="/" class="sh-logo" aria-label="Verma Accounting home">
+        <img src="<?= asset('images/verma-accounting-logo.png') ?>" alt="Verma Accounting &amp; Financial Services" width="170" height="42" />
+      </a>
+
+      <nav class="sh-nav" aria-label="Main">
+        <ul class="sh-list">
+          <?php foreach ($siteNav as $item): ?>
+            <?php if ($item['type'] === 'link'): ?>
+              <li><a href="<?= e($item['url']) ?>" class="sh-link"><?= e($item['label']) ?></a></li>
+            <?php else: ?>
+              <li class="sh-item">
+                <button type="button" class="sh-link sh-trigger" aria-expanded="false" aria-controls="sh-mega-<?= e($item['id']) ?>">
+                  <?= e($item['label']) ?>
+                  <i class="fas fa-chevron-down sh-caret" aria-hidden="true"></i>
+                </button>
+                <div class="sh-mega<?= !empty($item['compact']) ? ' sh-mega--compact' : '' ?>" id="sh-mega-<?= e($item['id']) ?>">
+                  <div class="sh-mega-main">
+                    <div class="sh-mega-grid">
+                      <?php foreach ($item['items'] as $sub): ?>
+                        <a href="<?= e($sub['url']) ?>" class="sh-mega-link"<?= $siteLinkAttrs($sub) ?>>
+                          <span class="sh-mega-icon" aria-hidden="true"><i class="fas <?= e($sub['icon']) ?>"></i></span>
+                          <span class="sh-mega-text">
+                            <span class="sh-mega-title"><?= e($sub['title']) ?><?php if (!empty($sub['external'])): ?> <i class="fas fa-arrow-up-right-from-square sh-ext" aria-hidden="true"></i><?php endif; ?></span>
+                            <span class="sh-mega-desc"><?= e($sub['desc']) ?></span>
+                          </span>
+                        </a>
+                      <?php endforeach; ?>
+                    </div>
+                    <?php if (!empty($item['all'])): ?>
+                      <a href="<?= e($item['all']['url']) ?>" class="sh-mega-all"><?= e($item['all']['label']) ?> <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+                    <?php endif; ?>
+                  </div>
+                </div>
+              </li>
+            <?php endif; ?>
+          <?php endforeach; ?>
+        </ul>
+      </nav>
+
+      <div class="sh-actions">
+        <a href="<?= e($sitePhoneHref) ?>" class="sh-phone" aria-label="Call <?= e($sitePhoneLabel) ?>">
+          <span class="sh-phone-icon" aria-hidden="true"><i class="fas fa-phone"></i></span>
+          <span class="sh-phone-text"><small>Call us</small><?= e($sitePhoneLabel) ?></span>
         </a>
-        <!-- Mobile Menu Toggle - Hamburger -->
-        <label
-          class="hamburger"
-          id="hamburgerMenu"
-          for="hamburgerCheckbox"
-          aria-label="Open menu"
-          aria-expanded="false"
-          aria-controls="vermaMenu">
-          <input type="checkbox" id="hamburgerCheckbox" aria-hidden="true" tabindex="-1">
-          <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-            <path class="line line-top-bottom" d="M27 10 13 10C10.8 10 9 8.2 9 6 9 3.5 10.8 2 13 2 15.2 2 17 3.8 17 6L17 26C17 28.2 18.8 30 21 30 23.2 30 25 28.2 25 26 25 23.8 23.2 22 21 22L7 22"></path>
-            <path class="line" d="M7 16 27 16"></path>
-          </svg>
-        </label>
-        <div class="nav-overlay" id="navOverlay" aria-hidden="true"></div>
-        <!-- Navigation Links -->
-        <div class="verma-menu" id="vermaMenu">
-          <div class="verma-menu-header">
-            <a href="/" class="verma-menu-brand">
-              <img
-                src="<?= asset('images/verma-accounting-logo.png') ?>"
-                alt="Verma Accounting"
-                width="160"
-                height="40" />
-            </a>
-          </div>
-
-          <nav class="verma-menu-nav" aria-label="Site">
-          <a href="/" class="verma-link" data-page="home">
-            <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-home"></i></span>
-            <span class="verma-link-text">Home</span>
-          </a>
-          <div class="verma-submenu">
-            <a
-              href="/services"
-              class="verma-link verma-toggle"
-              data-page="services"
-              aria-expanded="false"
-              aria-haspopup="true">
-              <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-briefcase"></i></span>
-              <span class="verma-link-text">Our Services</span>
-              <i class="fas fa-chevron-down verma-arrow" aria-hidden="true"></i>
-            </a>
-            <div class="verma-submenu-items">
-              <a href="/services" class="verma-submenu-link verma-submenu-all d-lg-none">View All Services</a>
-              <a href="/accounting" class="verma-submenu-link">Accounting</a>
-              <a href="/bookkeeping" class="verma-submenu-link">Bookkeeping</a>
-              <a href="/payroll" class="verma-submenu-link">Payroll</a>
-              <a href="/personal-tax" class="verma-submenu-link">Personal Tax</a>
-              <a href="/corporate-tax" class="verma-submenu-link">Corporate Tax</a>
-              <a href="/business-registration" class="verma-submenu-link">Business Registration</a>
-              <a href="/loan" class="verma-submenu-link">Business Loans</a>
-              <a href="https://owningottawa.com/" class="verma-submenu-link" target="_blank" rel="noopener">Real Estate</a>
-            </div>
-          </div>
-          <?php $submitMenuForms = site_submit_menu_forms(); ?>
-          <?php if ($submitMenuForms): ?>
-          <div class="verma-submenu">
-            <a
-              href="<?= e($submitMenuForms[0]['url']) ?>"
-              class="verma-link verma-toggle"
-              data-page="submit-documents"
-              aria-expanded="false"
-              aria-haspopup="true">
-              <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-cloud-upload-alt"></i></span>
-              <span class="verma-link-text">Submit Document</span>
-              <i class="fas fa-chevron-down verma-arrow" aria-hidden="true"></i>
-            </a>
-            <div class="verma-submenu-items">
-              <?php foreach ($submitMenuForms as $menuForm): ?>
-                <a href="<?= e($menuForm['url']) ?>" class="verma-submenu-link"><?= e($menuForm['title']) ?></a>
-              <?php endforeach; ?>
-            </div>
-          </div>
-          <?php endif; ?>
-          <a href="/resources" class="verma-link" data-page="resources">
-            <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-book-open"></i></span>
-            <span class="verma-link-text">Resources</span>
-          </a>
-          <a href="/blog" class="verma-link" data-page="blog">
-            <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-newspaper"></i></span>
-            <span class="verma-link-text">Blog</span>
-          </a>
-          <a href="/about" class="verma-link" data-page="about">
-            <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-users"></i></span>
-            <span class="verma-link-text">About Us</span>
-          </a>
-          <?php if ($siteCta['nav_label'] !== ''): ?>
-            <a href="<?= e($siteCta['url']) ?>" class="verma-link" data-page="form-cta">
-              <span class="verma-link-icon" aria-hidden="true"><i class="fas fa-file-alt"></i></span>
-              <span class="verma-link-text"><?= e($siteCta['nav_label']) ?></span>
-            </a>
-          <?php endif; ?>
-          </nav>
-
-          <div class="verma-menu-footer">
-            <a href="tel:+16133186478" class="verma-menu-footer-link">
-              <i class="fas fa-phone" aria-hidden="true"></i>
-              +1 (613) 318-6478
-            </a>
-            <a href="mailto:info@vermaaccounting.ca" class="verma-menu-footer-link">
-              <i class="fas fa-envelope" aria-hidden="true"></i>
-              info@vermaaccounting.ca
-            </a>
-          </div>
-        </div>
-
-        <!-- Contact Information -->
-        <div class="verma-contact">
-          <div class="verma-contact-text">
-            <div class="verma-phone">
-              <div class="verma-contact-icon">
-                <i class="fas fa-phone"></i>
-              </div>
-              <a href="tel:+16133186478" class="verma-phone-link">+1 (613) 318-6478</a>
-            </div>
-          </div>
-          <div class="verma-cta">
-            <a href="/contact" class="verma-book">
-              <div class="verma-contact-icon verma-book-icon">
-                <i class="fas fa-calendar-alt"></i>
-              </div>
-              <span class="verma-book-link">Book Appointment</span>
-            </a>
-          </div>
-        </div>
+        <a href="/contact" class="sh-btn sh-btn-primary sh-book">
+          <i class="fas fa-calendar-check" aria-hidden="true"></i>
+          <span class="sh-book-text">Book Appointment</span>
+        </a>
+        <button type="button" class="sh-burger" aria-controls="shDrawer" aria-expanded="false" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
       </div>
-    </nav>
+    </div>
   </header>
+
+  <div class="sh-overlay" id="shOverlay" data-sh-close></div>
+  <aside class="sh-drawer" id="shDrawer" aria-label="Menu" aria-hidden="true" inert>
+    <div class="sh-drawer-head">
+      <a href="/" class="sh-logo" aria-label="Verma Accounting home">
+        <img src="<?= asset('images/verma-accounting-logo.png') ?>" alt="" width="150" height="37" />
+      </a>
+      <button type="button" class="sh-close" data-sh-close aria-label="Close menu"><i class="fas fa-xmark" aria-hidden="true"></i></button>
+    </div>
+    <nav class="sh-drawer-nav" aria-label="Mobile">
+      <?php foreach ($siteNav as $item): ?>
+        <?php if ($item['type'] === 'link'): ?>
+          <a href="<?= e($item['url']) ?>" class="sh-dlink">
+            <span class="sh-dicon" aria-hidden="true"><i class="fas <?= e($item['icon']) ?>"></i></span>
+            <span class="sh-dlabel"><?= e($item['label']) ?></span>
+          </a>
+        <?php else: ?>
+          <div class="sh-dgroup">
+            <button type="button" class="sh-dlink sh-dtoggle" aria-expanded="false" aria-controls="sh-d-<?= e($item['id']) ?>">
+              <span class="sh-dicon" aria-hidden="true"><i class="fas <?= e($item['icon']) ?>"></i></span>
+              <span class="sh-dlabel"><?= e($item['label']) ?></span>
+              <i class="fas fa-chevron-down sh-caret" aria-hidden="true"></i>
+            </button>
+            <div class="sh-dsub" id="sh-d-<?= e($item['id']) ?>" hidden>
+              <?php foreach ($item['items'] as $sub): ?>
+                <a href="<?= e($sub['url']) ?>" class="sh-dsub-link"<?= $siteLinkAttrs($sub) ?>>
+                  <i class="fas <?= e($sub['icon']) ?>" aria-hidden="true"></i><?= e($sub['title']) ?>
+                </a>
+              <?php endforeach; ?>
+              <?php if (!empty($item['all'])): ?>
+                <a href="<?= e($item['all']['url']) ?>" class="sh-dsub-link sh-dsub-all"><?= e($item['all']['label']) ?> <i class="fas fa-arrow-right" aria-hidden="true"></i></a>
+              <?php endif; ?>
+            </div>
+          </div>
+        <?php endif; ?>
+      <?php endforeach; ?>
+    </nav>
+    <div class="sh-drawer-foot">
+      <a href="/contact" class="sh-btn sh-btn-primary sh-btn-block"><i class="fas fa-calendar-check" aria-hidden="true"></i> Book Appointment</a>
+      <div class="sh-drawer-contact">
+        <a href="<?= e($sitePhoneHref) ?>"><i class="fas fa-phone" aria-hidden="true"></i> <?= e($sitePhoneLabel) ?></a>
+        <a href="mailto:info@vermaaccounting.ca"><i class="fas fa-envelope" aria-hidden="true"></i> info@vermaaccounting.ca</a>
+      </div>
+    </div>
+  </aside>

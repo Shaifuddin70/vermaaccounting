@@ -1453,7 +1453,7 @@ function form_public_url(string $slug): string
     };
 }
 
-/** @return list<array{title: string, url: string}> */
+/** @return list<array{title: string, url: string, description: string, icon: string}> */
 function site_submit_menu_forms(): array
 {
     static $items = null;
@@ -1466,9 +1466,20 @@ function site_submit_menu_forms(): array
             require_once __DIR__ . '/bootstrap.php';
         }
         foreach ((new FormRepository())->submitMenuForms() as $form) {
+            $slug = (string) $form['slug'];
+            $description = trim((string) ($form['description'] ?? ''));
+            if (mb_strlen($description) > 70) {
+                $description = rtrim(mb_substr($description, 0, 67)) . '…';
+            }
             $items[] = [
                 'title' => (string) $form['title'],
-                'url' => form_public_url((string) $form['slug']),
+                'url' => form_public_url($slug),
+                'description' => $description !== '' ? $description : 'Secure online form',
+                'icon' => match ($slug) {
+                    'tax-intake' => 'fa-file-invoice-dollar',
+                    'submit-documents' => 'fa-cloud-arrow-up',
+                    default => 'fa-file-lines',
+                },
             ];
         }
     } catch (Throwable) {
