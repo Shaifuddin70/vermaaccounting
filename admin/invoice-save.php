@@ -83,17 +83,25 @@ if ($billToEmail !== '' && !filter_var($billToEmail, FILTER_VALIDATE_EMAIL)) {
     $errors[] = 'Enter a valid bill-to email address.';
 }
 
+$partnerId = partner_user_id();
+
 if ($clientId) {
     $client = (new ClientRepository())->find($clientId);
     if (!$client) {
         $clientId = null;
     } elseif (!partner_has_client_access((int) $clientId)) {
-        // Fall through to bill-to create/link instead of blocking the save.
         $clientId = null;
+        $errors[] = 'You do not have access to that client.';
     }
 }
 
-$partnerId = partner_user_id();
+// Bill-to matching an existing client must not grant a partner access to someone else's client.
+if ($partnerId !== null && !$clientId && $billToEmail !== '') {
+    $emailMatch = (new ClientRepository())->findByEmail($billToEmail);
+    if ($emailMatch && !partner_has_client_access((int) $emailMatch['id'], $partnerId)) {
+        $errors[] = 'A client with that email already exists. Ask an admin to share the client with you.';
+    }
+}
 
 if ($editId) {
     $existingInvoice = $repo->find($editId, $partnerId);
@@ -165,14 +173,79 @@ $clientNote = $clientCreated
     ? ' Client added to the directory.'
     : '';
 
+$sourceSubmissionId = (int) ($existing['source_submission_id'] ?? 0)
+    ?: invoice_valid_source_submission((int) ($_POST['source_submission_id'] ?? 0), $clientId, $partnerId);
+
+// Verified form payments are deducted through the Advance field. The editor folds ticked payments
+// into the posted advance and reports how much of it they make up (advance_payments_included), so
+// the manual part is what remains. The stored advance is rebuilt from the manual part plus the
+// payments actually linked, so stale tabs, client switches or no-JS edits cannot double-count.
+$submissionPaymentRepo = new SubmissionPaymentRepository();
+$advanceCandidates = $submissionPaymentRepo->openFor(
+    $sourceSubmissionId > 0 ? $sourceSubmissionId : null,
+    $clientId ? (int) $clientId : null
+);
+$advanceListed = !empty($_POST['advance_payments_listed']);
+$currentlyLinked = $editId ? $submissionPaymentRepo->forInvoice($editId) : [];
+$advanceApply = [];
+$advanceRelease = [];
+$postedIncluded = 0.0;
+if ($advanceListed) {
+    $selected = array_map('intval', (array) ($_POST['apply_submission_payments'] ?? []));
+    $shown = isset($_POST['listed_submission_payments'])
+        ? array_map('intval', (array) $_POST['listed_submission_payments'])
+        : array_map(static fn (array $p): int => (int) $p['id'], $currentlyLinked);
+    $advanceApply = array_values(array_filter(
+        $advanceCandidates,
+        static fn (array $p): bool => in_array((int) $p['id'], $selected, true)
+    ));
+    $advanceRelease = array_values(array_filter(
+        $currentlyLinked,
+        static fn (array $p): bool => in_array((int) $p['id'], $shown, true)
+            && !in_array((int) $p['id'], $selected, true)
+    ));
+    if (isset($_POST['advance_payments_included'])) {
+        $postedIncluded = invoice_parse_discount_flat_input($_POST['advance_payments_included']);
+    } else {
+        // Editor pages rendered before the included total was posted: assume ticked rows were folded in.
+        $postedIncluded = submission_payments_total(array_values(array_filter(
+            array_merge($currentlyLinked, $advanceApply),
+            static fn (array $p): bool => in_array((int) $p['id'], $selected, true)
+        )));
+    }
+} elseif (!$editId) {
+    $advanceApply = $advanceCandidates;
+}
+$manualAdvance = invoice_money(max(0, (float) $data['advance_amount'] - $postedIncluded));
+if ($advanceApply !== [] && trim((string) $data['advance_label']) === '') {
+    $data['advance_label'] = submission_payment_default_advance_label();
+}
+$releaseIds = array_map(static fn (array $p): int => (int) $p['id'], $advanceRelease);
+$keptLinked = array_values(array_filter(
+    $currentlyLinked,
+    static fn (array $p): bool => !in_array((int) $p['id'], $releaseIds, true)
+));
+$data['advance_amount'] = invoice_money(
+    $manualAdvance + submission_payments_total($keptLinked) + submission_payments_total($advanceApply)
+);
+
 if ($editId) {
+    $wasSettledByFigures = ($existing['status'] ?? '') === 'paid' && invoice_raw_amount_due($existing) <= 0.004;
     $repo->update($editId, $data, $items);
+    if ($sourceSubmissionId > 0 && empty($existing['source_submission_id'])) {
+        $repo->setSourceSubmission($editId, $sourceSubmissionId);
+    }
+    $applied = submission_payments_link_to_invoice($editId, $advanceApply, $advanceRelease);
+    invoice_sync_advance_with_linked_payments($editId, $manualAdvance);
+    $statusChange = invoice_reconcile_paid_status($editId, $wasSettledByFigures);
     ActivityLog::record('invoice.updated', 'invoice', $editId, [
         'number' => $invoiceNumber,
         'client_id' => $clientId,
         'client_created' => $clientCreated,
     ]);
-    $_SESSION['flash_success'] = 'Invoice #' . $invoiceNumber . ' saved.' . $clientNote;
+    $_SESSION['flash_success'] = 'Invoice #' . $invoiceNumber . ' saved.' . $clientNote
+        . submission_payments_apply_note($applied)
+        . invoice_status_change_note($statusChange);
     header('Location: /admin/invoice-view?id=' . $editId);
     exit;
 }
@@ -180,11 +253,19 @@ if ($editId) {
 $data['created_by_user_id'] = $user['id'] ?? null;
 $data['created_by_name'] = (string) ($user['name'] ?? 'Admin');
 $id = $repo->create($data, $items);
+if ($sourceSubmissionId > 0) {
+    $repo->setSourceSubmission($id, $sourceSubmissionId);
+}
 ActivityLog::record('invoice.created', 'invoice', $id, [
     'number' => $invoiceNumber,
     'client_id' => $clientId,
     'client_created' => $clientCreated,
 ]);
-$_SESSION['flash_success'] = 'Invoice #' . $invoiceNumber . ' created.' . $clientNote;
+$applied = submission_payments_link_to_invoice($id, $advanceApply);
+invoice_sync_advance_with_linked_payments($id, $manualAdvance);
+$statusChange = invoice_reconcile_paid_status($id, false);
+$_SESSION['flash_success'] = 'Invoice #' . $invoiceNumber . ' created.' . $clientNote
+    . submission_payments_apply_note($applied)
+    . invoice_status_change_note($statusChange);
 header('Location: /admin/invoice-view?id=' . $id);
 exit;

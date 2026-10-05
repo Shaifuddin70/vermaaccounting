@@ -187,6 +187,7 @@ final class Database
         $this->ensureInvoiceAdvanceColumns();
         $this->ensureInvoiceStatusColumns();
         $this->ensureInvoicePaymentsTable();
+        $this->ensureSubmissionPaymentsTable();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -283,6 +284,7 @@ final class Database
         $this->ensureInvoiceAdvanceColumns();
         $this->ensureInvoiceStatusColumns();
         $this->ensureInvoicePaymentsTable();
+        $this->ensureSubmissionPaymentsTable();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -655,6 +657,77 @@ final class Database
             )
         ');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_invoice_payments_invoice ON invoice_payments(invoice_id)');
+    }
+
+    /** Advance payments made through a form's payment field, applied to invoices once verified. */
+    private function ensureSubmissionPaymentsTable(): void
+    {
+        if (!$this->columnExists('invoices', 'source_submission_id')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN source_submission_id INT UNSIGNED DEFAULT NULL');
+                $this->pdo->exec('CREATE INDEX idx_invoices_source_submission ON invoices(source_submission_id)');
+            } else {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN source_submission_id INTEGER DEFAULT NULL');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_invoices_source_submission ON invoices(source_submission_id)');
+            }
+        }
+
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec("
+                CREATE TABLE IF NOT EXISTS submission_payments (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    submission_id INT UNSIGNED NOT NULL,
+                    form_id INT UNSIGNED NOT NULL,
+                    field_id VARCHAR(64) NOT NULL,
+                    amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    method VARCHAR(64) DEFAULT NULL,
+                    method_label VARCHAR(120) DEFAULT NULL,
+                    reference VARCHAR(200) DEFAULT NULL,
+                    payment_date DATE NOT NULL,
+                    status VARCHAR(16) NOT NULL DEFAULT 'pending',
+                    invoice_id INT UNSIGNED DEFAULT NULL,
+                    invoice_payment_id INT UNSIGNED DEFAULT NULL,
+                    applied_amount DECIMAL(12, 2) DEFAULT NULL,
+                    reviewed_by_user_id INT UNSIGNED DEFAULT NULL,
+                    reviewed_by_name VARCHAR(191) DEFAULT NULL,
+                    reviewed_at VARCHAR(32) DEFAULT NULL,
+                    created_at VARCHAR(32) NOT NULL,
+                    UNIQUE KEY uq_submission_payments_field (submission_id, field_id),
+                    KEY idx_submission_payments_status (status),
+                    KEY idx_submission_payments_invoice (invoice_id),
+                    KEY idx_submission_payments_invoice_payment (invoice_payment_id),
+                    CONSTRAINT fk_submission_payments_submission
+                        FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+            return;
+        }
+
+        $this->pdo->exec("
+            CREATE TABLE IF NOT EXISTS submission_payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                submission_id INTEGER NOT NULL,
+                form_id INTEGER NOT NULL,
+                field_id TEXT NOT NULL,
+                amount REAL NOT NULL DEFAULT 0,
+                method TEXT,
+                method_label TEXT,
+                reference TEXT,
+                payment_date TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                invoice_id INTEGER,
+                invoice_payment_id INTEGER,
+                applied_amount REAL,
+                reviewed_by_user_id INTEGER,
+                reviewed_by_name TEXT,
+                reviewed_at TEXT,
+                created_at TEXT NOT NULL,
+                UNIQUE (submission_id, field_id),
+                FOREIGN KEY (submission_id) REFERENCES submissions(id) ON DELETE CASCADE
+            )
+        ");
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_submission_payments_status ON submission_payments(status)');
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_submission_payments_invoice ON submission_payments(invoice_id)');
     }
 
     private function ensureInvoiceStatusColumns(): void

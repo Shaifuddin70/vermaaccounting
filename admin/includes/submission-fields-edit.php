@@ -12,16 +12,9 @@
     $value = $data[$name] ?? '';
     $fieldFiles = $filesByField[$id] ?? [];
 
-    if (in_array($type, ['heading', 'paragraph', 'page_break'], true)): ?>
-      <div class="submission-section-break">
-        <?php if ($type === 'heading'): ?>
-          <h3><?= e($field['label']) ?></h3>
-        <?php else: ?>
-          <p><?= nl2br(e($field['label'])) ?></p>
-        <?php endif; ?>
-      </div>
-      <?php continue;
-    endif;
+    if (in_array($type, ['heading', 'paragraph', 'page_break'], true)) {
+        continue;
+    }
   ?>
     <div class="submission-edit-field">
       <label for="sub-<?= e($id) ?>">
@@ -124,6 +117,20 @@
             <?php endif; ?>
           </div>
         <?php endforeach; ?>
+
+      <?php elseif ($type === 'payment'):
+        $payKeys = payment_storage_keys($name);
+      ?>
+        <select id="sub-<?= e($id) ?>" name="<?= e($name) ?>" <?= $required ? 'required' : '' ?>>
+          <option value="">Select…</option>
+          <?php foreach (payment_methods($field) as $method): ?>
+            <option value="<?= e($method['value']) ?>" <?= (string) $value === $method['value'] ? 'selected' : '' ?>><?= e($method['label']) ?></option>
+          <?php endforeach; ?>
+        </select>
+        <label for="sub-<?= e($id) ?>-ref" class="submission-edit-sublabel"><?= e((string) ($field['referenceLabel'] ?? 'Payment reference')) ?></label>
+        <input type="text" id="sub-<?= e($id) ?>-ref" name="<?= e($payKeys['reference']) ?>" maxlength="200"
+          value="<?= e((string) ($data[$payKeys['reference']] ?? '')) ?>">
+        <small class="admin-field-hint">Screenshots can be viewed on the submission page and are kept as uploaded.</small>
 
       <?php elseif ($type === 'checkbox'):
         $checked = is_array($value) ? $value : [];

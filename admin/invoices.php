@@ -107,6 +107,7 @@ require __DIR__ . '/includes/layout-start.php';
             <th>Invoice</th>
             <th>Client</th>
             <th>Bill to</th>
+            <th>Submission</th>
             <th>Date</th>
             <th>Due</th>
             <th>Total</th>
@@ -150,6 +151,18 @@ require __DIR__ . '/includes/layout-start.php';
                   <?php endif; ?>
                 </div>
               </td>
+              <td>
+                <?php if (!empty($inv['source_submission_ref'])): ?>
+                  <div class="invoice-client-cell">
+                    <a href="/admin/submission?id=<?= (int) $inv['source_submission_ref'] ?>&form_id=<?= (int) $inv['source_form_id'] ?>">#<?= (int) $inv['source_submission_ref'] ?></a>
+                    <?php if (trim((string) ($inv['source_form_title'] ?? '')) !== ''): ?>
+                      <span class="admin-field-hint"><?= e((string) $inv['source_form_title']) ?></span>
+                    <?php endif; ?>
+                  </div>
+                <?php else: ?>
+                  <span class="admin-field-hint">—</span>
+                <?php endif; ?>
+              </td>
               <td><?= e(invoice_format_date((string) ($inv['invoice_date'] ?? ''))) ?></td>
               <td><?= e(invoice_format_date((string) ($inv['due_date'] ?? ''))) ?></td>
               <td><strong><?= e(invoice_format_money($inv['total'] ?? 0)) ?></strong></td>
@@ -184,7 +197,7 @@ require __DIR__ . '/includes/layout-start.php';
                 <a href="/admin/invoice-edit?id=<?= (int) $inv['id'] ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Edit</a>
                 <?php endif; ?>
                 <?php if (Auth::can('invoices.delete')): ?>
-                <form method="post" action="/admin/invoice-action" class="inline-form" onsubmit="return confirm('Delete invoice #<?= e((string) $inv['invoice_number']) ?>?');">
+                <form method="post" action="/admin/invoice-action" class="inline-form" onsubmit="return confirm(<?= e_js('Delete invoice #' . $inv['invoice_number'] . '?') ?>);">
                   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                   <input type="hidden" name="id" value="<?= (int) $inv['id'] ?>">
                   <button type="submit" name="action" value="delete" class="admin-btn admin-btn-secondary admin-btn-sm">Delete</button>

@@ -16,7 +16,38 @@ final class Auth
     public static function check(): bool
     {
         self::startSession();
-        return !empty($_SESSION['admin_logged_in']);
+        if (empty($_SESSION['admin_logged_in'])) {
+            return false;
+        }
+        return self::sessionUserStillValid();
+    }
+
+    /** Re-read the DB user once per request so deactivation and role changes apply immediately. */
+    private static function sessionUserStillValid(): bool
+    {
+        static $verifiedFor = null;
+        $userId = $_SESSION['admin_user_id'] ?? null;
+        if ($userId === null) {
+            return true;
+        }
+        if ($verifiedFor === (int) $userId) {
+            return true;
+        }
+
+        try {
+            $row = (new UserRepository())->find((int) $userId);
+        } catch (Throwable $e) {
+            return false;
+        }
+
+        if (!$row || ($row['status'] ?? '') !== 'active') {
+            $_SESSION = [];
+            return false;
+        }
+
+        $_SESSION['admin_user_role'] = (string) ($row['role'] ?? 'reviewer');
+        $verifiedFor = (int) $userId;
+        return true;
     }
 
     public static function requireLogin(): void

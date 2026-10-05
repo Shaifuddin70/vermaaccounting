@@ -434,6 +434,25 @@
     }
   }, true);
 
+  form.addEventListener('change', function (e) {
+    var box = e.target;
+    if (!box || !box.matches('[data-advance-pay]') || !advanceInput) return;
+    var amount = parseFloat(box.getAttribute('data-advance-pay')) || 0;
+    var delta = box.checked ? amount : -amount;
+    var current = parseFloat(String(advanceInput.value || '').replace(/[^0-9.\-]/g, '')) || 0;
+    var next = Math.max(0, Math.round((current + delta) * 100) / 100);
+    advanceInput.value = next.toFixed(2);
+    var includedInput = document.getElementById('advance-payments-included');
+    if (includedInput) {
+      var included = parseFloat(includedInput.value) || 0;
+      includedInput.value = Math.max(0, Math.round((included + delta) * 100) / 100).toFixed(2);
+    }
+    if (box.checked && advanceLabelInput && String(advanceLabelInput.value || '').trim() === '') {
+      advanceLabelInput.value = 'Advance payment received';
+    }
+    recalc();
+  });
+
   form.addEventListener('click', function (e) {
     var btn = e.target.closest('.invoice-line-remove');
     if (!btn) return;

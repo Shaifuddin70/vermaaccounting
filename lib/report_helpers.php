@@ -75,32 +75,42 @@ function report_format_range_label(string $from, string $to): string
 }
 
 /**
- * Income counts once an invoice is approved (approved + sent + paid).
+ * Approved, sent and paid invoices are billed; drafts only count once money is
+ * actually received on them (an advance or a recorded payment).
  */
-function report_invoice_counts_as_income(string $status): bool
+function report_invoice_counts_as_income(string $status, ?array $row = null): bool
 {
     $status = strtolower(trim($status));
-    return in_array($status, ['approved', 'sent', 'paid'], true);
+    if (in_array($status, ['approved', 'sent', 'paid'], true)) {
+        return true;
+    }
+    return $row !== null && report_invoice_amounts($row)['collected'] > 0.004;
 }
 
 /**
- * Money figures for one invoice row. Income is everything the client owes for
- * the invoice, including any advance they already paid before it was issued.
+ * Money figures for one invoice row.
+ * - billed: everything the client owes for the invoice, including any advance.
+ * - income/collected: money actually received — advance + recorded payments
+ *   (partial payments included). An invoice marked Paid counts in full even if
+ *   the individual payments were never recorded.
  *
- * @return array{income: float, advance: float, paid: float, collected: float, outstanding: float, total: float}
+ * @return array{income: float, billed: float, advance: float, paid: float, collected: float, outstanding: float, total: float}
  */
 function report_invoice_amounts(array $row): array
 {
     $due = invoice_due_state($row);
-    $income = invoice_money($due['invoice_due'] + $due['advance_amount']);
-    $collected = invoice_money($due['advance_amount'] + $due['amount_paid']);
+    $billed = invoice_money($due['invoice_due'] + $due['advance_amount']);
+    $paid = $due['amount_paid'];
+    $outstanding = $due['amount_due'];
+    $collected = invoice_money($due['advance_amount'] + $paid);
 
     return [
-        'income' => $income,
+        'income' => $collected,
+        'billed' => $billed,
         'advance' => $due['advance_amount'],
-        'paid' => $due['amount_paid'],
+        'paid' => $paid,
         'collected' => $collected,
-        'outstanding' => $due['amount_due'],
+        'outstanding' => $outstanding,
         'total' => invoice_money((float) ($row['total'] ?? 0)),
     ];
 }
@@ -135,6 +145,8 @@ function report_summarize_invoices(array $rows): array
     $clientIds = [];
     $walkIn = 0;
     $income = 0.0;
+    $billed = 0.0;
+    $billedCount = 0;
     $incomeTotal = 0.0;
     $advanceTotal = 0.0;
     $paymentsTotal = 0.0;
@@ -157,13 +169,17 @@ function report_summarize_invoices(array $rows): array
         $byStatus[$status]['total'] = invoice_money($byStatus[$status]['total'] + $amounts['total']);
 
         $clientId = (int) ($row['client_id'] ?? 0);
-        if (report_invoice_counts_as_income($status)) {
+        if (report_invoice_counts_as_income($status, $row)) {
             $incomeCount++;
             $income = invoice_money($income + $amounts['income']);
-            $incomeTotal = invoice_money($incomeTotal + $amounts['total']);
             $advanceTotal = invoice_money($advanceTotal + $amounts['advance']);
             $paymentsTotal = invoice_money($paymentsTotal + $amounts['paid']);
-            $outstandingTotal = invoice_money($outstandingTotal + $amounts['outstanding']);
+            if ($status !== 'draft') {
+                $billedCount++;
+                $billed = invoice_money($billed + $amounts['billed']);
+                $incomeTotal = invoice_money($incomeTotal + $amounts['total']);
+                $outstandingTotal = invoice_money($outstandingTotal + $amounts['outstanding']);
+            }
             if ($clientId > 0) {
                 $clientIds[$clientId] = true;
             } else {
@@ -180,6 +196,8 @@ function report_summarize_invoices(array $rows): array
         'draft_count' => (int) ($byStatus['draft']['count'] ?? 0),
         'income_count' => $incomeCount,
         'income' => $income,
+        'billed' => $billed,
+        'billed_count' => $billedCount,
         'income_total' => $incomeTotal,
         'advance_total' => $advanceTotal,
         'payments_total' => $paymentsTotal,
@@ -223,7 +241,7 @@ function report_build_series(array $rows, string $grain, ?string $from, ?string 
     }
 
     foreach ($rows as $row) {
-        if (!report_invoice_counts_as_income((string) ($row['status'] ?? ''))) {
+        if (!report_invoice_counts_as_income((string) ($row['status'] ?? ''), $row)) {
             continue;
         }
         $date = report_parse_ymd((string) ($row['invoice_date'] ?? ''));
@@ -279,7 +297,7 @@ function report_top_clients(array $rows, int $limit = 8): array
 {
     $map = [];
     foreach ($rows as $row) {
-        if (!report_invoice_counts_as_income((string) ($row['status'] ?? ''))) {
+        if (!report_invoice_counts_as_income((string) ($row['status'] ?? ''), $row)) {
             continue;
         }
         $clientId = (int) ($row['client_id'] ?? 0);

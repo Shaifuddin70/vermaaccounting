@@ -231,7 +231,7 @@ require __DIR__ . '/includes/layout-start.php';
               </div>
               <?php if ($canRecordPayment): ?>
                 <form method="post" action="/admin/invoice-action"
-                  onsubmit="return confirm('Remove this payment of <?= e(invoice_format_money((float) $payment['amount'])) ?>?');">
+                  onsubmit="return confirm(<?= e_js('Remove this payment of ' . invoice_format_money((float) $payment['amount']) . '?') ?>);">
                   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
                   <input type="hidden" name="id" value="<?= $id ?>">
                   <input type="hidden" name="action" value="delete_payment">
@@ -271,7 +271,7 @@ require __DIR__ . '/includes/layout-start.php';
             <?= $mailEnabled ? '' : 'disabled' ?>><?= e($defaultMessage) ?></textarea>
         </div>
         <button type="submit" class="admin-btn admin-btn-secondary invoice-side-btn" <?= $mailEnabled ? '' : 'disabled' ?>
-          onclick="return confirm('Send invoice #<?= e((string) $invoice['invoice_number']) ?> PDF to this email?');">
+          onclick="return confirm(<?= e_js('Send invoice #' . $invoice['invoice_number'] . ' PDF to this email?') ?>);">
           Send PDF by email
         </button>
       </form>

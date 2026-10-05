@@ -263,7 +263,9 @@ function submission_email_field_rows(array $schema, array $data): array
             continue;
         }
         $raw = $data[$name];
-        if ($type === 'checkbox') {
+        if ($type === 'payment') {
+            $value = payment_submission_summary($field, $data);
+        } elseif ($type === 'checkbox') {
             $value = is_array($raw) ? implode(', ', array_map('strval', $raw)) : trim((string) $raw);
         } elseif ($type === 'partners') {
             $value = format_partner_submission_value($raw);

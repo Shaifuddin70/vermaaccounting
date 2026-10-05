@@ -21,6 +21,10 @@ if (!Auth::check()) {
     json_response(['error' => 'Unauthorized'], 401);
 }
 
+if (!Auth::can('forms.manage')) {
+    json_response(['error' => 'You do not have permission to manage forms.'], 403);
+}
+
 $repo = new FormRepository();
 $id = isset($input['id']) ? (int) $input['id'] : 0;
 $title = trim($input['title'] ?? 'Untitled form');

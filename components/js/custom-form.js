@@ -252,7 +252,10 @@
 
   function fieldHasValue(wrap) {
     if (!wrap || wrap.style.display === 'none') return true;
-    const fileField = wrap.querySelector('[data-file-field][data-required="1"]');
+    // Follow-up uploads are checked in validateFieldFormats, which names the missing input.
+    const fileField = Array.from(wrap.querySelectorAll('[data-file-field][data-required="1"]')).find(
+      (el) => !el.closest('[data-yes-no-reason-for]')
+    );
     if (fileField) {
       const tokenBox = fileField.querySelector('.custom-form-file-tokens');
       return !!(tokenBox && tokenBox.querySelector('input[data-staged-token]'));
@@ -331,7 +334,8 @@
       const type = reasonWrap.getAttribute('data-reason-type') || 'textarea';
       const required = reasonWrap.getAttribute('data-reason-required') === '1';
       const label =
-        reasonWrap.querySelector(':scope > label')?.textContent?.trim() || fieldLabel(wrap);
+        reasonWrap.querySelector(':scope > label')?.textContent?.replace(/\*/g, '').trim() ||
+        fieldLabel(wrap);
 
       if (type === 'checkbox') {
         const checks = reasonWrap.querySelectorAll('input[type="checkbox"]');

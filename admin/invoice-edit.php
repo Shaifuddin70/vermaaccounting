@@ -142,6 +142,47 @@ if ($submissionPrefill !== null && $old === []) {
     }
 }
 
+$sourceSubmissionId = (int) ($old['source_submission_id']
+    ?? ($invoice['source_submission_id'] ?? ($submissionPrefill['submission_id'] ?? 0)));
+$submissionPaymentRepo = new SubmissionPaymentRepository();
+$advancePayments = $submissionPaymentRepo->openFor(
+    $sourceSubmissionId > 0 ? $sourceSubmissionId : null,
+    (int) $clientId > 0 ? (int) $clientId : null,
+    ['verified', 'pending']
+);
+$appliedAdvancePayments = $invoice ? $submissionPaymentRepo->forInvoice((int) $invoice['id']) : [];
+$selectedAdvanceIds = $old !== []
+    ? array_map('intval', (array) ($old['apply_submission_payments'] ?? []))
+    : null;
+// Sum of the ticked form payments folded into the Advance field (mirrors invoice-advance-payments.php).
+$advanceIncluded = 0.0;
+foreach ($appliedAdvancePayments as $ap) {
+    if ($selectedAdvanceIds === null || in_array((int) $ap['id'], $selectedAdvanceIds, true)) {
+        $advanceIncluded += (float) ($ap['applied_amount'] ?? $ap['amount']);
+    }
+}
+foreach ($advancePayments as $ap) {
+    if ($ap['status'] === 'verified'
+        && ($selectedAdvanceIds === null ? !$invoice : in_array((int) $ap['id'], $selectedAdvanceIds, true))) {
+        $advanceIncluded += (float) $ap['amount'];
+    }
+}
+$advanceIncluded = invoice_money($advanceIncluded);
+
+if ($old !== []) {
+    $oldManualAdvance = max(
+        0,
+        invoice_parse_discount_flat_input($old['advance_amount'] ?? 0)
+            - invoice_parse_discount_flat_input($old['advance_payments_included'] ?? 0)
+    );
+    $advanceAmount = invoice_format_discount_flat_input($oldManualAdvance + $advanceIncluded);
+} elseif (!$invoice && $advanceIncluded > 0) {
+    $advanceAmount = invoice_format_discount_flat_input((float) $advanceAmount + $advanceIncluded);
+    if (trim($advanceLabel) === '') {
+        $advanceLabel = submission_payment_default_advance_label();
+    }
+}
+
 $clientsList = [];
 foreach ($clients as $c) {
     $clientsList[] = [
@@ -228,6 +269,9 @@ require __DIR__ . '/includes/layout-start.php';
   <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
   <?php if ($invoice): ?>
     <input type="hidden" name="id" value="<?= (int) $invoice['id'] ?>">
+  <?php endif; ?>
+  <?php if ($sourceSubmissionId > 0): ?>
+    <input type="hidden" name="source_submission_id" value="<?= $sourceSubmissionId ?>">
   <?php endif; ?>
 
   <div class="invoice-composer">
@@ -438,6 +482,7 @@ require __DIR__ . '/includes/layout-start.php';
           <input type="text" id="advance-label" name="advance_label" maxlength="120"
             value="<?= e($advanceLabel) ?>" placeholder="e.g. Deposit received">
         </div>
+        <?php require __DIR__ . '/includes/invoice-advance-payments.php'; ?>
         <div class="admin-field">
           <label for="due-adjustment">Due adjustment ($)</label>
           <input type="number" id="due-adjustment" name="due_adjustment" step="0.01" inputmode="decimal" autocomplete="off" value="<?= e($dueAdjustment) ?>">
@@ -492,5 +537,5 @@ require __DIR__ . '/includes/layout-start.php';
 window.INVOICE_CLIENTS = <?= json_encode($clientsList, JSON_UNESCAPED_UNICODE) ?>;
 window.INVOICE_SERVICES = <?= json_encode($servicesList, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/admin/js/invoice-edit.js?v=8" defer></script>
+<script src="/admin/js/invoice-edit.js?v=9" defer></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

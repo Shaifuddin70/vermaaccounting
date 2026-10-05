@@ -10,6 +10,37 @@ function e(?string $value): string
     return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 }
 
+/** Escape a value for a single-quoted JS string inside an HTML attribute (e.g. onclick="confirm('...')"). */
+function e_js(?string $value): string
+{
+    return e((string) json_encode((string) $value, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE));
+}
+
+/**
+ * Neutralize spreadsheet formulas in a CSV cell. Text starting with = + - @ tab or CR is prefixed
+ * with an apostrophe; plain numbers and phone-style values are left alone.
+ */
+function csv_safe_cell(mixed $value): string|int|float
+{
+    if (is_int($value) || is_float($value)) {
+        return $value;
+    }
+    $text = (string) $value;
+    if ($text === '' || !preg_match('/^[=+\-@\t\r]/', $text)) {
+        return $text;
+    }
+    if (preg_match('/^[+\-]?[\d\s().\-]+$/', $text)) {
+        return $text;
+    }
+    return "'" . $text;
+}
+
+/** @param array<int, mixed> $row */
+function csv_safe_row(array $row): array
+{
+    return array_map('csv_safe_cell', $row);
+}
+
 /** Root-relative URL for CSS, JS, images (works on /form/slug and all clean URLs). */
 function asset(string $path): string
 {
@@ -386,6 +417,7 @@ function field_types(): array
         'yes_no' => 'Yes / No',
         'file' => 'File upload',
         'image' => 'Image upload',
+        'payment' => 'Advance payment',
         'heading' => 'Section heading',
         'paragraph' => 'Paragraph text',
         'page_break' => 'Page break',
@@ -686,6 +718,10 @@ function default_field(string $type = 'text'): array
 
     if ($type === 'date') {
         $base['minAge'] = 0;
+    }
+
+    if ($type === 'payment') {
+        $base = array_merge($base, payment_field_defaults());
     }
 
     return $base;
@@ -1040,6 +1076,9 @@ function normalize_form_schema(array $schema): array
         if ($type === 'date') {
             $merged['minAge'] = normalize_min_age($merged['minAge'] ?? 0);
         }
+        if ($type === 'payment') {
+            $merged = normalize_payment_field($merged);
+        }
         $fields[] = $merged;
     }
 
@@ -1145,7 +1184,7 @@ function form_data_matchable_field_types(): array
 /** Field types never returned for public autofill. */
 function form_data_match_excluded_field_types(): array
 {
-    return ['file', 'signature', 'partners'];
+    return ['file', 'signature', 'partners', 'payment'];
 }
 
 /** @param array<string, mixed> $field */

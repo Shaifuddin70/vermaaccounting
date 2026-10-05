@@ -150,6 +150,36 @@ if ($condJson) {
             <?php endif; ?>
           </div>
 
+        <?php elseif ($type === 'payment'):
+          $paymentMethods = payment_methods($field);
+          $paymentAmount = payment_field_amount($field);
+        ?>
+          <?php if ($paymentAmount > 0): ?>
+            <div class="payment-amount">
+              <span class="payment-amount-label">Amount due</span>
+              <strong class="payment-amount-value"><?= e(payment_format_amount($paymentAmount)) ?></strong>
+            </div>
+          <?php endif; ?>
+          <div class="payment-methods" data-yes-no-field="<?= $id ?>" role="radiogroup" aria-label="<?= e($field['label']) ?>">
+            <?php foreach ($paymentMethods as $i => $method): ?>
+              <label class="payment-method">
+                <input type="radio"
+                  name="<?= $name ?>"
+                  value="<?= e($method['value']) ?>"
+                  <?= $i === 0 ? 'id="cf-' . $id . '"' : '' ?>
+                  <?= ($required && $i === 0) ? 'required' : '' ?>>
+                <span class="payment-method-box">
+                  <i class="fas <?= e(payment_method_icon($method['label'])) ?>" aria-hidden="true"></i>
+                  <span><?= e($method['label']) ?></span>
+                </span>
+              </label>
+            <?php endforeach; ?>
+          </div>
+          <?php foreach ($paymentMethods as $method):
+            $parentId = $id;
+            include __DIR__ . '/payment-method-inputs.php';
+          endforeach; ?>
+
         <?php elseif ($type === 'tel'): ?>
           <?php
             $phone = normalize_phone_field_settings($field);

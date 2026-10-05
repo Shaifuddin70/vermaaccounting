@@ -656,6 +656,119 @@
   min-height: 56px;
 }
 
+/* Advance payment */
+.payment-amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.6rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 10px;
+  background: rgba(249, 115, 22, 0.08);
+  border: 1px solid rgba(249, 115, 22, 0.25);
+}
+
+.payment-amount-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--verma-text);
+}
+
+.payment-amount-value {
+  font-size: 1.15rem;
+  color: #c2410c;
+}
+
+.payment-methods {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.6rem;
+}
+
+.payment-method {
+  position: relative;
+  margin: 0;
+  cursor: pointer;
+}
+
+.payment-method input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  pointer-events: none;
+}
+
+.payment-method-box {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 52px;
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid var(--verma-border);
+  border-radius: 10px;
+  background: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--verma-text);
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.payment-method-box i {
+  width: 1.25rem;
+  text-align: center;
+  color: var(--verma-navy);
+}
+
+.payment-method:hover .payment-method-box {
+  border-color: #c2ccda;
+}
+
+.payment-method input:checked + .payment-method-box {
+  border-color: var(--verma-navy);
+  background: rgba(30, 58, 138, 0.05);
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+}
+
+.payment-method input:focus-visible + .payment-method-box {
+  outline: 2px solid var(--verma-navy);
+  outline-offset: 2px;
+}
+
+.payment-instructions {
+  display: flex;
+  gap: 0.55rem;
+  align-items: flex-start;
+  margin-top: 0.6rem;
+  background: rgba(30, 58, 138, 0.05);
+  border-color: rgba(30, 58, 138, 0.15);
+  color: var(--verma-text);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.payment-instructions[hidden],
+.payment-input[hidden] {
+  display: none;
+}
+
+.payment-instructions i {
+  margin-top: 0.2rem;
+  color: var(--verma-navy);
+}
+
+.payment-instructions p {
+  margin: 0;
+}
+
+.payment-input {
+  margin-top: 0.6rem;
+}
+
 .custom-form-help {
   display: block;
   margin-top: 0.2rem;

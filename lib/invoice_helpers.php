@@ -265,7 +265,10 @@ function invoice_due_adjustment_label(array $invoice): string
  * amount_due is the outstanding balance after recorded payments;
  * invoice_due is the amount owed before any payments.
  *
- * @return array{advance_amount: float, due_adjustment: float, invoice_due: float, amount_paid: float, amount_due: float, advance_label: string, due_adjustment_label: string}
+ * A Paid invoice is settled everywhere: amount_due is 0 and any balance without a recorded
+ * payment counts as paid (unrecorded_paid). recorded_paid and raw_amount_due ignore status.
+ *
+ * @return array{advance_amount: float, due_adjustment: float, invoice_due: float, amount_paid: float, recorded_paid: float, unrecorded_paid: float, amount_due: float, raw_amount_due: float, is_settled: bool, advance_label: string, due_adjustment_label: string}
  */
 function invoice_due_state(array $invoice): array
 {
@@ -279,16 +282,29 @@ function invoice_due_state(array $invoice): array
         ? $storedDue
         : invoice_money(max(0, $total - $advance + $adjustment));
     $paid = invoice_money(max(0, (float) ($invoice['amount_paid'] ?? 0)));
+    $rawDue = invoice_money(max(0, $invoiceDue - $paid));
+    $settled = strtolower(trim((string) ($invoice['status'] ?? ''))) === 'paid';
+    $unrecorded = $settled ? $rawDue : 0.0;
 
     return [
         'advance_amount' => $advance,
         'due_adjustment' => $adjustment,
         'invoice_due' => $invoiceDue,
-        'amount_paid' => $paid,
-        'amount_due' => invoice_money(max(0, $invoiceDue - $paid)),
+        'amount_paid' => invoice_money($paid + $unrecorded),
+        'recorded_paid' => $paid,
+        'unrecorded_paid' => $unrecorded,
+        'amount_due' => $settled ? 0.0 : $rawDue,
+        'raw_amount_due' => $rawDue,
+        'is_settled' => $settled,
         'advance_label' => invoice_advance_label($invoice),
         'due_adjustment_label' => invoice_due_adjustment_label($invoice),
     ];
+}
+
+/** Outstanding balance from the figures alone, ignoring a Paid status. */
+function invoice_raw_amount_due(array $invoice): float
+{
+    return invoice_due_state($invoice)['raw_amount_due'];
 }
 
 function invoice_amount_due(array $invoice): float

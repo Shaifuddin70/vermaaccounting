@@ -36,9 +36,12 @@ final class InvoiceRepository
         $offset = max(0, $offset);
         [$where, $params] = $this->filterClause($search, $status, $partnerUserId);
         $stmt = $this->db->prepare('
-            SELECT i.*, c.name AS client_name, c.company AS client_company
+            SELECT i.*, c.name AS client_name, c.company AS client_company,
+                   s.id AS source_submission_ref, s.form_id AS source_form_id, f.title AS source_form_title
             FROM invoices i
             LEFT JOIN clients c ON c.id = i.client_id
+            LEFT JOIN submissions s ON s.id = i.source_submission_id
+            LEFT JOIN forms f ON f.id = s.form_id
             ' . $where . '
             ORDER BY i.invoice_date DESC, i.id DESC
             LIMIT ' . $limit . ' OFFSET ' . $offset
@@ -252,18 +255,107 @@ final class InvoiceRepository
             $this->db->rollBack();
             throw $e;
         }
+        $this->completeSourceSubmissionIfPaid($id);
     }
 
     public function updateStatus(int $id, string $status): void
     {
         $stmt = $this->db->prepare('UPDATE invoices SET status = ?, updated_at = ? WHERE id = ?');
         $stmt->execute([$status, now_iso(), $id]);
+        $this->completeSourceSubmissionIfPaid($id);
+    }
+
+    /** A paid invoice closes out the submission it was created from. */
+    private function completeSourceSubmissionIfPaid(int $id): void
+    {
+        $stmt = $this->db->prepare('
+            SELECT i.invoice_number, s.id AS submission_id, s.form_id, s.status AS submission_status
+            FROM invoices i
+            JOIN submissions s ON s.id = i.source_submission_id
+            WHERE i.id = ? AND i.status = ?
+        ');
+        $stmt->execute([$id, 'paid']);
+        $row = $stmt->fetch();
+        if (!$row || ($row['submission_status'] ?? '') === 'complete') {
+            return;
+        }
+        (new FormRepository())->setSubmissionStatus((int) $row['submission_id'], 'complete');
+        ActivityLog::record('submission.status_changed', 'submission', (int) $row['submission_id'], [
+            'form_id' => (int) $row['form_id'],
+            'from_status' => (string) ($row['submission_status'] ?? 'pending'),
+            'to_status' => 'complete',
+            'reason' => 'Invoice #' . $row['invoice_number'] . ' paid',
+        ]);
     }
 
     public function delete(int $id): void
     {
+        (new SubmissionPaymentRepository())->releaseInvoice($id);
         $stmt = $this->db->prepare('DELETE FROM invoices WHERE id = ?');
         $stmt->execute([$id]);
+    }
+
+    /** Add to the invoice's advance (deducted from the total) and recompute the amount due. */
+    public function increaseAdvance(int $id, float $amount, string $defaultLabel = ''): void
+    {
+        $invoice = $this->find($id);
+        if (!$invoice) {
+            return;
+        }
+        $this->setAdvance($id, (float) ($invoice['advance_amount'] ?? 0) + $amount, $defaultLabel);
+    }
+
+    /** Replace the invoice's advance (deducted from the total) and recompute the amount due. */
+    public function setAdvance(int $id, float $advanceAmount, string $defaultLabel = ''): void
+    {
+        $invoice = $this->find($id);
+        if (!$invoice) {
+            return;
+        }
+        $advance = invoice_money(max(0, $advanceAmount));
+        $amountDue = invoice_money(max(
+            0,
+            (float) ($invoice['total'] ?? 0) - $advance + (float) ($invoice['due_adjustment'] ?? 0)
+        ));
+        $label = trim((string) ($invoice['advance_label'] ?? ''));
+        $stmt = $this->db->prepare('
+            UPDATE invoices SET advance_amount = ?, amount_due = ?, advance_label = ?, updated_at = ? WHERE id = ?
+        ');
+        $stmt->execute([
+            $advance,
+            $amountDue,
+            $label !== '' ? $label : ($defaultLabel !== '' ? $defaultLabel : null),
+            now_iso(),
+            $id,
+        ]);
+    }
+
+    public function setSourceSubmission(int $id, ?int $submissionId): void
+    {
+        $stmt = $this->db->prepare('UPDATE invoices SET source_submission_id = ? WHERE id = ?');
+        $stmt->execute([$submissionId ?: null, $id]);
+        $this->completeSourceSubmissionIfPaid($id);
+    }
+
+    /** @return list<array<string, mixed>> */
+    public function forSourceSubmission(int $submissionId): array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM invoices WHERE source_submission_id = ? ORDER BY id DESC');
+        $stmt->execute([$submissionId]);
+        return $stmt->fetchAll();
+    }
+
+    /** Most recent invoice created from a submission that still has a balance. */
+    public function openInvoiceForSubmission(int $submissionId): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM invoices WHERE source_submission_id = ? ORDER BY id DESC');
+        $stmt->execute([$submissionId]);
+        foreach ($stmt->fetchAll() as $invoice) {
+            if (invoice_amount_due($invoice) > 0.004) {
+                return $invoice;
+            }
+        }
+        return null;
     }
 
     /** @return list<array<string, mixed>> */
@@ -289,7 +381,7 @@ final class InvoiceRepository
      * @param array<string, mixed> $data
      * @return float New total paid on the invoice.
      */
-    public function addPayment(int $invoiceId, array $data): float
+    public function addPayment(int $invoiceId, array $data, ?int &$paymentId = null): float
     {
         $this->db->beginTransaction();
         try {
@@ -310,6 +402,7 @@ final class InvoiceRepository
                 (string) ($data['recorded_by_name'] ?? ''),
                 now_iso(),
             ]);
+            $paymentId = (int) $this->db->lastInsertId();
             $paid = $this->syncAmountPaid($invoiceId);
             $this->db->commit();
             return $paid;
@@ -326,6 +419,7 @@ final class InvoiceRepository
         try {
             $stmt = $this->db->prepare('DELETE FROM invoice_payments WHERE id = ? AND invoice_id = ?');
             $stmt->execute([$paymentId, $invoiceId]);
+            (new SubmissionPaymentRepository())->releaseInvoicePayment($paymentId);
             $paid = $this->syncAmountPaid($invoiceId);
             $this->db->commit();
             return $paid;
@@ -396,12 +490,17 @@ final class InvoiceRepository
         $params = [];
         if ($search !== null && trim($search) !== '') {
             $like = '%' . trim($search) . '%';
-            $parts[] = '(i.invoice_number LIKE ? OR i.bill_to_name LIKE ? OR i.bill_to_company LIKE ? OR c.name LIKE ? OR c.company LIKE ?)';
+            $submissionRef = (int) ltrim(trim($search), '#');
+            $parts[] = '(i.invoice_number LIKE ? OR i.bill_to_name LIKE ? OR i.bill_to_company LIKE ? OR c.name LIKE ? OR c.company LIKE ?'
+                . ($submissionRef > 0 && ctype_digit(ltrim(trim($search), '#')) ? ' OR i.source_submission_id = ?' : '') . ')';
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
             $params[] = $like;
+            if ($submissionRef > 0 && ctype_digit(ltrim(trim($search), '#'))) {
+                $params[] = $submissionRef;
+            }
         }
         if ($status !== null && $status !== '' && $status !== 'all') {
             $parts[] = 'i.status = ?';

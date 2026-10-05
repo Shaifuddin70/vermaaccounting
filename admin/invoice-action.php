@@ -132,7 +132,7 @@ if ($action === 'delete_payment') {
     }
 
     $paid = $repo->deletePayment($paymentId, $id);
-    $newBalance = invoice_amount_due(array_merge($invoice, ['amount_paid' => $paid]));
+    $newBalance = invoice_raw_amount_due(array_merge($invoice, ['amount_paid' => $paid]));
 
     $statusNote = '';
     if ($newBalance > 0 && ($invoice['status'] ?? '') === 'paid') {
@@ -168,18 +168,19 @@ if ($action === 'send_email') {
         exit;
     }
 
-    $wasSent = ($invoice['status'] ?? '') === 'sent';
-    if (!$wasSent) {
+    $previousStatus = (string) ($invoice['status'] ?? '');
+    $markSent = in_array($previousStatus, ['draft', 'approved'], true);
+    if ($markSent) {
         $repo->updateStatus($id, 'sent');
     }
 
     ActivityLog::record('invoice.emailed', 'invoice', $id, [
         'number' => (string) ($invoice['invoice_number'] ?? ''),
         'to' => $result['to'] ?? $to,
-        'status' => 'sent',
+        'status' => $markSent ? 'sent' : $previousStatus,
     ]);
     $_SESSION['flash_success'] = 'Invoice PDF sent to ' . ($result['to'] ?? $to) . '.'
-        . ($wasSent ? '' : ' Status set to Sent.');
+        . ($markSent ? ' Status set to Sent.' : '');
     header('Location: ' . $redirect);
     exit;
 }

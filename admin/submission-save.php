@@ -33,6 +33,7 @@ $config = app_config();
 $maxBytes = (int) ($config['max_upload_bytes'] ?? 10485760);
 $allowedMimes = $config['allowed_upload_mimes'] ?? [];
 $existingFiles = files_by_field_id($repo->filesForSubmission($submissionId));
+$existingData = json_decode((string) ($submission['data_json'] ?? ''), true) ?: [];
 
 $data = [];
 $errors = [];
@@ -48,6 +49,20 @@ foreach ($schema['fields'] as $field) {
 
     // Admin edit form shows every field (no conditional hide), so always validate.
     $visible = true;
+
+    if ($type === 'payment') {
+        $payKeys = payment_storage_keys($name);
+        $method = trim((string) ($_POST[$name] ?? ''));
+        if ($method !== '' && payment_method_for_value($field, $method) === null) {
+            $errors[] = 'Please choose a valid payment method for ' . $field['label'] . '.';
+        } elseif ($method === '' && !empty($field['required'])) {
+            $errors[] = $field['label'] . ' is required.';
+        }
+        $data[$name] = $method;
+        $data[$payKeys['reference']] = mb_substr(trim((string) ($_POST[$payKeys['reference']] ?? '')), 0, 200);
+        $data[$payKeys['screenshot']] = $existingData[$payKeys['screenshot']] ?? '';
+        continue;
+    }
 
     if ($type === 'checkbox') {
         $raw = $_POST[$name] ?? [];
@@ -139,6 +154,7 @@ if ($errors) {
 
 $repo->updateSubmissionData($submissionId, $data);
 sync_submission_partners_from_data($submissionId, $schema, $data);
+(new SubmissionPaymentRepository())->recordFromSubmission($submissionId, $formId, $schema['fields'], $data);
 
 ActivityLog::record('submission.edited', 'submission', $submissionId, [
     'form_id' => $formId,

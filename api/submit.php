@@ -75,6 +75,24 @@ foreach ($schema['fields'] as $field) {
         continue;
     }
 
+    if ($type === 'payment') {
+        [$paymentData, $paymentFiles] = payment_field_from_post(
+            $field,
+            $form,
+            $schema,
+            $uploadSession,
+            $_POST,
+            $maxBytes,
+            $allowedMimes,
+            $errors
+        );
+        $data = array_merge($data, $paymentData);
+        foreach ($paymentFiles as $meta) {
+            $filesMeta[] = $meta;
+        }
+        continue;
+    }
+
     if (in_array($type, ['file', 'image'], true)) {
         [$fileValue, $fieldFilesMeta] = process_field_file_uploads(
             $field,
@@ -138,11 +156,13 @@ if (!empty($taxYearCfg['enabled'])) {
 }
 
 if ($errors) {
+    upload_journal_rollback();
     json_response(['error' => implode(' ', $errors), 'errors' => $errors], 422);
 }
 
 $contentSpam = form_spam_content_reject_reason(array_merge($_POST, $data), $slug);
 if ($contentSpam !== null) {
+    upload_journal_rollback();
     error_log('Form spam blocked (post-validate content) from ' . form_spam_client_ip() . ': ' . $contentSpam);
     json_response(['error' => 'Unable to submit right now. Please try again later.'], 429);
 }
@@ -150,11 +170,18 @@ if ($contentSpam !== null) {
 if ($slug === document_submission_form_slug()) {
     document_submission_validate($data, $errors);
     if ($errors) {
+        upload_journal_rollback();
         json_response(['error' => implode(' ', $errors), 'errors' => $errors], 422);
     }
 }
 
-$submissionId = $repo->saveSubmission((int) $form['id'], $data, $filesMeta, $taxYear > 0 ? $taxYear : null);
+try {
+    $submissionId = $repo->saveSubmission((int) $form['id'], $data, $filesMeta, $taxYear > 0 ? $taxYear : null);
+} catch (Throwable $e) {
+    upload_journal_rollback();
+    throw $e;
+}
+upload_journal_commit();
 form_spam_record_hit($slug);
 sync_submission_partners_from_data($submissionId, $schema, $data);
 
@@ -167,6 +194,7 @@ if ($slug === document_submission_form_slug()) {
         'data_json' => json_encode($data, JSON_UNESCAPED_UNICODE),
     ], $schema);
 }
+(new SubmissionPaymentRepository())->recordFromSubmission($submissionId, (int) $form['id'], $schema['fields'], $data);
 
 send_submission_notification_emails(
     $form,

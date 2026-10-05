@@ -21,7 +21,7 @@ $seoDescription = 'Securely upload personal or business tax documents to Verma A
 
 include __DIR__ . '/components/header.php';
 ?>
-<link rel="stylesheet" href="/css/custom-form.css?v=20">
+<link rel="stylesheet" href="/css/custom-form.css?v=21">
 <main class="main-content vf-page doc-submit-page">
   <div class="vf-container">
     <div class="vf-layout">
@@ -82,6 +82,6 @@ include __DIR__ . '/components/header.php';
 <script>
   window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/components/js/custom-form.js?v=24"></script>
+<script src="/components/js/custom-form.js?v=26"></script>
 <script src="/components/js/document-submission.js?v=4"></script>
 <?php include __DIR__ . '/components/footer.php'; ?>

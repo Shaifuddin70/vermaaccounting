@@ -843,6 +843,7 @@
            </div>`
           : ''
       }
+      ${field.type === 'payment' ? renderPaymentEditor(field) : ''}
       ${
         field.type !== 'page_break'
           ? `<hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
@@ -858,6 +859,156 @@
     `;
 
     bindFieldEditorEvents(field, otherFields);
+  }
+
+  const PAYMENT_INPUT_MODES = { off: 'Don’t ask', optional: 'Optional', required: 'Required' };
+
+  function paymentModeSelect(attr, index, current) {
+    return `<select ${attr}="${index}">${Object.entries(PAYMENT_INPUT_MODES)
+      .map(([v, l]) => `<option value="${v}" ${current === v ? 'selected' : ''}>${l}</option>`)
+      .join('')}</select>`;
+  }
+
+  // Mirrors invoice_payment_methods() in lib/invoice_helpers.php.
+  const INVOICE_PAYMENT_METHODS = {
+    e_transfer: 'Interac e-Transfer',
+    cash: 'Cash',
+    cheque: 'Cheque',
+    debit: 'Debit card',
+    credit_card: 'Credit card',
+    bank_transfer: 'Bank transfer',
+    other: 'Other',
+  };
+
+  function guessInvoicePaymentMethod(label) {
+    const l = String(label || '').toLowerCase();
+    if ((l.includes('transfer') && !l.includes('bank') && !l.includes('wire')) || l.includes('interac')) return 'e_transfer';
+    if (l.includes('debit')) return 'debit';
+    if (l.includes('card') || l.includes('credit')) return 'credit_card';
+    if (l.includes('cash')) return 'cash';
+    if (l.includes('cheque') || l.includes('check')) return 'cheque';
+    if (l.includes('bank') || l.includes('wire') || l.includes('deposit')) return 'bank_transfer';
+    return 'other';
+  }
+
+  function renderPaymentEditor(field) {
+    const methods = Array.isArray(field.options) ? field.options : [];
+    const methodsHtml = methods
+      .map(
+        (m, i) => `
+        <div class="pay-method-card">
+          <div class="pay-method-head">
+            <input type="text" data-pay-label="${i}" value="${escapeAttr(m.label || '')}" placeholder="Method name, e.g. E-transfer" aria-label="Payment method name">
+            <button type="button" class="admin-btn admin-btn-danger admin-btn-sm" data-pay-remove="${i}" ${methods.length < 2 ? 'disabled' : ''} aria-label="Remove method">×</button>
+          </div>
+          <div class="admin-field admin-field--full">
+            <label>Instructions shown to the client</label>
+            <textarea rows="2" data-pay-instructions="${i}" placeholder="e.g. Send the e-transfer to info@vermaaccounting.ca">${escapeHtml(m.instructions || '')}</textarea>
+          </div>
+          <div class="admin-fields-2col">
+            <div class="admin-field"><label>Ask for payment reference</label>${paymentModeSelect('data-pay-reference', i, m.reference || 'off')}</div>
+            <div class="admin-field"><label>Ask for screenshot</label>${paymentModeSelect('data-pay-screenshot', i, m.screenshot || 'off')}</div>
+            <div class="admin-field"><label>Record on invoices as</label><select data-pay-record-as="${i}">${Object.entries(INVOICE_PAYMENT_METHODS)
+              .map(([v, l]) => `<option value="${v}" ${(m.recordAs || guessInvoicePaymentMethod(m.label)) === v ? 'selected' : ''}>${l}</option>`)
+              .join('')}</select></div>
+          </div>
+        </div>`
+      )
+      .join('');
+
+    return `
+      <hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
+      <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Advance payment</h3>
+      <div class="admin-fields-2col">
+        <div class="admin-field admin-field--full">
+          <label for="fe-pay-amount">Amount due (CAD)</label>
+          <input type="number" id="fe-pay-amount" min="0" step="0.01" inputmode="decimal" value="${escapeAttr(field.amount || '')}" placeholder="e.g. 50.00">
+          <small class="admin-field-hint">Fixed amount the client pays. Each submission records a pending payment for it; once verified it’s applied to the client’s invoice and counts toward income. Leave blank to only collect payment details.</small>
+        </div>
+        <div class="admin-field">
+          <label for="fe-pay-ref-label">Reference field label</label>
+          <input type="text" id="fe-pay-ref-label" value="${escapeAttr(field.referenceLabel || 'Payment reference')}">
+        </div>
+        <div class="admin-field">
+          <label for="fe-pay-shot-label">Screenshot field label</label>
+          <input type="text" id="fe-pay-shot-label" value="${escapeAttr(field.screenshotLabel || 'Payment screenshot')}">
+        </div>
+      </div>
+      <div class="admin-field admin-field--full">
+        <label>Payment methods</label>
+        <div class="pay-method-list">${methodsHtml}</div>
+        <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" id="fe-pay-add">+ Payment method</button>
+      </div>`;
+  }
+
+  function bindPaymentEditor(field) {
+    if (field.type !== 'payment') return;
+    field.options = Array.isArray(field.options) ? field.options : [];
+
+    el('fe-pay-amount')?.addEventListener('input', (e) => {
+      field.amount = e.target.value;
+    });
+    el('fe-pay-ref-label')?.addEventListener('input', (e) => {
+      field.referenceLabel = e.target.value;
+    });
+    el('fe-pay-shot-label')?.addEventListener('input', (e) => {
+      field.screenshotLabel = e.target.value;
+    });
+
+    fieldEditor.querySelectorAll('[data-pay-label]').forEach((input) => {
+      input.addEventListener('input', () => {
+        const m = field.options[Number(input.dataset.payLabel)];
+        m.label = input.value;
+        // Keep saved method values stable so older submissions still resolve their label.
+        if (m._new) m.value = slugify(input.value) || m.value;
+        if (m._new && !m._recordAsPicked) {
+          m.recordAs = guessInvoicePaymentMethod(input.value);
+          const select = fieldEditor.querySelector(`[data-pay-record-as="${input.dataset.payLabel}"]`);
+          if (select) select.value = m.recordAs;
+        }
+      });
+    });
+    fieldEditor.querySelectorAll('[data-pay-record-as]').forEach((select) => {
+      select.addEventListener('change', () => {
+        const m = field.options[Number(select.dataset.payRecordAs)];
+        m.recordAs = select.value;
+        m._recordAsPicked = true;
+      });
+    });
+    fieldEditor.querySelectorAll('[data-pay-instructions]').forEach((input) => {
+      input.addEventListener('input', () => {
+        field.options[Number(input.dataset.payInstructions)].instructions = input.value;
+      });
+    });
+    fieldEditor.querySelectorAll('[data-pay-reference]').forEach((select) => {
+      select.addEventListener('change', () => {
+        field.options[Number(select.dataset.payReference)].reference = select.value;
+      });
+    });
+    fieldEditor.querySelectorAll('[data-pay-screenshot]').forEach((select) => {
+      select.addEventListener('change', () => {
+        field.options[Number(select.dataset.payScreenshot)].screenshot = select.value;
+      });
+    });
+    fieldEditor.querySelectorAll('[data-pay-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (field.options.length < 2) return;
+        field.options.splice(Number(btn.dataset.payRemove), 1);
+        renderFieldEditor();
+      });
+    });
+    el('fe-pay-add')?.addEventListener('click', () => {
+      field.options.push({
+        label: 'New method',
+        value: 'method_' + (field.options.length + 1),
+        instructions: '',
+        reference: 'required',
+        screenshot: 'optional',
+        recordAs: 'other',
+        _new: true,
+      });
+      renderFieldEditor();
+    });
   }
 
   function escapeAttr(s) {
@@ -1261,6 +1412,7 @@
       renderFieldEditor();
     });
 
+    bindPaymentEditor(field);
     bindConditions(field);
 
     el('fe-delete')?.addEventListener('click', () => {
@@ -1365,6 +1517,33 @@
       },
       file: { type: 'file', label: 'File upload', required: false, accept: 'image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,application/pdf,application/zip,application/x-zip-compressed', maxFiles: 5, options: [], conditions: [] },
       image: { type: 'image', label: 'Image upload', required: false, accept: 'image/*', maxFiles: 5, options: [], conditions: [] },
+      payment: {
+        type: 'payment',
+        label: 'Advance payment',
+        required: true,
+        amount: '',
+        referenceLabel: 'Payment reference',
+        screenshotLabel: 'Payment screenshot',
+        options: [
+          {
+            label: 'E-transfer',
+            value: 'e_transfer',
+            instructions: 'Send an Interac e-Transfer to info@vermaaccounting.ca.',
+            reference: 'required',
+            screenshot: 'required',
+            recordAs: 'e_transfer',
+          },
+          {
+            label: 'Card payment',
+            value: 'card_payment',
+            instructions: '',
+            reference: 'required',
+            screenshot: 'optional',
+            recordAs: 'credit_card',
+          },
+        ],
+        conditions: [],
+      },
       heading: { type: 'heading', label: 'Section title', required: false, options: [], conditions: [] },
       paragraph: { type: 'paragraph', label: 'Instructions…', required: false, options: [], conditions: [] },
       page_break: { type: 'page_break', label: 'Next page', required: false, options: [], conditions: [] },

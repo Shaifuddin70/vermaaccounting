@@ -23,6 +23,9 @@ $schema = $repo->decodeSchema($form);
 $data = json_decode($submission['data_json'], true) ?: [];
 $files = $repo->filesForSubmission($submissionId);
 $filesByField = files_by_field_id($files);
+$submissionPayments = (new SubmissionPaymentRepository())->forSubmission($submissionId);
+$linkedClient = (new ClientRepository())->findBySubmissionId($submissionId);
+$sourceInvoices = Auth::can('invoices.view') ? (new InvoiceRepository())->forSourceSubmission($submissionId) : [];
 $status = $submission['status'] ?? 'pending';
 $csrf = Auth::csrfToken();
 $editErrors = $_SESSION['submission_edit_errors'] ?? [];
@@ -38,9 +41,6 @@ require __DIR__ . '/includes/layout-start.php';
     <?php if ($editMode): ?>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
     <?php else: ?>
-      <?php if (Auth::can('invoices.create')): ?>
-      <a href="<?= e(invoice_edit_url_from_submission($submissionId, $formId)) ?>" class="admin-btn admin-btn-secondary">Create invoice</a>
-      <?php endif; ?>
       <?php if (Auth::can('submissions.edit')): ?>
       <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>&edit=1" class="admin-btn admin-btn-primary">Edit</a>
       <?php endif; ?>
@@ -69,80 +69,104 @@ require __DIR__ . '/includes/layout-start.php';
   </div>
 <?php endif; ?>
 
-<div class="submission-meta admin-card">
-  <div class="submission-meta-grid">
-    <div>
-      <span class="submission-meta-label">Form</span>
-      <strong><?= e($form['title']) ?></strong>
-    </div>
-    <div>
-      <span class="submission-meta-label">Status</span>
-      <span class="submission-status-badge submission-status-badge--<?= e($status) ?>">
-        <?= e(submission_status_label($status)) ?>
-      </span>
-    </div>
-    <?php if (form_tax_year_enabled($schema) && submission_tax_year_label($submission) !== ''): ?>
-      <div>
-        <span class="submission-meta-label">Tax year</span>
-        <strong><?= e(submission_tax_year_label($submission)) ?></strong>
-      </div>
-    <?php endif; ?>
-    <div>
-      <span class="submission-meta-label">Submitted</span>
-      <?= e($submission['created_at']) ?>
-    </div>
-    <?php if (!empty($submission['updated_at'])): ?>
-      <div>
-        <span class="submission-meta-label">Last updated</span>
-        <?= e($submission['updated_at']) ?>
-      </div>
-    <?php endif; ?>
-  </div>
-  <div class="submission-meta-actions">
-    <?php if (!$editMode && count($files) > 0): ?>
-      <form method="post" action="/admin/submission-files-zip" class="inline-form">
-        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-        <input type="hidden" name="form_id" value="<?= $formId ?>">
-        <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
-        <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm">Download all files</button>
-      </form>
-    <?php endif; ?>
-    <?php if ($status === 'pending'): ?>
-      <form method="post" action="/admin/submission-status" class="inline-form">
-        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-        <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
-        <input type="hidden" name="form_id" value="<?= $formId ?>">
-        <input type="hidden" name="status" value="complete">
-        <input type="hidden" name="redirect_view" value="1">
-        <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">Mark complete</button>
-      </form>
-    <?php else: ?>
-      <form method="post" action="/admin/submission-status" class="inline-form">
-        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-        <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
-        <input type="hidden" name="form_id" value="<?= $formId ?>">
-        <input type="hidden" name="status" value="pending">
-        <input type="hidden" name="redirect_view" value="1">
-        <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm">Mark pending</button>
-      </form>
-    <?php endif; ?>
-  </div>
-</div>
-
+<?php if ($editMode): ?>
 <div class="admin-card submission-detail-card">
-  <?php if ($editMode): ?>
-    <form method="post" action="/admin/submission-save" enctype="multipart/form-data" class="submission-edit-form">
-      <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
-      <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
-      <input type="hidden" name="form_id" value="<?= $formId ?>">
-      <?php require __DIR__ . '/includes/submission-fields-edit.php'; ?>
-      <div class="submission-form-actions">
-        <button type="submit" class="admin-btn admin-btn-primary">Save changes</button>
-        <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
-      </div>
-    </form>
-  <?php else: ?>
-    <?php require __DIR__ . '/includes/submission-fields-view.php'; ?>
-  <?php endif; ?>
+  <form method="post" action="/admin/submission-save" enctype="multipart/form-data" class="submission-edit-form">
+    <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+    <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
+    <input type="hidden" name="form_id" value="<?= $formId ?>">
+    <?php require __DIR__ . '/includes/submission-fields-edit.php'; ?>
+    <div class="submission-form-actions">
+      <button type="submit" class="admin-btn admin-btn-primary">Save changes</button>
+      <a href="/admin/submission?id=<?= $submissionId ?>&form_id=<?= $formId ?>" class="admin-btn admin-btn-secondary">Cancel</a>
+    </div>
+  </form>
 </div>
+<?php else: ?>
+<div class="sub-layout">
+  <aside class="sub-side">
+    <section class="admin-card sub-side-card">
+      <div class="sub-side-status">
+        <span class="submission-status-badge submission-status-badge--<?= e($status) ?>"><?= e(submission_status_label($status)) ?></span>
+        <?php if (Auth::can('submissions.complete')): ?>
+          <form method="post" action="/admin/submission-status" class="inline-form">
+            <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+            <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
+            <input type="hidden" name="form_id" value="<?= $formId ?>">
+            <input type="hidden" name="status" value="<?= $status === 'pending' ? 'complete' : 'pending' ?>">
+            <input type="hidden" name="redirect_view" value="1">
+            <button type="submit" class="admin-btn admin-btn-sm <?= $status === 'pending' ? 'admin-btn-primary' : 'admin-btn-secondary' ?>">
+              <?= $status === 'pending' ? 'Mark complete' : 'Mark pending' ?>
+            </button>
+          </form>
+        <?php endif; ?>
+      </div>
+      <?php if ($linkedClient): ?>
+        <div class="sub-side-client">
+          <?php if (Auth::can('clients.view')): ?>
+            <a href="/admin/client?id=<?= (int) $linkedClient['id'] ?>" class="sub-side-client-name"><?= e((string) $linkedClient['name']) ?></a>
+          <?php else: ?>
+            <strong class="sub-side-client-name"><?= e((string) $linkedClient['name']) ?></strong>
+          <?php endif; ?>
+          <?php if (!empty($linkedClient['email'])): ?><span><?= e((string) $linkedClient['email']) ?></span><?php endif; ?>
+          <?php if (!empty($linkedClient['phone'])): ?><span><?= e((string) $linkedClient['phone']) ?></span><?php endif; ?>
+        </div>
+      <?php endif; ?>
+      <dl class="sub-side-list">
+        <div><dt>Form</dt><dd><?= e($form['title']) ?></dd></div>
+        <?php if (form_tax_year_enabled($schema) && submission_tax_year_label($submission) !== ''): ?>
+          <div><dt>Tax year</dt><dd><?= e(submission_tax_year_label($submission)) ?></dd></div>
+        <?php endif; ?>
+        <div><dt>Submitted</dt><dd><?= e(app_format_datetime((string) $submission['created_at'], false)) ?></dd></div>
+        <?php if (!empty($submission['updated_at'])): ?>
+          <div><dt>Updated</dt><dd><?= e(app_format_datetime((string) $submission['updated_at'], false)) ?></dd></div>
+        <?php endif; ?>
+      </dl>
+    </section>
+
+    <?php if (Auth::can('invoices.view') || Auth::can('invoices.create')): ?>
+      <section class="admin-card sub-side-card">
+        <h2 class="sub-side-title">Invoices</h2>
+        <?php if ($sourceInvoices): ?>
+          <ul class="sub-side-invoices">
+            <?php foreach ($sourceInvoices as $si):
+              $siPaid = ($si['status'] ?? '') === 'paid';
+            ?>
+              <li>
+                <a href="/admin/invoice-view?id=<?= (int) $si['id'] ?>">#<?= e((string) $si['invoice_number']) ?></a>
+                <span><?= e(invoice_format_money((float) $si['total'])) ?></span>
+                <span class="admin-badge <?= $siPaid ? 'admin-badge-paid' : (($si['status'] ?? '') === 'sent' ? 'admin-badge-info' : '') ?>"><?= e(invoice_status_label((string) $si['status'])) ?></span>
+              </li>
+            <?php endforeach; ?>
+          </ul>
+        <?php else: ?>
+          <p class="sub-side-muted">No invoice yet.</p>
+        <?php endif; ?>
+        <?php if (Auth::can('invoices.create')): ?>
+          <a href="<?= e(invoice_edit_url_from_submission($submissionId, $formId)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm sub-side-btn">Create invoice</a>
+        <?php endif; ?>
+      </section>
+    <?php endif; ?>
+
+    <?php require __DIR__ . '/includes/submission-payment-card.php'; ?>
+
+    <?php if (count($files) > 0): ?>
+      <section class="admin-card sub-side-card">
+        <h2 class="sub-side-title">Files</h2>
+        <p class="sub-side-muted"><?= count($files) ?> file<?= count($files) === 1 ? '' : 's' ?> uploaded</p>
+        <form method="post" action="/admin/submission-files-zip">
+          <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+          <input type="hidden" name="form_id" value="<?= $formId ?>">
+          <input type="hidden" name="submission_id" value="<?= $submissionId ?>">
+          <button type="submit" class="admin-btn admin-btn-secondary admin-btn-sm sub-side-btn">Download all files</button>
+        </form>
+      </section>
+    <?php endif; ?>
+  </aside>
+
+  <div class="sub-main">
+    <?php require __DIR__ . '/includes/submission-fields-view.php'; ?>
+  </div>
+</div>
+<?php endif; ?>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

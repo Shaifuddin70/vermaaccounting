@@ -53,11 +53,18 @@ if ($role === 'admin' && !$actorIsFullAdmin) {
     $errors[] = 'Only admins can assign the admin role.';
 }
 if ($permissionsJson !== null && !$actorIsFullAdmin) {
+    // Non-admin managers can only grant capabilities they hold themselves.
     $filtered = array_values(array_filter(
         permission_parse_stored($permissionsJson) ?? [],
-        static fn(string $key): bool => $key !== 'team.manage'
+        static fn(string $key): bool => $key !== 'team.manage' && Auth::can($key)
     ));
     $permissionsJson = permission_encode_for_storage($filtered);
+}
+if (!$isNew && !$actorIsFullAdmin) {
+    $targetUser = (new UserRepository())->find((int) $editId);
+    if ($targetUser && ($targetUser['role'] ?? '') === 'admin') {
+        $errors[] = 'Only admins can edit admin accounts.';
+    }
 }
 
 if ($name === '') {

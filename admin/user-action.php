@@ -29,6 +29,15 @@ if (!$user || $id < 1) {
     exit;
 }
 
+$actor = Auth::currentUser();
+$actorIsFullAdmin = ($actor['is_config_admin'] ?? false) || Auth::userRole() === 'admin';
+if (($user['role'] ?? '') === 'admin' && !$actorIsFullAdmin) {
+    if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['error' => 'Only admins can change admin accounts.']); exit; }
+    $_SESSION['flash_error'] = 'Only admins can change admin accounts.';
+    header('Location: /admin/users');
+    exit;
+}
+
 if ($action === 'deactivate') {
     $userRepo->setStatus($id, 'inactive');
     ActivityLog::record('user.deactivated', 'user', $id, ['name' => $user['name']]);

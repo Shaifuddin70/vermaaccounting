@@ -57,6 +57,9 @@ if ($taxYearOn) {
 $headers[] = 'IP Address';
 foreach ($inputFields as $field) {
     $headers[] = $field['label'];
+    if ($field['type'] === 'payment') {
+        $headers[] = ($field['referenceLabel'] ?? 'Payment reference') . ' (' . $field['label'] . ')';
+    }
     if ($field['type'] === 'yes_no') {
         foreach (yes_no_follow_ups($field) as $followUp) {
             $headers[] = ($followUp['label'] ?? 'Follow-up') . ' (' . $field['label'] . ')';
@@ -64,7 +67,7 @@ foreach ($inputFields as $field) {
     }
 }
 $headers[] = 'Uploaded Files';
-fputcsv($out, $headers);
+fputcsv($out, csv_safe_row($headers));
 
 foreach ($submissions as $sub) {
     $data = json_decode($sub['data_json'], true) ?: [];
@@ -82,6 +85,11 @@ foreach ($submissions as $sub) {
         $val = $data[$key] ?? '';
         if (is_array($val)) {
             $val = implode('; ', $val);
+        }
+        if ($field['type'] === 'payment') {
+            $row[] = $val !== '' ? payment_method_label($field, (string) $val) : '';
+            $row[] = (string) ($data[payment_storage_keys($key)['reference']] ?? '');
+            continue;
         }
         $row[] = (string) $val;
         if ($field['type'] === 'yes_no') {
@@ -102,7 +110,7 @@ foreach ($submissions as $sub) {
     }
     $row[] = implode(' | ', $fileParts);
 
-    fputcsv($out, $row);
+    fputcsv($out, csv_safe_row($row));
 }
 
 fclose($out);

@@ -58,6 +58,13 @@ function staging_find_field(array $schema, string $fieldId): ?array
         if (($field['id'] ?? '') === $fieldId) {
             return $field;
         }
+        if (($field['type'] ?? '') === 'payment') {
+            $pseudo = payment_find_screenshot_field($field, $fieldId);
+            if ($pseudo !== null) {
+                return $pseudo;
+            }
+            continue;
+        }
         if (($field['type'] ?? '') !== 'yes_no') {
             continue;
         }
@@ -309,6 +316,60 @@ function staging_remove_token(string $session, string $token): bool
 }
 
 /**
+ * Files moved into final storage during this request, so a submit that fails validation
+ * can put staged files back (keeping the client's tokens usable) and delete direct uploads.
+ *
+ * @param array<string, mixed>|null $entry
+ * @return list<array<string, mixed>>
+ */
+function upload_journal_record(?array $entry = null, bool $reset = false): array
+{
+    static $journal = [];
+    if ($reset) {
+        $journal = [];
+    } elseif ($entry !== null) {
+        $journal[] = $entry;
+    }
+    return $journal;
+}
+
+/** Keep the files moved this request (the submission was saved). */
+function upload_journal_commit(): void
+{
+    upload_journal_record(null, true);
+}
+
+/** Undo every file move made this request. */
+function upload_journal_rollback(): void
+{
+    $entries = array_reverse(upload_journal_record());
+    upload_journal_record(null, true);
+
+    $restoredBySession = [];
+    foreach ($entries as $entry) {
+        $dest = (string) ($entry['dest'] ?? '');
+        if (($entry['type'] ?? '') === 'staged') {
+            $src = (string) $entry['src'];
+            if ($dest !== '' && is_file($dest) && is_dir(dirname($src)) && @rename($dest, $src)) {
+                $restoredBySession[(string) $entry['session']][(string) $entry['token']] = $entry['meta'];
+                continue;
+            }
+        }
+        if ($dest !== '' && is_file($dest)) {
+            @unlink($dest);
+        }
+    }
+
+    foreach ($restoredBySession as $session => $tokens) {
+        $manifest = staging_read_manifest($session);
+        foreach ($tokens as $token => $meta) {
+            $manifest['tokens'][$token] = $meta;
+        }
+        staging_write_manifest($session, $manifest);
+    }
+}
+
+/**
  * @param list<string> $tokens
  * @return array{0: list<string>, 1: list<array<string, mixed>>} stored names + filesMeta
  */
@@ -353,6 +414,14 @@ function staging_claim_tokens(
             throw new RuntimeException('Could not finalize upload.');
         }
 
+        upload_journal_record([
+            'type' => 'staged',
+            'dest' => $dest,
+            'src' => $src,
+            'session' => $session,
+            'token' => $token,
+            'meta' => $meta,
+        ]);
         unset($manifest['tokens'][$token]);
         $storedPath = $form['id'] . '/' . $basename;
         $storedNames[] = $storedPath;
@@ -391,6 +460,7 @@ function finalize_direct_upload(
     if (!move_uploaded_file($upload['tmp_name'], $dest)) {
         throw new RuntimeException('Could not save ' . ($field['label'] ?? 'file'));
     }
+    upload_journal_record(['type' => 'direct', 'dest' => $dest]);
 
     $storedPath = $form['id'] . '/' . $stored;
     return [

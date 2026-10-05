@@ -7,6 +7,66 @@ function submission_status_label(string $status): string
     return $status === 'complete' ? 'Complete' : 'Pending';
 }
 
+/**
+ * Group answer fields into sections for the admin view, using the form's headings
+ * (or page-break titles) as section names. Paragraphs are client-facing copy and skipped.
+ *
+ * @return list<array{title: string, fields: list<array<string, mixed>>}>
+ */
+function submission_view_sections(array $schema, array $skipTypes = []): array
+{
+    $sections = [];
+    $current = ['title' => '', 'fields' => []];
+    foreach ($schema['fields'] ?? [] as $field) {
+        $type = (string) ($field['type'] ?? '');
+        if ($type === 'heading' || $type === 'page_break') {
+            if ($current['fields'] !== []) {
+                $sections[] = $current;
+                $current = ['title' => '', 'fields' => []];
+            }
+            if ($type === 'heading' || $current['title'] === '') {
+                $current['title'] = trim((string) ($field['label'] ?? ''));
+            }
+            continue;
+        }
+        if ($type === 'paragraph' || in_array($type, $skipTypes, true)) {
+            continue;
+        }
+        $current['fields'][] = $field;
+    }
+    if ($current['fields'] !== []) {
+        $sections[] = $current;
+    }
+    foreach ($sections as $i => $section) {
+        $title = submission_staff_title($section['title']);
+        $sections[$i]['title'] = $title !== '' ? $title : ($i === 0 ? 'Details' : 'More details');
+    }
+    return $sections;
+}
+
+/** Rewrites client-facing headings ("About you", "Tell us about your year") for staff. */
+function submission_staff_title(string $title): string
+{
+    $title = trim($title);
+    if ($title === '') {
+        return '';
+    }
+    $title = (string) preg_replace('/^(tell us|let us know)\s+(about\s+)?/i', '', $title);
+    $title = (string) preg_replace('/^(please\s+)?upload\s+(your\s+)?/i', '', $title);
+    $title = (string) preg_replace('/\byour\b/i', "the client's", $title);
+    $title = (string) preg_replace('/\byou\b/i', 'the client', $title);
+    return ucfirst(trim($title));
+}
+
+function submission_field_is_answered(array $field, array $data, array $filesByField): bool
+{
+    $type = (string) ($field['type'] ?? '');
+    if (in_array($type, ['file', 'image'], true)) {
+        return !empty($filesByField[(string) $field['id']]);
+    }
+    return trim(format_submission_value($data[(string) ($field['name'] ?? '')] ?? '')) !== '';
+}
+
 function is_image_mime(?string $mime): bool
 {
     return is_string($mime) && str_starts_with($mime, 'image/');

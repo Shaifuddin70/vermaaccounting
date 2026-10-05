@@ -21,7 +21,7 @@ fwrite($out, "\xEF\xBB\xBF");
 fputcsv($out, ['Name', 'SIN', 'Email', 'Phone', 'Company', 'Address', 'Date of Birth', 'Notes', 'Source', 'Submissions', 'Added']);
 
 foreach ($rows as $row) {
-    fputcsv($out, [
+    fputcsv($out, csv_safe_row([
         $row['name'] ?? '',
         $row['sin'] ?? '',
         $row['email'] ?? '',
@@ -33,7 +33,7 @@ foreach ($rows as $row) {
         ($row['source'] ?? '') === 'import' ? 'Imported' : 'Form',
         (int) ($row['submission_count'] ?? 0),
         substr((string) ($row['created_at'] ?? ''), 0, 10),
-    ]);
+    ]));
 }
 
 fclose($out);
