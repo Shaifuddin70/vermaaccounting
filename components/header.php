@@ -137,8 +137,15 @@ if ($siteSubmitMenu) {
   ];
 }
 $siteNav[] = ['type' => 'link', 'url' => '/resources', 'label' => 'Resources', 'icon' => 'fa-book-open-reader'];
-$siteNav[] = ['type' => 'link', 'url' => '/blog', 'label' => 'Blog', 'icon' => 'fa-newspaper'];
-$siteNav[] = ['type' => 'link', 'url' => '/about', 'label' => 'About Us', 'icon' => 'fa-users'];
+$siteNav[] = [
+  'type' => 'mega', 'id' => 'about', 'label' => 'About Us', 'icon' => 'fa-users',
+  'compact' => true,
+  'items' => [
+    ['url' => '/about', 'title' => 'About Us', 'desc' => 'Our team, story & values', 'icon' => 'fa-users'],
+    ['url' => '/blog', 'title' => 'Blog', 'desc' => 'Tax tips, news & guides', 'icon' => 'fa-newspaper'],
+    ['url' => '/contact', 'title' => 'Contact Us', 'desc' => 'Get in touch or book a call', 'icon' => 'fa-envelope'],
+  ],
+];
 if ($siteCta['nav_label'] !== '') {
   $siteNav[] = ['type' => 'link', 'url' => $siteCta['url'], 'label' => $siteCta['nav_label'], 'icon' => 'fa-file-lines'];
 }
