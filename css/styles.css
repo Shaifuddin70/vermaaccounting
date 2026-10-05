@@ -6725,6 +6725,51 @@ ul li::before {
   font-size: 0.95rem;
 }
 
+.blog-pagination-pages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.blog-pagination-num,
+.blog-pagination-current {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.blog-pagination-num {
+  color: #1e3a8a;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+}
+
+.blog-pagination-num:hover {
+  border-color: #f97316;
+  color: #f97316;
+}
+
+.blog-pagination-current {
+  color: #fff;
+  background: #1e3a8a;
+}
+
+.blog-related {
+  margin-top: 3rem;
+}
+
+.blog-related > h2 {
+  font-size: 1.5rem;
+  color: #0f172a;
+  margin-bottom: 1.25rem;
+}
+
 .blog-article-hero {
   background:
     radial-gradient(ellipse 80% 60% at 100% 0%, rgba(249, 115, 22, 0.12), transparent 55%),

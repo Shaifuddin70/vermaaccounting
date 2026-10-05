@@ -30,6 +30,7 @@ $contentHtml = blog_prepare_content_html((string) ($blog['content_html'] ?? ''))
 include 'components/header.php';
 
 $categories = $blog['categories'] ?? [];
+$relatedPosts = $repo->related((int) $blog['id'], $categories, 6);
 $author = trim((string) ($blog['author_name'] ?? ''));
 $featured = trim((string) ($blog['featured_image'] ?? ''));
 $authorPhoto = asset('images/rishab-verma-lg.jpg');
@@ -138,6 +139,35 @@ $authorPhoto = asset('images/rishab-verma-lg.jpg');
             </div>
           </aside>
         </div>
+
+        <?php if ($relatedPosts !== []): ?>
+          <section class="blog-related" aria-labelledby="blog-related-title">
+            <h2 id="blog-related-title">Related articles</h2>
+            <div class="blog-grid">
+              <?php foreach ($relatedPosts as $rel): ?>
+                <article class="blog-card">
+                  <a href="<?= e(blog_public_url($rel)) ?>" class="blog-card-media">
+                    <?php if (!empty($rel['featured_image'])): ?>
+                      <img src="<?= e((string) $rel['featured_image']) ?>" alt="<?= e((string) $rel['title']) ?>" loading="lazy" width="640" height="360">
+                    <?php else: ?>
+                      <div class="blog-card-media-placeholder" aria-hidden="true"></div>
+                    <?php endif; ?>
+                  </a>
+                  <div class="blog-card-body">
+                    <?php if (!empty($rel['categories'])): ?>
+                      <div class="blog-card-cats"><?= e(implode(' · ', array_slice($rel['categories'], 0, 2))) ?></div>
+                    <?php endif; ?>
+                    <h3 class="blog-card-title">
+                      <a href="<?= e(blog_public_url($rel)) ?>"><?= e((string) $rel['title']) ?></a>
+                    </h3>
+                    <p class="blog-card-excerpt"><?= e((string) ($rel['excerpt'] ?? '')) ?></p>
+                    <a href="<?= e(blog_public_url($rel)) ?>" class="blog-card-link">Read article →</a>
+                  </div>
+                </article>
+              <?php endforeach; ?>
+            </div>
+          </section>
+        <?php endif; ?>
       </div>
     </div>
   </article>

@@ -38,6 +38,7 @@ if (!function_exists('asset')) {
            <li><a href="/"><i class="fas fa-angle-right"></i> Home</a></li>
            <li><a href="/services"><i class="fas fa-angle-right"></i> Services</a></li>
            <li><a href="/resources"><i class="fas fa-angle-right"></i> Resources</a></li>
+           <li><a href="/blog"><i class="fas fa-angle-right"></i> Blog</a></li>
            <li><a href="/contact"><i class="fas fa-angle-right"></i> Contact</a></li>
            <li><a href="/about"><i class="fas fa-angle-right"></i> About Us</a></li>
            <li><a href="/privacy"><i class="fas fa-angle-right"></i> Privacy Policy</a></li>

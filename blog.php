@@ -22,6 +22,11 @@ if ($page === 1 && $blogs !== []) {
 
 $seoTitle = 'Accounting & Tax Blog | Verma Accounting Ontario';
 $seoDescription = 'Practical tax, bookkeeping, and accounting guides for Ontario individuals and businesses from Verma Accounting.';
+if ($page > 1) {
+    $seoTitle = 'Accounting & Tax Blog – Page ' . $page . ' | Verma Accounting Ontario';
+    $seoDescription = 'Page ' . $page . ' of ' . $totalPages . ': ' . $seoDescription;
+    $seoCanonicalPath = '/blog?page=' . $page;
+}
 
 include 'components/header.php';
 ?>
@@ -149,11 +154,19 @@ include 'components/header.php';
         <?php if ($totalPages > 1): ?>
           <nav class="blog-pagination" aria-label="Blog pages">
             <?php if ($page > 1): ?>
-              <a href="/blog?page=<?= $page - 1 ?>" class="cta-button secondary">← Previous</a>
+              <a href="<?= $page - 1 === 1 ? '/blog' : '/blog?page=' . ($page - 1) ?>" class="cta-button secondary" rel="prev">← Previous</a>
             <?php endif; ?>
-            <span class="blog-pagination-status">Page <?= $page ?> of <?= $totalPages ?></span>
+            <span class="blog-pagination-pages">
+              <?php for ($p = 1; $p <= $totalPages; $p++): ?>
+                <?php if ($p === $page): ?>
+                  <span class="blog-pagination-current" aria-current="page"><?= $p ?></span>
+                <?php else: ?>
+                  <a href="<?= $p === 1 ? '/blog' : '/blog?page=' . $p ?>" class="blog-pagination-num"><?= $p ?></a>
+                <?php endif; ?>
+              <?php endfor; ?>
+            </span>
             <?php if ($page < $totalPages): ?>
-              <a href="/blog?page=<?= $page + 1 ?>" class="cta-button secondary">Next →</a>
+              <a href="/blog?page=<?= $page + 1 ?>" class="cta-button secondary" rel="next">Next →</a>
             <?php endif; ?>
           </nav>
         <?php endif; ?>

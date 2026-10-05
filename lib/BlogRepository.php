@@ -34,6 +34,27 @@ final class BlogRepository
         return $this->all('published', $limit, $offset);
     }
 
+    /**
+     * Other published posts, preferring shared categories, then recency.
+     *
+     * @param list<string> $categories
+     * @return list<array<string, mixed>>
+     */
+    public function related(int $excludeId, array $categories, int $limit = 6): array
+    {
+        $wanted = array_map('strtolower', array_map('strval', $categories));
+        $scored = [];
+        foreach ($this->published(200, 0) as $index => $post) {
+            if ((int) $post['id'] === $excludeId) {
+                continue;
+            }
+            $shared = count(array_intersect($wanted, array_map('strtolower', (array) ($post['categories'] ?? []))));
+            $scored[] = ['post' => $post, 'shared' => $shared, 'index' => $index];
+        }
+        usort($scored, static fn (array $a, array $b): int => [$b['shared'], $a['index']] <=> [$a['shared'], $b['index']]);
+        return array_map(static fn (array $row): array => $row['post'], array_slice($scored, 0, max(1, $limit)));
+    }
+
     public function count(?string $localStatus = null): int
     {
         if ($localStatus !== null && $localStatus !== '') {

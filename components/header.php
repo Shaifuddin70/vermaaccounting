@@ -14,7 +14,10 @@ $seoDescriptionOverride = $seoDescription ?? null;
 $seoMeta = seo_resolve($canonicalPath, $seoTitleOverride, $seoDescriptionOverride);
 $seoPageSchema = seo_page_schema($canonicalPath);
 
-if ($canonicalPath !== '/') {
+if (isset($seoCanonicalPath) && is_string($seoCanonicalPath) && $seoCanonicalPath !== '') {
+  // Pages like /blog?page=2 need a self-referencing canonical that keeps the query string.
+  $canonicalUrl = seo_site_base_url() . $seoCanonicalPath;
+} elseif ($canonicalPath !== '/') {
   $canonicalUrl = seo_site_base_url() . $canonicalPath;
 } else {
   $canonicalUrl = seo_site_base_url() . '/';
@@ -102,7 +105,7 @@ if ($canonicalPath !== '/') {
   <script type="application/ld+json"><?= json_encode($homeFaqSchema, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
   <?php endif; endif; ?>
 
-  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=85" />
+  <link rel="stylesheet" href="<?= asset('css/styles.css') ?>?v=86" />
   <link rel="stylesheet" href="<?= asset('css/header.css') ?>?v=3" />
 </head>
 
