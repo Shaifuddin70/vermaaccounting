@@ -35,7 +35,10 @@ $mailEnabled = !empty($mail['enabled']);
 $sendOld = $_SESSION['invoice_send_old'] ?? [];
 unset($_SESSION['invoice_send_old']);
 $defaultTo = (string) ($sendOld['to_email'] ?? invoice_recipient_email($invoice));
-$defaultMessage = (string) ($sendOld['email_message'] ?? '');
+$emailDraft = invoice_email_draft($invoice);
+$defaultSubject = (string) ($sendOld['email_subject'] ?? $emailDraft['subject']);
+$defaultMessage = (string) ($sendOld['email_message'] ?? $emailDraft['body']);
+$canManageTemplates = Auth::can('invoices.settings') && partner_user_id() === null;
 
 $payments = $repo->payments($id);
 $invoiceDue = (float) $dueState['invoice_due'];
@@ -265,10 +268,30 @@ require __DIR__ . '/includes/layout-start.php';
             <small class="admin-field-hint">No client email on file — enter one to send.</small>
           <?php endif; ?>
         </div>
+        <?php if (count($emailDraft['templates']) > 1): ?>
         <div class="admin-field">
-          <label for="email-message">Message <span class="admin-field-hint">(optional)</span></label>
-          <textarea id="email-message" name="email_message" rows="3" placeholder="Add a short note for the client…"
+          <label for="email-template">Template</label>
+          <select id="email-template" data-email-templates="<?= e(json_encode($emailDraft['templates'], JSON_UNESCAPED_UNICODE)) ?>"
+            <?= $mailEnabled ? '' : 'disabled' ?>>
+            <?php foreach ($emailDraft['templates'] as $tpl): ?>
+              <option value="<?= e($tpl['id']) ?>" <?= $tpl['is_default'] ? 'selected' : '' ?>><?= e($tpl['name']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <?php endif; ?>
+        <div class="admin-field">
+          <label for="email-subject">Subject</label>
+          <input type="text" id="email-subject" name="email_subject" maxlength="200" value="<?= e($defaultSubject) ?>"
+            <?= $mailEnabled ? '' : 'disabled' ?>>
+        </div>
+        <div class="admin-field">
+          <label for="email-message">Message</label>
+          <textarea id="email-message" name="email_message" rows="7"
             <?= $mailEnabled ? '' : 'disabled' ?>><?= e($defaultMessage) ?></textarea>
+          <small class="admin-field-hint">
+            The amount due and due date are added below the message, and the PDF is attached.
+            <?php if ($canManageTemplates): ?><a href="/admin/invoice-templates#email-templates">Edit templates</a><?php endif; ?>
+          </small>
         </div>
         <button type="submit" class="admin-btn admin-btn-secondary invoice-side-btn" <?= $mailEnabled ? '' : 'disabled' ?>
           onclick="return confirm(<?= e_js('Send invoice #' . $invoice['invoice_number'] . ' PDF to this email?') ?>);">
@@ -352,5 +375,28 @@ require __DIR__ . '/includes/layout-start.php';
   })();
 </script>
 <?php endif; ?>
+
+<script>
+  (function () {
+    var picker = document.getElementById('email-template');
+    if (!picker) return;
+    var templates = JSON.parse(picker.getAttribute('data-email-templates') || '[]');
+    var subject = document.getElementById('email-subject');
+    var message = document.getElementById('email-message');
+    var current = templates.find(function (t) { return t.id === picker.value; });
+    picker.addEventListener('change', function () {
+      var next = templates.find(function (t) { return t.id === picker.value; });
+      if (!next) return;
+      var edited = current && (subject.value !== current.subject || message.value !== current.body);
+      if (edited && !confirm('Replace the subject and message you edited with this template?')) {
+        picker.value = current.id;
+        return;
+      }
+      subject.value = next.subject;
+      message.value = next.body;
+      current = next;
+    });
+  })();
+</script>
 
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

@@ -155,13 +155,15 @@ if ($action === 'send_email') {
     Auth::requireCapability('invoices.send');
     $to = trim((string) ($_POST['to_email'] ?? ''));
     $message = trim((string) ($_POST['email_message'] ?? ''));
+    $subject = trim((string) ($_POST['email_subject'] ?? ''));
     $items = $repo->itemsForInvoice($id);
-    $result = invoice_send_to_client($invoice, $items, $to, $message !== '' ? $message : null);
+    $result = invoice_send_to_client($invoice, $items, $to, $message !== '' ? $message : null, $subject !== '' ? $subject : null);
 
     if (!$result['ok']) {
         $_SESSION['flash_error'] = $result['error'] ?? 'Failed to send invoice.';
         $_SESSION['invoice_send_old'] = [
             'to_email' => $to,
+            'email_subject' => $subject,
             'email_message' => $message,
         ];
         header('Location: ' . $redirect . '#send-invoice');

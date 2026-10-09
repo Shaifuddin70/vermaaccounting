@@ -81,7 +81,7 @@ return [
 
     // Public form anti-spam (honeypot + timing + HMAC token + IP/global rate limits)
     'form_spam' => [
-        'per_ip_limit' => 2,
+        'per_ip_limit' => 5,
         'per_ip_window' => 3600,
         'global_limit' => 15,
         'global_window' => 600,

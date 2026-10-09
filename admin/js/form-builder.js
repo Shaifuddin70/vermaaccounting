@@ -91,7 +91,7 @@
         br.type = 'page_break';
         br.label = String(page.title || '').trim() || 'Page ' + (index + 1);
         br.required = false;
-        br.conditions = [];
+        br.conditions = Array.isArray(br.conditions) ? br.conditions : [];
         flat.push(br);
       }
       (page.fields || []).forEach((field) => {
@@ -138,7 +138,10 @@
         return (
           '<button type="button" class="fb-page-tab' +
           (index === activePageIndex ? ' is-active' : '') +
-          '" role="tab" aria-selected="' +
+          (index > 0 && page.breakField?.conditions?.length ? ' has-conditions' : '') +
+          '"' +
+          (pages.length > 1 ? ' draggable="true" title="Drag to reorder pages"' : '') +
+          ' role="tab" aria-selected="' +
           (index === activePageIndex ? 'true' : 'false') +
           '" data-page-index="' +
           index +
@@ -162,6 +165,45 @@
         renderFieldList();
         renderFieldEditor();
       });
+
+      if (pages.length < 2) return;
+      const index = Number(btn.getAttribute('data-page-index')) || 0;
+
+      btn.addEventListener('dragstart', (e) => {
+        pageDragFromIndex = index;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'page:' + index);
+        btn.classList.add('is-dragging');
+      });
+
+      btn.addEventListener('dragend', () => {
+        pageDragFromIndex = null;
+        clearPageDropIndicators();
+      });
+
+      btn.addEventListener('dragover', (e) => {
+        if (pageDragFromIndex === null) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        tabs.querySelectorAll('.fb-page-tab').forEach((n) => n.classList.remove('drop-before', 'drop-after'));
+        const rect = btn.getBoundingClientRect();
+        btn.classList.add(e.clientX < rect.left + rect.width / 2 ? 'drop-before' : 'drop-after');
+      });
+
+      btn.addEventListener('dragleave', (e) => {
+        if (!btn.contains(e.relatedTarget)) btn.classList.remove('drop-before', 'drop-after');
+      });
+
+      btn.addEventListener('drop', (e) => {
+        if (pageDragFromIndex === null) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const from = pageDragFromIndex;
+        const insertAfter = btn.classList.contains('drop-after');
+        pageDragFromIndex = null;
+        clearPageDropIndicators();
+        reorderPages(from, index, insertAfter);
+      });
     });
 
     if (titleInput && document.activeElement !== titleInput) {
@@ -170,6 +212,33 @@
     if (deleteBtn) {
       deleteBtn.hidden = pages.length < 2;
     }
+  }
+
+  let pageDragFromIndex = null;
+
+  function clearPageDropIndicators() {
+    el('fb-page-tabs')?.querySelectorAll('.fb-page-tab').forEach((node) => {
+      node.classList.remove('drop-before', 'drop-after', 'is-dragging');
+    });
+  }
+
+  function reorderPages(fromIndex, toIndex, insertAfter) {
+    const pages = getPages();
+    if (!pages[fromIndex]) return;
+    let insertAt = toIndex + (insertAfter ? 1 : 0);
+    if (fromIndex < insertAt) insertAt--;
+    insertAt = Math.max(0, Math.min(insertAt, pages.length - 1));
+    if (insertAt === fromIndex) return;
+
+    const activePage = pages[activePageIndex];
+    const [moved] = pages.splice(fromIndex, 1);
+    pages.splice(insertAt, 0, moved);
+    setPages(pages);
+    activePageIndex = Math.max(0, pages.indexOf(activePage));
+    syncActivePageSelection();
+    renderPageTabs();
+    renderFieldList();
+    renderFieldEditor();
   }
 
   function addPage() {
@@ -337,6 +406,7 @@
         const from = dragFromIndex ?? Number(e.dataTransfer.getData('text/plain'));
         const insertAfter = item.classList.contains('drop-after');
         clearDropIndicators();
+        if (pageDragFromIndex !== null || !Number.isInteger(from)) return;
         reorderFieldsOnActivePage(from, localIndex, insertAfter);
       });
 
@@ -847,8 +917,8 @@
       ${
         field.type !== 'page_break'
           ? `<hr style="border:none;border-top:1px solid #dbe3f0;margin:1rem 0;">
-      <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Conditional logic</h3>
-      <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Show or hide this field based on answers to other fields.</p>
+      <h3 style="margin:0 0 0.75rem;font-size:0.95rem;">Show / hide this field</h3>
+      <p style="font-size:0.8rem;color:#64748b;margin:0 0 0.75rem;">Hide this field depending on the answer to another question — e.g. hide “Spouse name” when Marital status is Single.</p>
       ${conditionsHtml}`
           : ''
       }
@@ -1017,60 +1087,176 @@
 
   function renderConditionsEditor(field, otherFields) {
     if (!field.conditions) field.conditions = [];
-    const block = field.conditions[0] || {
-      action: 'show',
-      logic: 'all',
-      rules: [],
-    };
+    return (
+      '<div data-cond-root="field">' +
+      renderConditionBlock(field.conditions, otherFields, 'field') +
+      '</div>'
+    );
+  }
 
-    const rulesHtml =
-      block.rules
-        .map((rule, i) => {
-          const fieldOpts = otherFields
-            .map(
-              (f) =>
-                `<option value="${f.id}" ${rule.field === f.id ? 'selected' : ''}>${escapeHtml(f.label)}</option>`
-            )
-            .join('');
-          return `
-          <div class="condition-row" data-rule="${i}">
-            <select data-rule-field>${fieldOpts || '<option value="">No fields</option>'}</select>
-            <select data-rule-op>
-              <option value="equals" ${rule.operator === 'equals' ? 'selected' : ''}>equals</option>
-              <option value="not_equals" ${rule.operator === 'not_equals' ? 'selected' : ''}>not equals</option>
-              <option value="contains" ${rule.operator === 'contains' ? 'selected' : ''}>contains</option>
-              <option value="empty" ${rule.operator === 'empty' ? 'selected' : ''}>is empty</option>
-              <option value="not_empty" ${rule.operator === 'not_empty' ? 'selected' : ''}>is not empty</option>
-            </select>
-            <input type="text" data-rule-value value="${escapeAttr(rule.value || '')}" placeholder="Value">
-            <button type="button" class="admin-btn admin-btn-danger" data-remove-rule="${i}">×</button>
+  const CHOICE_TYPES = ['select', 'radio', 'checkbox', 'yes_no'];
+
+  function conditionValueControl(rule, ruleField) {
+    const op = rule.operator || 'equals';
+    if (op === 'empty' || op === 'not_empty') {
+      return '<span class="fb-cond-novalue" data-rule-value-none></span>';
+    }
+    const value = String(rule.value ?? '');
+    const options = ruleField && CHOICE_TYPES.includes(ruleField.type) ? ruleField.options || [] : [];
+    if (!options.length) {
+      return `<input type="text" data-rule-value value="${escapeAttr(value)}" placeholder="Value">`;
+    }
+    const known = options.some((o) => String(o.value) === value);
+    return (
+      '<select data-rule-value>' +
+      (value === '' ? '<option value="" selected>Choose an answer…</option>' : '') +
+      (value === '' || known ? '' : `<option value="${escapeAttr(value)}" selected>${escapeHtml(value)}</option>`) +
+      options
+        .map(
+          (o) =>
+            `<option value="${escapeAttr(o.value)}" ${String(o.value) === value ? 'selected' : ''}>${escapeHtml(
+              o.label || o.value
+            )}</option>`
+        )
+        .join('') +
+      '</select>'
+    );
+  }
+
+  /** Shared show/hide rule editor for fields and pages. */
+  function renderConditionBlock(conditions, candidateFields, noun) {
+    const block = conditions[0] || { action: 'show', logic: 'all', rules: [] };
+    const rulesHtml = block.rules
+      .map((rule, i) => {
+        const ruleField =
+          candidateFields.find((f) => f.id === rule.field) || candidateFields[0] || null;
+        const fieldOpts = candidateFields
+          .map(
+            (f) =>
+              `<option value="${f.id}" ${ruleField && ruleField.id === f.id ? 'selected' : ''}>${escapeHtml(f.label)}</option>`
+          )
+          .join('');
+        const op = rule.operator || 'equals';
+        return `
+          <div class="fb-cond-rule" data-rule="${i}">
+            <div class="fb-cond-rule-head">
+              <span class="fb-cond-rule-label">${i === 0 ? 'When' : block.logic === 'any' ? 'Or when' : 'And when'}</span>
+              <button type="button" class="fb-cond-rule-remove" data-remove-rule="${i}" aria-label="Remove rule" title="Remove rule">×</button>
+            </div>
+            <select data-rule-field aria-label="Question">${fieldOpts || '<option value="">No earlier questions</option>'}</select>
+            <div class="fb-cond-rule-line">
+              <select data-rule-op aria-label="Comparison">
+                <option value="equals" ${op === 'equals' ? 'selected' : ''}>is</option>
+                <option value="not_equals" ${op === 'not_equals' ? 'selected' : ''}>is not</option>
+                <option value="contains" ${op === 'contains' ? 'selected' : ''}>contains</option>
+                <option value="empty" ${op === 'empty' ? 'selected' : ''}>is empty</option>
+                <option value="not_empty" ${op === 'not_empty' ? 'selected' : ''}>is not empty</option>
+              </select>
+              ${conditionValueControl({ ...rule, operator: op }, ruleField)}
+            </div>
           </div>`;
-        })
-        .join('');
+      })
+      .join('');
 
+    const mode = conditions.length ? (block.action === 'hide' ? 'hide' : 'show') : 'always';
     return `
       <div class="admin-field">
-        <label class="admin-checkbox-label"><input type="checkbox" id="fe-cond-enabled" ${field.conditions.length ? 'checked' : ''}><span>Enable conditions</span></label>
+        <label>Visibility</label>
+        <select data-cond-mode>
+          <option value="always" ${mode === 'always' ? 'selected' : ''}>Always show ${noun}</option>
+          <option value="show" ${mode === 'show' ? 'selected' : ''}>Show ${noun} only when…</option>
+          <option value="hide" ${mode === 'hide' ? 'selected' : ''}>Hide ${noun} when…</option>
+        </select>
       </div>
-      <div id="fe-cond-panel" style="${field.conditions.length ? '' : 'display:none'}">
-        <div class="admin-field">
-          <label>Action</label>
-          <select id="fe-cond-action">
-            <option value="show" ${block.action === 'show' ? 'selected' : ''}>Show field when…</option>
-            <option value="hide" ${block.action === 'hide' ? 'selected' : ''}>Hide field when…</option>
-          </select>
-        </div>
+      <div data-cond-panel style="${conditions.length ? '' : 'display:none'}">
         <div class="admin-field">
           <label>Match</label>
-          <select id="fe-cond-logic">
+          <select data-cond-logic>
             <option value="all" ${block.logic === 'all' ? 'selected' : ''}>All rules</option>
             <option value="any" ${block.logic === 'any' ? 'selected' : ''}>Any rule</option>
           </select>
         </div>
-        <div id="fe-rules">${rulesHtml}</div>
-        <button type="button" class="admin-btn admin-btn-secondary" id="fe-add-rule">+ Add rule</button>
+        <div data-cond-rules>${rulesHtml}</div>
+        <button type="button" class="admin-btn admin-btn-secondary" data-cond-add>+ Add rule</button>
       </div>
     `;
+  }
+
+  /**
+   * @param {HTMLElement|null} root
+   * @param {() => array} getConditions
+   * @param {(conditions: array) => void} setConditions
+   * @param {() => void} rerender
+   */
+  function bindConditionBlock(root, getConditions, setConditions, rerender) {
+    if (!root) return;
+    const modeSelect = root.querySelector('[data-cond-mode]');
+    if (!modeSelect) return;
+
+    const read = () => {
+      const rules = [];
+      root.querySelectorAll('[data-rule]').forEach((row) => {
+        rules.push({
+          field: row.querySelector('[data-rule-field]')?.value || '',
+          operator: row.querySelector('[data-rule-op]')?.value || 'equals',
+          value: row.querySelector('[data-rule-value]')?.value || '',
+        });
+      });
+      return [
+        {
+          action: modeSelect.value === 'hide' ? 'hide' : 'show',
+          logic: root.querySelector('[data-cond-logic]')?.value || 'all',
+          rules,
+        },
+      ];
+    };
+    const save = () => setConditions(modeSelect.value === 'always' ? [] : read());
+
+    modeSelect.addEventListener('change', () => {
+      if (modeSelect.value === 'always') {
+        setConditions([]);
+      } else {
+        const current = getConditions();
+        const next = current.length ? current : [{ action: 'show', logic: 'all', rules: [] }];
+        next[0].action = modeSelect.value;
+        if (!next[0].rules.length) next[0].rules.push({ field: '', operator: 'equals', value: '' });
+        setConditions(next);
+      }
+      rerender();
+    });
+
+    root.querySelectorAll('[data-rule-value]').forEach((node) => {
+      node.addEventListener('change', save);
+      node.addEventListener('input', save);
+    });
+
+    root.querySelectorAll('[data-rule-field], [data-rule-op], [data-cond-logic]').forEach((node) => {
+      node.addEventListener('change', () => {
+        const row = node.closest('[data-rule]');
+        if (row && node.matches('[data-rule-field]')) {
+          const valueInput = row.querySelector('[data-rule-value]');
+          if (valueInput) valueInput.value = '';
+        }
+        save();
+        rerender();
+      });
+    });
+
+    root.querySelector('[data-cond-add]')?.addEventListener('click', () => {
+      const next = read();
+      next[0].rules.push({ field: '', operator: 'equals', value: '' });
+      setConditions(next);
+      rerender();
+    });
+
+    root.querySelectorAll('[data-remove-rule]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const next = read();
+        next[0].rules.splice(Number(btn.dataset.removeRule), 1);
+        setConditions(next);
+        rerender();
+      });
+    });
   }
 
   function renderPartnerFieldEditor(field) {
@@ -1553,67 +1739,14 @@
   }
 
   function bindConditions(field) {
-    const enabled = el('fe-cond-enabled');
-    const panel = el('fe-cond-panel');
-    if (!enabled) return;
-
-    const readRules = () => {
-      const rules = [];
-      el('fe-rules')?.querySelectorAll('[data-rule]').forEach((row) => {
-        rules.push({
-          field: row.querySelector('[data-rule-field]')?.value || '',
-          operator: row.querySelector('[data-rule-op]')?.value || 'equals',
-          value: row.querySelector('[data-rule-value]')?.value || '',
-        });
-      });
-      return rules;
-    };
-
-    const saveConditions = () => {
-      if (!enabled.checked) {
-        field.conditions = [];
-        return;
-      }
-      field.conditions = [
-        {
-          action: el('fe-cond-action')?.value || 'show',
-          logic: el('fe-cond-logic')?.value || 'all',
-          rules: readRules(),
-        },
-      ];
-    };
-
-    enabled.addEventListener('change', () => {
-      panel.style.display = enabled.checked ? '' : 'none';
-      if (enabled.checked && !field.conditions.length) {
-        field.conditions = [{ action: 'show', logic: 'all', rules: [] }];
-        renderFieldEditor();
-      } else if (!enabled.checked) {
-        field.conditions = [];
-      }
-    });
-
-    ['fe-cond-action', 'fe-cond-logic'].forEach((id) => {
-      el(id)?.addEventListener('change', saveConditions);
-    });
-
-    el('fe-add-rule')?.addEventListener('click', () => {
-      if (!field.conditions.length) field.conditions = [{ action: 'show', logic: 'all', rules: [] }];
-      field.conditions[0].rules.push({ field: '', operator: 'equals', value: '' });
-      renderFieldEditor();
-    });
-
-    fieldEditor.querySelectorAll('[data-remove-rule]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        field.conditions[0].rules.splice(Number(btn.dataset.removeRule), 1);
-        renderFieldEditor();
-      });
-    });
-
-    fieldEditor.querySelectorAll('[data-rule-field], [data-rule-op], [data-rule-value]').forEach((node) => {
-      node.addEventListener('change', saveConditions);
-      node.addEventListener('input', saveConditions);
-    });
+    bindConditionBlock(
+      fieldEditor.querySelector('[data-cond-root="field"]'),
+      () => field.conditions || [],
+      (conditions) => {
+        field.conditions = conditions;
+      },
+      renderFieldEditor
+    );
   }
 
   el('add-field-btn')?.addEventListener('click', () => {

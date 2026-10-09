@@ -597,6 +597,8 @@
 
   /** @type {((index: number, opts?: { scroll?: boolean }) => void) | null} */
   let goToFormPage = null;
+  /** @type {(() => void) | null} */
+  let refreshFormPageNav = null;
 
   function initFormPages() {
     const pagesRoot = document.getElementById('form-pages');
@@ -613,39 +615,67 @@
     const progressFill = document.getElementById('form-page-progress-fill');
     let current = 0;
 
+    const isSkipped = (page) => page.hasAttribute('data-page-skipped');
+
+    function neighbourPage(from, step) {
+      for (let i = from + step; i >= 0 && i < pages.length; i += step) {
+        if (!isSkipped(pages[i])) return i;
+      }
+      return -1;
+    }
+
+    function updateNav() {
+      const active = pages.filter((page) => !isSkipped(page));
+      const before = pages.slice(0, current).filter((page) => !isSkipped(page)).length;
+      const total = Math.max(1, active.length);
+      const isLast = neighbourPage(current, 1) === -1;
+      if (prevBtn) prevBtn.hidden = neighbourPage(current, -1) === -1;
+      if (nextBtn) nextBtn.hidden = isLast;
+      if (submitBtn) submitBtn.hidden = !isLast;
+      if (stepLabel) stepLabel.textContent = 'Step ' + Math.min(before + 1, total) + ' of ' + total;
+      if (titleLabel) titleLabel.textContent = pages[current].getAttribute('data-page-title') || '';
+      if (progressFill) {
+        progressFill.style.width = (Math.min(before + 1, total) / total) * 100 + '%';
+      }
+    }
+
     function showPage(index, opts) {
       const shouldScroll = !opts || opts.scroll !== false;
       current = Math.max(0, Math.min(pages.length - 1, index));
       pages.forEach((page, i) => {
         page.hidden = i !== current;
       });
-      if (prevBtn) prevBtn.hidden = current === 0;
-      if (nextBtn) nextBtn.hidden = current === pages.length - 1;
-      if (submitBtn) submitBtn.hidden = current !== pages.length - 1;
-      if (stepLabel) stepLabel.textContent = 'Step ' + (current + 1) + ' of ' + pages.length;
-      if (titleLabel) titleLabel.textContent = pages[current].getAttribute('data-page-title') || '';
-      if (progressFill) {
-        progressFill.style.width = ((current + 1) / pages.length) * 100 + '%';
-      }
       if (statusEl) {
         statusEl.textContent = '';
         statusEl.className = 'custom-form-status';
       }
       applyConditions();
+      if (isSkipped(pages[current])) {
+        const fallback = neighbourPage(current, 1) !== -1 ? neighbourPage(current, 1) : neighbourPage(current, -1);
+        if (fallback !== -1) {
+          showPage(fallback, opts);
+          return;
+        }
+      }
+      updateNav();
       if (shouldScroll) {
         requestAnimationFrame(() => scrollFormToTop());
       }
     }
 
     prevBtn?.addEventListener('click', () => {
-      showPage(current - 1);
+      const target = neighbourPage(current, -1);
+      if (target !== -1) showPage(target);
     });
 
     nextBtn?.addEventListener('click', () => {
       if (!validatePage(pages[current])) return;
-      showPage(current + 1);
+      applyConditions();
+      const target = neighbourPage(current, 1);
+      if (target !== -1) showPage(target);
     });
 
+    refreshFormPageNav = updateNav;
     showPage(0, { scroll: false });
     goToFormPage = showPage;
   }
@@ -985,37 +1015,74 @@
     return block.action === 'hide' ? !match : match;
   }
 
+  function setFieldWrapVisible(wrap, visible) {
+    wrap.style.display = visible ? '' : 'none';
+    const phoneWrap = wrap.querySelector('[data-phone-field]');
+    wrap.querySelectorAll('input, select, textarea').forEach((el) => {
+      if (el.closest('.yes-no-reason-wrap')) return;
+      el.disabled = !visible;
+      if (!visible) {
+        if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
+        else if (el.type !== 'file') {
+          if (phoneWrap && el.matches('[data-phone-cc]')) return;
+          el.value = '';
+        }
+      }
+    });
+    if (phoneWrap && visible) {
+      applyPhoneFormatToLocal(phoneWrap);
+    }
+  }
+
+  /** Pages whose conditions say they should be skipped; earlier pages are settled first. */
+  function applyPageConditions() {
+    const skipped = new Set();
+    form.querySelectorAll('.custom-form-page').forEach((page) => {
+      const raw = page.getAttribute('data-page-conditions');
+      let skip = false;
+      if (raw) {
+        try {
+          skip = !evaluateConditions(JSON.parse(raw));
+        } catch (e) {
+          skip = false;
+        }
+      }
+      page.toggleAttribute('data-page-skipped', skip);
+      if (skip) {
+        skipped.add(page);
+        page.querySelectorAll('[data-field-id]').forEach((wrap) => {
+          setFieldWrapVisible(wrap, false);
+          wrap.setAttribute('data-page-disabled', '1');
+        });
+      }
+    });
+    return skipped;
+  }
+
   function applyConditions() {
+    const skippedPages = applyPageConditions();
     fields.forEach((wrap) => {
+      const page = wrap.closest('.custom-form-page');
+      if (page && skippedPages.has(page)) return;
+
       const raw = wrap.getAttribute('data-conditions');
       if (!raw) {
+        if (wrap.hasAttribute('data-page-disabled')) {
+          wrap.removeAttribute('data-page-disabled');
+          setFieldWrapVisible(wrap, true);
+        }
         wrap.style.display = '';
         return;
       }
+      wrap.removeAttribute('data-page-disabled');
       try {
-        const conditions = JSON.parse(raw);
-        const visible = evaluateConditions(conditions);
-        wrap.style.display = visible ? '' : 'none';
-        const phoneWrap = wrap.querySelector('[data-phone-field]');
-        wrap.querySelectorAll('input, select, textarea').forEach((el) => {
-          if (el.closest('.yes-no-reason-wrap')) return;
-          el.disabled = !visible;
-          if (!visible) {
-            if (el.type === 'checkbox' || el.type === 'radio') el.checked = false;
-            else if (el.type !== 'file') {
-              if (phoneWrap && el.matches('[data-phone-cc]')) return;
-              el.value = '';
-            }
-          }
-        });
-        if (phoneWrap && visible) {
-          applyPhoneFormatToLocal(phoneWrap);
-        }
+        setFieldWrapVisible(wrap, evaluateConditions(JSON.parse(raw)));
       } catch (e) {
         wrap.style.display = '';
       }
     });
     applyYesNoReasons();
+    if (typeof refreshFormPageNav === 'function') refreshFormPageNav();
   }
 
   function applyYesNoReasons() {

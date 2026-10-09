@@ -20,9 +20,40 @@ function invoice_recipient_email(array $invoice): string
 }
 
 /**
+ * Email templates filled in for one invoice, ready to edit in the send form.
+ *
+ * @return array{subject: string, body: string, templates: list<array{id: string, name: string, subject: string, body: string, is_default: bool}>}
+ */
+function invoice_email_draft(array $invoice): array
+{
+    $templates = [];
+    $default = null;
+    foreach (invoice_templates()['emails'] as $template) {
+        $filled = [
+            'id' => (string) $template['id'],
+            'name' => (string) $template['name'],
+            'subject' => invoice_template_fill((string) $template['subject'], $invoice),
+            'body' => invoice_template_fill((string) $template['body'], $invoice),
+            'is_default' => !empty($template['is_default']),
+        ];
+        $templates[] = $filled;
+        if ($filled['is_default'] && $default === null) {
+            $default = $filled;
+        }
+    }
+    $default ??= $templates[0] ?? null;
+    $number = (string) ($invoice['invoice_number'] ?? '');
+    return [
+        'subject' => ($default['subject'] ?? '') !== '' ? $default['subject'] : 'Invoice #' . $number . ' from Verma Accounting',
+        'body' => (string) ($default['body'] ?? ''),
+        'templates' => $templates,
+    ];
+}
+
+/**
  * @return array{ok: bool, error?: string, to?: string}
  */
-function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?string $message = null): array
+function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?string $message = null, ?string $subject = null): array
 {
     $toEmail = strtolower(trim($toEmail));
     if ($toEmail === '' || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
@@ -42,25 +73,23 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
     }
 
     $number = (string) ($invoice['invoice_number'] ?? '');
-    $company = invoice_company_settings();
     $currency = (string) ($invoice['currency'] ?? 'CAD');
     $amountDue = invoice_format_money(invoice_amount_due($invoice));
     $due = invoice_format_date((string) ($invoice['due_date'] ?? ''));
-    $billName = trim((string) ($invoice['bill_to_name'] ?? ''));
-    if ($billName === '') {
-        $billName = trim((string) ($invoice['bill_to_company'] ?? ''));
-    }
-    if ($billName === '') {
-        $billName = 'there';
-    }
 
-    $extra = trim((string) ($message ?? ''));
-    $paymentEmail = $company['payment_email'] ?? 'info@vermaaccounting.ca';
+    $draft = invoice_email_draft($invoice);
+    $message = trim(str_replace("\r\n", "\n", (string) ($message ?? '')));
+    $body = invoice_template_fill($message !== '' ? $message : $draft['body'], $invoice);
+    $subject = trim((string) ($subject ?? ''));
+    $subject = invoice_template_fill($subject !== '' ? $subject : $draft['subject'], $invoice);
 
-    $bodyHtml = '<p style="margin:0 0 16px;color:#334155;">Hi ' . e($billName) . ',</p>'
-        . '<p style="margin:0 0 16px;color:#334155;">Please find invoice <strong>#'
-        . e($number) . '</strong> attached as a PDF.</p>'
-        . '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 20px;">'
+    $bodyHtml = '';
+    foreach (preg_split('/\n{2,}/', $body) ?: [] as $paragraph) {
+        if (trim($paragraph) !== '') {
+            $bodyHtml .= '<p style="margin:0 0 16px;color:#334155;">' . nl2br(e(trim($paragraph))) . '</p>';
+        }
+    }
+    $bodyHtml .= '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 20px;">'
         . '<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;width:40%;">Amount due</td>'
         . '<td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#1e3a8a;font-weight:700;text-align:right;">'
         . e($amountDue) . ' ' . e($currency) . '</td></tr>'
@@ -69,31 +98,19 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
         . e($due) . '</td></tr>'
         . '</table>';
 
-    if ($extra !== '') {
-        $bodyHtml .= '<p style="margin:0 0 16px;color:#334155;">' . nl2br(e($extra)) . '</p>';
-    }
-
-    $bodyHtml .= '<p style="margin:0;color:#64748b;font-size:14px;">Please make payment to '
-        . '<a href="mailto:' . e($paymentEmail) . '" style="color:#f97316;">' . e($paymentEmail) . '</a>.</p>';
-
     $html = submission_email_layout(
         'Invoice #' . $number,
         $bodyHtml,
         'This invoice was sent by Verma Accounting & Financial Services.'
     );
 
-    $text = "Hi {$billName},\n\n"
-        . "Please find invoice #{$number} attached as a PDF.\n\n"
+    $text = $body . "\n\n"
         . "Amount due: {$amountDue} {$currency}\n"
-        . "Payment due: {$due}\n\n";
-    if ($extra !== '') {
-        $text .= $extra . "\n\n";
-    }
-    $text .= "Please make payment to {$paymentEmail}.\n";
+        . "Payment due: {$due}\n";
 
     $ok = $mailer->sendWithAttachments(
         $toEmail,
-        'Invoice #' . $number . ' from Verma Accounting',
+        $subject,
         $html,
         [[
             'filename' => $pdf['filename'],

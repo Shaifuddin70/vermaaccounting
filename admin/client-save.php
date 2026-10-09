@@ -23,7 +23,11 @@ $email = strtolower(trim((string) ($_POST['email'] ?? '')));
 $phone = trim((string) ($_POST['phone'] ?? ''));
 $otherPhone = trim((string) ($_POST['other_phone'] ?? ''));
 $company = trim((string) ($_POST['company'] ?? ''));
-$address = trim(preg_replace('/\s*\R\s*/', ', ', (string) ($_POST['address'] ?? '')) ?? '');
+$addressStreet = trim((string) ($_POST['address_street'] ?? ''));
+$addressCity = trim((string) ($_POST['address_city'] ?? ''));
+$addressProvince = trim((string) ($_POST['address_province'] ?? ''));
+$addressPostal = trim((string) ($_POST['address_postal'] ?? ''));
+$addressCountry = trim((string) ($_POST['address_country'] ?? ''));
 $sin = trim((string) ($_POST['sin'] ?? ''));
 $dob = trim((string) ($_POST['date_of_birth'] ?? ''));
 $status = trim((string) ($_POST['status'] ?? ''));
@@ -38,7 +42,11 @@ $oldInput = [
     'phone' => $phone,
     'other_phone' => $otherPhone,
     'company' => $company,
-    'address' => $address,
+    'address_street' => $addressStreet,
+    'address_city' => $addressCity,
+    'address_province' => $addressProvince,
+    'address_postal' => $addressPostal,
+    'address_country' => $addressCountry,
     'sin' => $sin,
     'date_of_birth' => $dob,
     'status' => $status,
@@ -65,6 +73,10 @@ if ($name === '') {
 if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $errors[] = 'Enter a valid email address.';
 }
+$postalCanada = $addressCountry === '' || in_array(strtolower($addressCountry), ['canada', 'ca', 'can'], true);
+if ($addressPostal !== '' && $postalCanada && !preg_match('/^[A-Za-z]\d[A-Za-z]\s*-?\s*\d[A-Za-z]\d$/', $addressPostal)) {
+    $errors[] = 'Enter a valid Canadian postal code (e.g. K1A 0B1).';
+}
 if ($dob !== '') {
     $parsed = DateTimeImmutable::createFromFormat('Y-m-d', $dob);
     if (!$parsed || $parsed->format('Y-m-d') !== $dob) {
@@ -90,7 +102,11 @@ $data = [
     'email' => $email,
     'phone' => $phone,
     'company' => $company,
-    'address' => $address,
+    'address_street' => $addressStreet,
+    'address_city' => $addressCity,
+    'address_province' => $addressProvince,
+    'address_postal' => $addressPostal,
+    'address_country' => $addressCountry,
     'is_active' => $isActive,
     'sin' => $sin,
     'date_of_birth' => $dob !== '' ? $dob : null,

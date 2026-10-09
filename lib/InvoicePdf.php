@@ -231,7 +231,7 @@ final class InvoicePdf extends FPDF
         $total = invoice_format_money($this->invoice['total'] ?? 0);
         $amountDue = invoice_format_money($this->dueState['amount_due']);
 
-        $notesText = trim((string) ($this->invoice['notes'] ?? ''));
+        $notesText = trim(invoice_template_fill((string) ($this->invoice['notes'] ?? ''), $this->invoice));
         $thankYou = 'Thank you for choosing our service!';
         if ($notesText !== '') {
             $notesText = trim(preg_replace(

@@ -10,7 +10,7 @@
 /** @var float $total */
 /** @var float $amountDue */
 
-$notesText = trim((string) ($invoice['notes'] ?? ''));
+$notesText = trim(invoice_template_fill((string) ($invoice['notes'] ?? ''), $invoice));
 $thankYou = 'Thank you for choosing our service!';
 $notesBody = $notesText;
 if ($notesText !== '') {

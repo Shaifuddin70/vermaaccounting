@@ -105,6 +105,11 @@ $advanceLabel = (string) ($old['advance_label'] ?? ($invoice ? (string) ($invoic
 $dueAdjustmentLabel = (string) ($old['due_adjustment_label'] ?? ($invoice ? (string) ($invoice['due_adjustment_label'] ?? '') : ''));
 $status = (string) ($old['status'] ?? $invoice['status'] ?? 'draft');
 $notes = (string) ($old['notes'] ?? $invoice['notes'] ?? invoice_default_notes());
+$noteTemplates = array_map(
+    static fn (array $tpl): array => ['id' => $tpl['id'], 'name' => $tpl['name'], 'body' => invoice_template_fill($tpl['body'])],
+    invoice_templates()['notes']
+);
+$canManageTemplates = Auth::can('invoices.settings') && partner_user_id() === null;
 
 if ($submissionPrefill !== null && $old === []) {
     if (!empty($submissionPrefill['client_id'])) {
@@ -191,6 +196,7 @@ foreach ($clients as $c) {
         'company' => (string) $c['company'],
         'email' => (string) $c['email'],
         'phone' => (string) ($c['phone'] ?? ''),
+        'address' => $c['address'],
     ];
 }
 
@@ -443,7 +449,21 @@ require __DIR__ . '/includes/layout-start.php';
       </div>
 
       <div class="admin-field invoice-notes-field">
-        <label for="invoice-notes">Notes / Terms</label>
+        <div class="invoice-notes-head">
+          <label for="invoice-notes">Notes / Terms</label>
+          <?php if (count($noteTemplates) > 1): ?>
+            <select id="invoice-notes-template" aria-label="Notes template"
+              data-note-templates="<?= e(json_encode($noteTemplates, JSON_UNESCAPED_UNICODE)) ?>">
+              <option value="">Insert template…</option>
+              <?php foreach ($noteTemplates as $tpl): ?>
+                <option value="<?= e($tpl['id']) ?>"><?= e($tpl['name']) ?></option>
+              <?php endforeach; ?>
+            </select>
+          <?php endif; ?>
+          <?php if ($canManageTemplates): ?>
+            <a href="/admin/invoice-templates#note-templates" class="invoice-notes-manage">Edit templates</a>
+          <?php endif; ?>
+        </div>
         <textarea id="invoice-notes" name="notes" rows="3"><?= e($notes) ?></textarea>
       </div>
     </section>
@@ -537,5 +557,5 @@ require __DIR__ . '/includes/layout-start.php';
 window.INVOICE_CLIENTS = <?= json_encode($clientsList, JSON_UNESCAPED_UNICODE) ?>;
 window.INVOICE_SERVICES = <?= json_encode($servicesList, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/admin/js/invoice-edit.js?v=9" defer></script>
+<script src="/admin/js/invoice-edit.js?v=11" defer></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

@@ -2478,6 +2478,120 @@ body.admin-body {
   background: rgba(255, 255, 255, 0.22);
 }
 
+.fb-page-tab.has-conditions .fb-page-tab-label::before {
+  content: '⑂ ';
+  font-weight: 700;
+}
+
+.fb-cond-novalue {
+  display: none;
+}
+
+.fb-cond-rule {
+  display: grid;
+  gap: 0.4rem;
+  min-width: 0;
+  margin-bottom: 0.6rem;
+  padding: 0.6rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+}
+
+.fb-cond-rule-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fb-cond-rule-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--admin-text-muted, #64748b);
+}
+
+.fb-cond-rule-remove {
+  width: 1.6rem;
+  height: 1.6rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--admin-text-muted, #64748b);
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fb-cond-rule-remove:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.fb-cond-rule-line {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 0.4rem;
+}
+
+.fb-cond-rule-line:has(.fb-cond-novalue) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.fb-cond-rule select,
+.fb-cond-rule input[type='text'] {
+  width: 100%;
+  min-width: 0;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font: inherit;
+  font-size: 0.875rem;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  text-overflow: ellipsis;
+}
+
+.fb-cond-rule select:focus,
+.fb-cond-rule input[type='text']:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: var(--admin-focus-ring);
+}
+
+.fb-page-tab[draggable='true'] {
+  position: relative;
+  cursor: grab;
+}
+
+.fb-page-tab[draggable='true']:active {
+  cursor: grabbing;
+}
+
+.fb-page-tab.is-dragging {
+  opacity: 0.45;
+}
+
+.fb-page-tab.drop-before::before,
+.fb-page-tab.drop-after::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--admin-primary);
+}
+
+.fb-page-tab.drop-before::before {
+  left: -4px;
+}
+
+.fb-page-tab.drop-after::after {
+  right: -4px;
+}
+
 .fb-page-add {
   flex-shrink: 0;
   width: 2.25rem;
@@ -2517,7 +2631,27 @@ body.admin-body {
 .fb-page-title-row input {
   flex: 1;
   min-width: 10rem;
+  min-height: 2.25rem;
   margin: 0;
+  padding: 0.45rem 0.75rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font: inherit;
+  font-size: 0.875rem;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.fb-page-title-row input:focus {
+  outline: none;
+  border-color: var(--admin-primary);
+  box-shadow: var(--admin-focus-ring);
+}
+
+.fb-page-title-row .admin-btn {
+  min-height: 2.25rem;
 }
 
 .fb-fields-empty {
@@ -7953,6 +8087,110 @@ a.clients-contact-line:hover {
   margin: 1rem 0 0;
   padding-top: 1rem;
   border-top: 1px solid var(--admin-border, #e2e8f0);
+}
+
+.invoice-notes-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.invoice-notes-head label {
+  margin: 0 auto 0 0 !important;
+}
+
+.invoice-notes-head select {
+  min-width: 11rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.8125rem;
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text);
+}
+
+.invoice-notes-manage {
+  font-size: 0.8125rem;
+}
+
+.invoice-templates-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.invoice-templates-columns > .admin-card {
+  margin: 0;
+}
+
+.invoice-templates-title {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+}
+
+.invoice-template-card {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+}
+
+.invoice-template-card.is-new {
+  border-style: dashed;
+  background: var(--admin-surface-variant);
+}
+
+.invoice-template-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.invoice-template-card-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.invoice-template-delete span {
+  color: var(--admin-danger, #dc2626);
+}
+
+.invoice-templates-help {
+  margin-bottom: 1.25rem;
+}
+
+.invoice-templates-help .admin-field-hint {
+  margin: -0.5rem 0 0.75rem;
+}
+
+.invoice-templates-placeholders {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.invoice-templates-placeholders dt code {
+  font-size: 0.8125rem;
+}
+
+.invoice-templates-placeholders dd {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--admin-muted);
+}
+
+@media (max-width: 1000px) {
+  .invoice-templates-columns {
+    grid-template-columns: 1fr;
+  }
 }
 
 .invoice-summary-title {

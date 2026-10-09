@@ -168,6 +168,7 @@ final class Database
         $this->ensureClientsManualSource();
         $this->ensureClientsEmailUnsubscribedColumn();
         $this->ensureClientsAddressColumn();
+        $this->ensureClientsAddressPartColumns();
         $this->ensureClientsActiveColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
@@ -265,6 +266,7 @@ final class Database
         $this->ensureClientsManualSource();
         $this->ensureClientsEmailUnsubscribedColumn();
         $this->ensureClientsAddressColumn();
+        $this->ensureClientsAddressPartColumns();
         $this->ensureClientsActiveColumn();
         $this->ensurePartnerRole();
         $this->ensureSubmissionPartnersTable();
@@ -1011,6 +1013,58 @@ final class Database
 
         if (!$this->sqliteColumnExists('clients', 'address')) {
             $this->pdo->exec('ALTER TABLE clients ADD COLUMN address TEXT');
+        }
+    }
+
+    private function ensureClientsAddressPartColumns(): void
+    {
+        $columns = [
+            'address_street' => 'VARCHAR(255)',
+            'address_city' => 'VARCHAR(120)',
+            'address_province' => 'VARCHAR(64)',
+            'address_postal' => 'VARCHAR(16)',
+            'address_country' => 'VARCHAR(64)',
+        ];
+        $added = false;
+        $after = 'address';
+        foreach ($columns as $column => $type) {
+            if ($this->driver === 'mysql') {
+                if (!$this->columnExists('clients', $column)) {
+                    $this->pdo->exec('ALTER TABLE clients ADD COLUMN ' . $column . ' ' . $type . ' DEFAULT NULL AFTER ' . $after);
+                    $added = true;
+                }
+            } elseif (!$this->sqliteColumnExists('clients', $column)) {
+                $this->pdo->exec('ALTER TABLE clients ADD COLUMN ' . $column . ' TEXT');
+                $added = true;
+            }
+            $after = $column;
+        }
+        if (!$added) {
+            return;
+        }
+
+        require_once __DIR__ . '/client_helpers.php';
+        $rows = $this->pdo->query("
+            SELECT id, address FROM clients
+            WHERE address IS NOT NULL AND TRIM(address) <> ''
+              AND (address_street IS NULL OR address_street = '')
+              AND (address_city IS NULL OR address_city = '')
+        ")->fetchAll();
+        $stmt = $this->pdo->prepare('
+            UPDATE clients
+            SET address_street = ?, address_city = ?, address_province = ?, address_postal = ?, address_country = ?
+            WHERE id = ?
+        ');
+        foreach ($rows as $row) {
+            $parts = client_address_parts((string) $row['address']);
+            $stmt->execute([
+                $parts['street'],
+                $parts['city'],
+                $parts['province'],
+                $parts['postal'],
+                $parts['country'],
+                (int) $row['id'],
+            ]);
         }
     }
 

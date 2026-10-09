@@ -125,7 +125,14 @@ $clientLink = invoice_ensure_client_from_bill_to(
     $billToName,
     $billToCompany,
     $billToEmail,
-    $billToPhone
+    $billToPhone,
+    [
+        'street' => (string) ($_POST['bill_to_street'] ?? ''),
+        'city' => (string) ($_POST['bill_to_city'] ?? ''),
+        'province' => (string) ($_POST['bill_to_province'] ?? ''),
+        'postal' => (string) ($_POST['bill_to_postal'] ?? ''),
+        'country' => (string) ($_POST['bill_to_country'] ?? ''),
+    ]
 );
 $clientId = $clientLink['client_id'];
 $clientCreated = !empty($clientLink['created']);

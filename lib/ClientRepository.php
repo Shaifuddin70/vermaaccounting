@@ -351,7 +351,8 @@ final class ClientRepository
         [$scopeSql, $scopeParams] = partner_client_scope_sql($partnerUserId, 'c');
         $where = $scopeSql !== '' ? (' WHERE ' . $scopeSql) : '';
         $stmt = $this->db->prepare('
-            SELECT c.id, c.name, c.company, c.email, c.phone
+            SELECT c.id, c.name, c.company, c.email, c.phone, c.address,
+                   c.address_street, c.address_city, c.address_province, c.address_postal, c.address_country
             FROM clients c
             ' . $where . '
             ORDER BY c.name ASC
@@ -367,6 +368,7 @@ final class ClientRepository
                 'company' => (string) ($row['company'] ?? ''),
                 'email' => (string) ($row['email'] ?? ''),
                 'phone' => (string) ($row['phone'] ?? ''),
+                'address' => client_address_from_row($row),
             ];
         }
         return $out;
@@ -485,6 +487,16 @@ final class ClientRepository
         }
         $stmt = $this->db->prepare('SELECT * FROM clients WHERE sin = ? LIMIT 1');
         $stmt->execute([$sin]);
+        $row = $stmt->fetch();
+        if ($row) {
+            return $row;
+        }
+        $digits = $this->sinDigits($sin);
+        if (strlen($digits) !== 9) {
+            return null;
+        }
+        $stmt = $this->db->prepare("SELECT * FROM clients WHERE REPLACE(REPLACE(sin, '-', ''), ' ', '') = ? LIMIT 1");
+        $stmt->execute([$digits]);
         return $stmt->fetch() ?: null;
     }
 
@@ -508,9 +520,14 @@ final class ClientRepository
     public function create(array $data, string $source = 'import'): int
     {
         $now = now_iso();
+        $address = $this->resolveAddress($data, null);
         $stmt = $this->db->prepare('
-            INSERT INTO clients (name, sin, email, phone, company, address, is_active, date_of_birth, notes, source, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clients (
+                name, sin, email, phone, company, address,
+                address_street, address_city, address_province, address_postal, address_country,
+                is_active, date_of_birth, notes, source, created_at, updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         $stmt->execute([
             trim((string) ($data['name'] ?? '')),
@@ -518,7 +535,7 @@ final class ClientRepository
             $this->normalizeEmail($data['email'] ?? ''),
             trim((string) ($data['phone'] ?? '')),
             trim((string) ($data['company'] ?? '')),
-            trim((string) ($data['address'] ?? '')),
+            ...array_values($address),
             array_key_exists('is_active', $data) ? ((int) (bool) $data['is_active']) : 1,
             $this->normalizeDob($data['date_of_birth'] ?? null),
             trim((string) ($data['notes'] ?? '')),
@@ -535,9 +552,12 @@ final class ClientRepository
         if (!$existing) {
             return false;
         }
+        $address = $this->resolveAddress($data, $existing);
         $stmt = $this->db->prepare('
             UPDATE clients
-            SET name = ?, sin = ?, email = ?, phone = ?, company = ?, address = ?, is_active = ?, date_of_birth = ?, notes = ?, updated_at = ?
+            SET name = ?, sin = ?, email = ?, phone = ?, company = ?, address = ?,
+                address_street = ?, address_city = ?, address_province = ?, address_postal = ?, address_country = ?,
+                is_active = ?, date_of_birth = ?, notes = ?, updated_at = ?
             WHERE id = ?
         ');
         $isActive = array_key_exists('is_active', $data) ? $data['is_active'] : ($existing['is_active'] ?? 1);
@@ -550,7 +570,7 @@ final class ClientRepository
             $this->normalizeEmail($data['email'] ?? $existing['email']),
             trim((string) ($data['phone'] ?? $existing['phone'] ?? '')),
             trim((string) ($data['company'] ?? $existing['company'] ?? '')),
-            trim((string) ($data['address'] ?? $existing['address'] ?? '')),
+            ...array_values($address),
             (int) (bool) $isActive,
             $dob,
             trim((string) ($data['notes'] ?? $existing['notes'] ?? '')),
@@ -647,7 +667,11 @@ final class ClientRepository
         return $row ?: null;
     }
 
-    public function linkFromSubmission(array $submission, array $schema): void
+    /**
+     * @param bool $refreshExisting True for a brand-new submission: a returning client's
+     *                              profile is updated with the answers they just gave.
+     */
+    public function linkFromSubmission(array $submission, array $schema, bool $refreshExisting = false): void
     {
         $submissionId = (int) ($submission['id'] ?? 0);
         if ($submissionId < 1) {
@@ -659,7 +683,7 @@ final class ClientRepository
             return;
         }
 
-        $result = $this->upsertFromExtracted($extracted, 'submission');
+        $result = $this->upsertFromExtracted($extracted, 'submission', $refreshExisting ? $submissionId : null);
         if ($result === null) {
             return;
         }
@@ -868,8 +892,12 @@ final class ClientRepository
         return $stmt->fetchAll();
     }
 
-    /** @return array{id: int, is_new: bool}|null */
-    private function upsertFromExtracted(array $extracted, string $source): ?array
+    /**
+     * @param int|null $refreshFromSubmissionId When set, a matched client is updated with the new answers
+     *                                          instead of only filling blank fields.
+     * @return array{id: int, is_new: bool}|null
+     */
+    private function upsertFromExtracted(array $extracted, string $source, ?int $refreshFromSubmissionId = null): ?array
     {
         $name = trim((string) ($extracted['name'] ?? ''));
         $sin = trim((string) ($extracted['sin'] ?? ''));
@@ -888,7 +916,11 @@ final class ClientRepository
         if ($sin !== '') {
             $existing = $this->findBySin($sin);
             if ($existing) {
-                $this->fillEmptyFields((int) $existing['id'], $extracted);
+                if ($refreshFromSubmissionId !== null) {
+                    $this->refreshFromSubmission((int) $existing['id'], $extracted, true, $refreshFromSubmissionId);
+                } else {
+                    $this->fillEmptyFields((int) $existing['id'], $extracted);
+                }
                 return ['id' => (int) $existing['id'], 'is_new' => false];
             }
         }
@@ -896,7 +928,13 @@ final class ClientRepository
         if ($email !== '') {
             $existing = $this->findByEmail($email);
             if ($existing) {
-                $this->fillEmptyFields((int) $existing['id'], $extracted);
+                $existingSin = $this->sinDigits((string) ($existing['sin'] ?? ''));
+                $samePerson = $sin === '' || $existingSin === '' || $existingSin === $this->sinDigits($sin);
+                if ($refreshFromSubmissionId !== null && $samePerson) {
+                    $this->refreshFromSubmission((int) $existing['id'], $extracted, false, $refreshFromSubmissionId);
+                } else {
+                    $this->fillEmptyFields((int) $existing['id'], $extracted);
+                }
                 return ['id' => (int) $existing['id'], 'is_new' => false];
             }
         }
@@ -909,7 +947,7 @@ final class ClientRepository
             'company' => $extracted['company'] ?? '',
             'date_of_birth' => $extracted['date_of_birth'] ?? null,
             'notes' => '',
-        ], $source);
+        ] + $this->addressPartFields((array) ($extracted['address'] ?? [])), $source);
 
         return ['id' => $id, 'is_new' => true];
     }
@@ -917,7 +955,7 @@ final class ClientRepository
     /**
      * Create or match a client from invoice bill-to / contact fields.
      *
-     * @param array{name?: string, email?: string, phone?: string, company?: string, sin?: string, date_of_birth?: string|null} $data
+     * @param array{name?: string, email?: string, phone?: string, company?: string, sin?: string, date_of_birth?: string|null, address?: array<string, string>} $data
      * @return array{id: int, is_new: bool}|null
      */
     public function upsertFromContact(array $data, string $source = 'manual'): ?array
@@ -930,7 +968,74 @@ final class ClientRepository
             'company' => trim((string) ($data['company'] ?? '')),
             'sin' => trim((string) ($data['sin'] ?? '')),
             'date_of_birth' => $data['date_of_birth'] ?? null,
+            'address' => (array) ($data['address'] ?? []),
         ], $source);
+    }
+
+    /**
+     * Overwrite a returning client's details with the non-blank answers from a new submission.
+     * Name and email only change when the client was matched by SIN, since an email can be
+     * shared by family members.
+     */
+    private function refreshFromSubmission(int $clientId, array $extracted, bool $matchedBySin, int $submissionId): void
+    {
+        $client = $this->find($clientId);
+        if (!$client) {
+            return;
+        }
+
+        $updates = [];
+        $changeIfDifferent = static function (string $key, string $value) use ($client, &$updates): void {
+            if ($value !== '' && $value !== trim((string) ($client[$key] ?? ''))) {
+                $updates[$key] = $value;
+            }
+        };
+
+        $changeIfDifferent('phone', trim((string) ($extracted['phone'] ?? '')));
+        $changeIfDifferent('company', trim((string) ($extracted['company'] ?? '')));
+        $changeIfDifferent('date_of_birth', (string) (birthday_normalize_dob($extracted['date_of_birth'] ?? '') ?? ''));
+        if ($matchedBySin) {
+            $changeIfDifferent('name', trim((string) ($extracted['name'] ?? '')));
+            $email = strtolower(trim((string) ($extracted['email'] ?? '')));
+            if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                $changeIfDifferent('email', $email);
+            }
+        }
+        $sin = trim((string) ($extracted['sin'] ?? ''));
+        if (trim((string) ($client['sin'] ?? '')) === '' && $sin !== '' && !$this->sinExists($sin, $clientId)) {
+            $updates['sin'] = $sin;
+        }
+
+        $address = $this->addressPartFields((array) ($extracted['address'] ?? []));
+        if ($address !== []) {
+            $newLine = client_address_compose([
+                'street' => $address['address_street'],
+                'city' => $address['address_city'],
+                'province' => $address['address_province'],
+                'postal' => $address['address_postal'],
+                'country' => $address['address_country'],
+            ]);
+            if ($newLine !== client_address_compose(client_address_from_row($client))) {
+                $updates += $address;
+            }
+        }
+
+        if ($updates === []) {
+            return;
+        }
+        $this->update($clientId, array_merge($client, $updates));
+        ActivityLog::record('client.updated_from_submission', 'client', $clientId, [
+            'submission_id' => $submissionId,
+            'fields' => array_values(array_unique(array_map(
+                static fn (string $key): string => str_starts_with($key, 'address_') ? 'address' : $key,
+                array_keys($updates)
+            ))),
+        ]);
+    }
+
+    private function sinDigits(string $sin): string
+    {
+        return preg_replace('/\D+/', '', $sin) ?? '';
     }
 
     private function fillEmptyFields(int $clientId, array $extracted): void
@@ -951,6 +1056,10 @@ final class ClientRepository
         }
         if (($client['date_of_birth'] ?? '') === '' && ($extracted['date_of_birth'] ?? '') !== '') {
             $updates['date_of_birth'] = $extracted['date_of_birth'];
+        }
+        $currentAddress = client_address_from_row($client);
+        if ($currentAddress['street'] === '' && $currentAddress['city'] === '' && $currentAddress['postal'] === '') {
+            $updates += $this->addressPartFields((array) ($extracted['address'] ?? []));
         }
         if (count($updates) > 0) {
             $this->update($clientId, array_merge($client, $updates));
@@ -1000,7 +1109,8 @@ final class ClientRepository
 
         $province = (string) ($filters['province'] ?? '');
         if ($province !== '') {
-            $parts[] = '(c.address LIKE ? OR c.address LIKE ?)';
+            $parts[] = '(c.address_province = ? OR c.address LIKE ? OR c.address LIKE ?)';
+            $params[] = client_province_name($province);
             $params[] = '%, ' . $province . ' %';
             $params[] = '%, ' . $province;
         }
@@ -1033,6 +1143,66 @@ final class ClientRepository
         }
         $where = $parts === [] ? '' : ('WHERE ' . implode(' AND ', $parts));
         return [$where, $params];
+    }
+
+    /**
+     * Address columns to store. Separate address_* fields win when they change;
+     * otherwise a changed one-line `address` is split into parts.
+     *
+     * @return array{address: string, street: string, city: string, province: string, postal: string, country: string}
+     */
+    private function resolveAddress(array $data, ?array $existing): array
+    {
+        $current = client_address_from_row($existing);
+        $partKeys = [
+            'street' => 'address_street',
+            'city' => 'address_city',
+            'province' => 'address_province',
+            'postal' => 'address_postal',
+            'country' => 'address_country',
+        ];
+
+        $partsChanged = false;
+        $parts = $current;
+        foreach ($partKeys as $part => $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+            $value = trim((string) $data[$key]);
+            if ($value !== trim((string) ($existing[$key] ?? ''))) {
+                $partsChanged = true;
+            }
+            $parts[$part] = $value;
+        }
+
+        if ($partsChanged) {
+            $parts = client_address_normalize($parts);
+            return ['address' => client_address_compose($parts)] + $parts;
+        }
+
+        $line = array_key_exists('address', $data)
+            ? trim(preg_replace('/\s*\R\s*/', ', ', (string) $data['address']) ?? '')
+            : trim((string) ($existing['address'] ?? ''));
+        if ($existing !== null && $line === trim((string) ($existing['address'] ?? ''))) {
+            return ['address' => $line] + $current;
+        }
+        return ['address' => $line] + client_address_parts($line);
+    }
+
+    /** @param array<string, mixed> $parts street/city/province/postal/country */
+    private function addressPartFields(array $parts): array
+    {
+        $parts = client_address_normalize($parts);
+        if ($parts['street'] === '' && $parts['city'] === '' && $parts['postal'] === '') {
+            return [];
+        }
+        return [
+            'address_street' => $parts['street'],
+            'address_city' => $parts['city'],
+            'address_province' => $parts['province'],
+            'address_postal' => $parts['postal'],
+            'address_country' => $parts['country'],
+        ];
     }
 
     private function normalizeEmail(mixed $email): ?string

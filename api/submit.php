@@ -35,17 +35,24 @@ $filesMeta = [];
 $errors = [];
 $answersById = collect_posted_answers_by_id($schema, $_POST);
 
+$pageVisible = true;
 foreach ($schema['fields'] as $field) {
     $type = $field['type'];
     $name = $field['name'];
     $id = $field['id'];
 
-    if (in_array($type, ['heading', 'paragraph', 'page_break'], true)) {
+    if ($type === 'page_break') {
+        $pageVisible = form_field_is_visible($field, $answersById);
+        continue;
+    }
+    if (in_array($type, ['heading', 'paragraph'], true)) {
         continue;
     }
 
-    $visible = form_field_is_visible($field, $answersById);
+    $visible = $pageVisible && form_field_is_visible($field, $answersById);
     if (!$visible) {
+        // Later conditions must see a skipped answer as blank, matching the browser.
+        $answersById[$id] = $type === 'checkbox' ? [] : '';
         if ($type === 'checkbox') {
             $data[$name] = [];
         } elseif (!in_array($type, ['file', 'image'], true)) {
@@ -192,7 +199,7 @@ if ($slug === document_submission_form_slug()) {
     $clientRepo->linkFromSubmission([
         'id' => $submissionId,
         'data_json' => json_encode($data, JSON_UNESCAPED_UNICODE),
-    ], $schema);
+    ], $schema, true);
 }
 (new SubmissionPaymentRepository())->recordFromSubmission($submissionId, (int) $form['id'], $schema['fields'], $data);
 

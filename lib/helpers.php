@@ -85,7 +85,9 @@ function form_field_uses_half_column(string $type, array $field = []): bool
  * Split schema fields into pages using page_break markers.
  * The page_break label becomes the title of the following page.
  *
- * @return list<array{title: string, fields: list<array<string, mixed>>}>
+ * The page_break conditions decide whether the following page is shown.
+ *
+ * @return list<array{title: string, fields: list<array<string, mixed>>, conditions: list<array<string, mixed>>}>
  */
 function form_schema_pages(array $schema): array
 {
@@ -93,6 +95,7 @@ function form_schema_pages(array $schema): array
     $fields = [];
     $firstTitle = trim((string) ($schema['settings']['firstPageTitle'] ?? ''));
     $nextTitle = $firstTitle !== '' ? $firstTitle : 'Page 1';
+    $nextConditions = [];
 
     foreach ($schema['fields'] ?? [] as $field) {
         if (!is_array($field)) {
@@ -102,10 +105,12 @@ function form_schema_pages(array $schema): array
             $pages[] = [
                 'title' => $nextTitle,
                 'fields' => $fields,
+                'conditions' => $nextConditions,
             ];
             $fields = [];
             $label = trim((string) ($field['label'] ?? ''));
             $nextTitle = $label !== '' ? $label : ('Page ' . (count($pages) + 1));
+            $nextConditions = is_array($field['conditions'] ?? null) ? $field['conditions'] : [];
             continue;
         }
         $fields[] = $field;
@@ -114,6 +119,7 @@ function form_schema_pages(array $schema): array
     $pages[] = [
         'title' => $nextTitle,
         'fields' => $fields,
+        'conditions' => $nextConditions,
     ];
 
     while (count($pages) > 1 && $pages[count($pages) - 1]['fields'] === []) {
@@ -121,7 +127,7 @@ function form_schema_pages(array $schema): array
     }
 
     if ($pages === []) {
-        $pages[] = ['title' => 'Page 1', 'fields' => []];
+        $pages[] = ['title' => 'Page 1', 'fields' => [], 'conditions' => []];
     }
 
     return $pages;

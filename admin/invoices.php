@@ -38,6 +38,7 @@ require __DIR__ . '/includes/layout-start.php';
   <div class="admin-header-actions">
     <?php if ($partnerId === null && Auth::can('invoices.settings')): ?>
     <a href="/admin/invoice-settings" class="admin-btn admin-btn-secondary">Company details</a>
+    <a href="/admin/invoice-templates" class="admin-btn admin-btn-secondary">Templates</a>
     <a href="/admin/invoice-services" class="admin-btn admin-btn-secondary">Services (<?= (int) $serviceCount ?>)</a>
     <?php endif; ?>
     <?php if (Auth::can('invoices.create')): ?>

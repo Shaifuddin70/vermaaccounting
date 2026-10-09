@@ -200,6 +200,211 @@ function client_address_locality(?string $address): string
     return count($parts) >= 3 ? $city : $region;
 }
 
+/**
+ * Split a one-line client address ("Street, City, ON A1A 1A1[, Country]") into parts.
+ *
+ * @return array{street: string, city: string, province: string, postal: string, country: string}
+ */
+function client_address_parts(?string $address): array
+{
+    $out = ['street' => '', 'city' => '', 'province' => '', 'postal' => '', 'country' => ''];
+    $parts = array_values(array_filter(
+        array_map('trim', preg_split('/\s*(?:,|\R)\s*/', trim((string) $address)) ?: []),
+        static fn (string $p): bool => $p !== ''
+    ));
+    if ($parts === []) {
+        return $out;
+    }
+
+    $countries = ['canada' => 'Canada', 'ca' => 'Canada', 'can' => 'Canada', 'usa' => 'USA', 'us' => 'USA', 'united states' => 'USA'];
+    if (count($parts) > 1 && isset($countries[strtolower($parts[count($parts) - 1])])) {
+        $out['country'] = $countries[strtolower(array_pop($parts))];
+    }
+
+    $provinces = client_provinces();
+    $provinceIndex = null;
+    for ($i = count($parts) - 1; $i >= 1; $i--) {
+        $segment = $parts[$i];
+        if (preg_match('/\b([A-Z]\d[A-Z])\s?(\d[A-Z]\d)\b/i', $segment, $pm)) {
+            $out['postal'] = strtoupper($pm[1] . ' ' . $pm[2]);
+            $segment = trim(str_replace($pm[0], '', $segment));
+        }
+        $province = '';
+        if (preg_match('/^([A-Z]{2})$/i', $segment, $cm) && isset($provinces[strtoupper($cm[1])])) {
+            $province = $provinces[strtoupper($cm[1])];
+        } else {
+            foreach ($provinces as $name) {
+                if (strcasecmp($segment, $name) === 0) {
+                    $province = $name;
+                    break;
+                }
+            }
+        }
+        if ($province !== '' || $out['postal'] !== '') {
+            $out['province'] = $province;
+            $provinceIndex = $i;
+            break;
+        }
+    }
+
+    if ($provinceIndex !== null) {
+        $parts = array_slice($parts, 0, $provinceIndex);
+    }
+    if (count($parts) >= 2 || ($provinceIndex !== null && count($parts) === 1 && !preg_match('/\d/', $parts[0]))) {
+        $out['city'] = (string) array_pop($parts);
+    }
+    $out['street'] = implode(', ', $parts);
+    if ($out['country'] === '' && ($out['province'] !== '' || $out['postal'] !== '')) {
+        $out['country'] = 'Canada';
+    }
+
+    return $out;
+}
+
+/** Full province name from a code ("ON") or name ("ontario"); unknown values are returned trimmed. */
+function client_province_name(?string $province): string
+{
+    $province = trim((string) $province);
+    if ($province === '') {
+        return '';
+    }
+    $provinces = client_provinces();
+    if (isset($provinces[strtoupper($province)])) {
+        return $provinces[strtoupper($province)];
+    }
+    foreach ($provinces as $name) {
+        if (strcasecmp($province, $name) === 0) {
+            return $name;
+        }
+    }
+    return $province;
+}
+
+function client_province_code(?string $province): string
+{
+    $name = client_province_name($province);
+    $code = array_search($name, client_provinces(), true);
+    return $code === false ? '' : (string) $code;
+}
+
+function client_normalize_postal(?string $postal): string
+{
+    $postal = strtoupper(trim((string) $postal));
+    if (preg_match('/^([A-Z]\d[A-Z])\s*-?\s*(\d[A-Z]\d)$/', $postal, $m)) {
+        return $m[1] . ' ' . $m[2];
+    }
+    return $postal;
+}
+
+/**
+ * Clean address parts as stored on the client record.
+ *
+ * @param array<string, mixed> $parts street/city/province/postal/country
+ * @return array{street: string, city: string, province: string, postal: string, country: string}
+ */
+function client_address_normalize(array $parts): array
+{
+    $clean = static fn (mixed $v): string => trim(preg_replace('/\s+/', ' ', (string) $v) ?? '');
+    $out = [
+        'street' => $clean($parts['street'] ?? ''),
+        'city' => $clean($parts['city'] ?? ''),
+        'province' => client_province_name($clean($parts['province'] ?? '')),
+        'postal' => client_normalize_postal($clean($parts['postal'] ?? '')),
+        'country' => $clean($parts['country'] ?? ''),
+    ];
+    $hasLocation = $out['street'] !== '' || $out['city'] !== '' || $out['postal'] !== '';
+    if (!$hasLocation) {
+        return ['street' => '', 'city' => '', 'province' => '', 'postal' => '', 'country' => ''];
+    }
+    if ($out['country'] === '' && ($out['province'] !== '' || $out['postal'] !== '')) {
+        $out['country'] = 'Canada';
+    }
+    return $out;
+}
+
+/** One-line address ("Street, City, ON A1A 1A1") used for display, search and filters. */
+function client_address_compose(array $parts): string
+{
+    $parts = client_address_normalize($parts);
+    $code = client_province_code($parts['province']);
+    $region = trim(($code !== '' ? $code : $parts['province']) . ' ' . $parts['postal']);
+    $country = in_array(strtolower($parts['country']), ['canada', 'ca', 'can'], true) ? '' : $parts['country'];
+
+    return implode(', ', array_filter(
+        [$parts['street'], $parts['city'], $region, $country],
+        static fn (string $v): bool => $v !== ''
+    ));
+}
+
+/**
+ * Address parts for a client row, falling back to parsing the one-line address.
+ *
+ * @param array<string, mixed>|null $client
+ * @return array{street: string, city: string, province: string, postal: string, country: string}
+ */
+function client_address_from_row(?array $client): array
+{
+    $parts = client_address_normalize([
+        'street' => $client['address_street'] ?? '',
+        'city' => $client['address_city'] ?? '',
+        'province' => $client['address_province'] ?? '',
+        'postal' => $client['address_postal'] ?? '',
+        'country' => $client['address_country'] ?? '',
+    ]);
+    if ($parts['street'] !== '' || $parts['city'] !== '' || $parts['postal'] !== '') {
+        return $parts;
+    }
+    return client_address_parts((string) ($client['address'] ?? ''));
+}
+
+/**
+ * Address fields from a form submission (street/city/province/postal/country, or one combined field).
+ *
+ * @return array{street: string, city: string, province: string, postal: string, country: string}
+ */
+function client_extract_address_from_submission(array $submission, array $schema): array
+{
+    $data = json_decode((string) ($submission['data_json'] ?? '{}'), true) ?: [];
+    $found = ['street' => '', 'city' => '', 'province' => '', 'postal' => '', 'country' => ''];
+
+    foreach ($schema['fields'] ?? [] as $field) {
+        $fieldName = (string) ($field['name'] ?? '');
+        $haystack = strtolower($fieldName) . ' ' . strtolower((string) ($field['label'] ?? ''));
+        if (preg_match('/\b(spouse|partner|employer|dependant|dependent)\b/', $haystack)) {
+            continue;
+        }
+        $raw = $data[$fieldName] ?? '';
+        $val = is_array($raw) ? trim(implode(', ', array_map('strval', $raw))) : trim((string) $raw);
+        if ($val === '') {
+            continue;
+        }
+
+        if ($found['street'] === '' && preg_match('/\b(street|address\s*line|addr|address)\b/', $haystack)
+            && !preg_match('/\b(email|e-mail)\b/', $haystack)) {
+            $found['street'] = $val;
+        } elseif ($found['city'] === '' && preg_match('/\b(city|town|municipality)\b/', $haystack)) {
+            $found['city'] = $val;
+        } elseif ($found['province'] === '' && preg_match('/\b(province|state|territory)\b/', $haystack)) {
+            $found['province'] = $val;
+        } elseif ($found['postal'] === '' && preg_match('/\b(postal|postcode|zip)\b/', $haystack)) {
+            $found['postal'] = $val;
+        } elseif ($found['country'] === '' && preg_match('/\bcountry\b/', $haystack)) {
+            $found['country'] = $val;
+        }
+    }
+
+    if ($found['city'] === '' && $found['postal'] === '' && str_contains($found['street'], ',')) {
+        $parsed = client_address_parts($found['street']);
+        foreach ($parsed as $key => $value) {
+            if ($found[$key] === '' || $key === 'street') {
+                $found[$key] = $value;
+            }
+        }
+    }
+
+    return client_address_normalize($found);
+}
+
 function client_age(?string $dob): ?int
 {
     $dob = birthday_normalize_dob($dob);
@@ -213,7 +418,7 @@ function client_age(?string $dob): ?int
     }
 }
 
-/** @return array{name: string, sin: string, email: string, phone: string, company: string, date_of_birth: string} */
+/** @return array{name: string, sin: string, email: string, phone: string, company: string, date_of_birth: string, address: array{street: string, city: string, province: string, postal: string, country: string}} */
 function extract_client_from_submission(array $submission, array $schema): array
 {
     $data = json_decode((string) ($submission['data_json'] ?? '{}'), true) ?: [];
@@ -223,6 +428,9 @@ function extract_client_from_submission(array $submission, array $schema): array
     $phone = '';
     $company = '';
     $dob = '';
+    $firstName = '';
+    $middleName = '';
+    $lastName = '';
 
     foreach ($schema['fields'] ?? [] as $field) {
         $fieldName = (string) ($field['name'] ?? '');
@@ -261,10 +469,22 @@ function extract_client_from_submission(array $submission, array $schema): array
             $phone = $phone !== '' ? $phone : $val;
         } elseif (preg_match('/\b(company|business|organization|organisation|firm)\b/', $haystack)) {
             $company = $company !== '' ? $company : $val;
+        } elseif (preg_match('/\b(spouse|partner|dependant|dependent|child|employer)\b/', $haystack)) {
+            continue;
+        } elseif (preg_match('/\b(first|given)[\s_-]*name\b/', $haystack)) {
+            $firstName = $firstName !== '' ? $firstName : $val;
+        } elseif (preg_match('/\bmiddle[\s_-]*name\b/', $haystack)) {
+            $middleName = $middleName !== '' ? $middleName : $val;
+        } elseif (preg_match('/\b(last|family|sur)[\s_-]*name\b|\bsurname\b/', $haystack)) {
+            $lastName = $lastName !== '' ? $lastName : $val;
         } elseif (preg_match('/\b(full|client|contact|customer)\s+name\b|\b(client|customer)\b|\bname\b/', $haystack)
             && !preg_match('/\b(user|user\s*name|file|image|form)\s*name\b/', $haystack)) {
             $name = $name !== '' ? $name : $val;
         }
+    }
+
+    if ($name === '' && ($firstName !== '' || $lastName !== '')) {
+        $name = trim(implode(' ', array_filter([$firstName, $middleName, $lastName], static fn (string $v): bool => $v !== '')));
     }
 
     if ($name === '') {
@@ -287,6 +507,7 @@ function extract_client_from_submission(array $submission, array $schema): array
         'phone' => $phone,
         'company' => $company,
         'date_of_birth' => $dob,
+        'address' => client_extract_address_from_submission($submission, $schema),
     ];
 }
 

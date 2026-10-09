@@ -279,6 +279,21 @@
     if (name && client.name) name.value = client.name;
     if (email && client.email) email.value = client.email;
     if (phone && client.phone) phone.value = client.phone;
+
+    var address = client.address || {};
+    if (address.street || address.city || address.postal) {
+      var fields = {
+        'bill-street': address.street || '',
+        'bill-city': address.city || '',
+        'bill-postal': address.postal || ''
+      };
+      if (address.province) fields['bill-province'] = address.province;
+      if (address.country) fields['bill-country'] = address.country;
+      Object.keys(fields).forEach(function (id) {
+        var input = document.getElementById(id);
+        if (input) input.value = fields[id];
+      });
+    }
   }
 
   function clearClient() {
@@ -460,6 +475,21 @@
     if (row) row.remove();
     recalc();
   });
+
+  var notesTemplate = document.getElementById('invoice-notes-template');
+  var notesInput = document.getElementById('invoice-notes');
+  if (notesTemplate && notesInput) {
+    var noteTemplates = JSON.parse(notesTemplate.getAttribute('data-note-templates') || '[]');
+    notesTemplate.addEventListener('change', function () {
+      var tpl = noteTemplates.find(function (t) { return t.id === notesTemplate.value; });
+      notesTemplate.value = '';
+      if (!tpl) return;
+      var current = String(notesInput.value || '').trim();
+      if (current !== '' && current !== tpl.body && !confirm('Replace the current notes with “' + tpl.name + '”?')) return;
+      notesInput.value = tpl.body;
+      notesInput.focus();
+    });
+  }
 
   normalizeDiscountField(discountInput, 100);
   normalizeDiscountField(discountFlatInput);

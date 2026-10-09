@@ -33,6 +33,21 @@ $value = static function (string $key) use ($old, $editClient, $meta): string {
     return (string) ($editClient[$key] ?? '');
 };
 
+$savedAddress = client_address_from_row($editClient);
+if ($isNew && $savedAddress['country'] === '') {
+    $savedAddress['country'] = 'Canada';
+}
+$addressValue = static function (string $part) use ($old, $savedAddress): string {
+    $key = 'address_' . $part;
+    return array_key_exists($key, $old) ? (string) $old[$key] : $savedAddress[$part];
+};
+$provinceOptions = array_values(client_provinces());
+sort($provinceOptions);
+$currentProvince = $addressValue('province');
+if ($currentProvince !== '' && !in_array($currentProvince, $provinceOptions, true)) {
+    $provinceOptions[] = $currentProvince;
+}
+
 $unsubscribed = array_key_exists('email_unsubscribed', $old)
     ? (bool) $old['email_unsubscribed']
     : trim((string) ($editClient['email_unsubscribed_at'] ?? '')) !== '';
@@ -145,10 +160,42 @@ require __DIR__ . '/includes/layout-start.php';
             placeholder="Optional">
         </div>
       </div>
+    </section>
+
+    <section class="admin-card client-detail-card">
+      <h2 class="client-detail-title">Address</h2>
       <div class="admin-field">
-        <label for="ce-address">Address</label>
-        <textarea id="ce-address" name="address" rows="2"
-          placeholder="Street, City, Province Postal code" autocomplete="street-address"><?= e($value('address')) ?></textarea>
+        <label for="ce-street">Street address</label>
+        <input type="text" id="ce-street" name="address_street" value="<?= e($addressValue('street')) ?>"
+          placeholder="e.g. 12-264 Washington Street" autocomplete="street-address">
+      </div>
+      <div class="user-edit-row">
+        <div class="admin-field">
+          <label for="ce-city">City</label>
+          <input type="text" id="ce-city" name="address_city" value="<?= e($addressValue('city')) ?>"
+            placeholder="e.g. Ottawa" autocomplete="address-level2">
+        </div>
+        <div class="admin-field">
+          <label for="ce-province">Province / territory</label>
+          <select id="ce-province" name="address_province" autocomplete="address-level1">
+            <option value="">— Select —</option>
+            <?php foreach ($provinceOptions as $provinceName): ?>
+              <option value="<?= e($provinceName) ?>" <?= $provinceName === $addressValue('province') ? 'selected' : '' ?>><?= e($provinceName) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      </div>
+      <div class="user-edit-row">
+        <div class="admin-field">
+          <label for="ce-postal">Postal code</label>
+          <input type="text" id="ce-postal" name="address_postal" value="<?= e($addressValue('postal')) ?>"
+            placeholder="A1A 1A1" autocomplete="postal-code" maxlength="16">
+        </div>
+        <div class="admin-field">
+          <label for="ce-country">Country</label>
+          <input type="text" id="ce-country" name="address_country" value="<?= e($addressValue('country')) ?>"
+            placeholder="Canada" autocomplete="country-name">
+        </div>
       </div>
     </section>
 

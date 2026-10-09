@@ -66,6 +66,9 @@ $documentSubmissionMode = !empty($documentSubmissionMode);
         class="custom-form-page"
         data-page-index="<?= (int) $pageIndex ?>"
         data-page-title="<?= e($page['title']) ?>"
+        <?php if ($pageIndex > 0 && !empty($page['conditions'])): ?>
+          data-page-conditions="<?= e(json_encode($page['conditions'])) ?>"
+        <?php endif; ?>
         <?= $pageIndex > 0 ? 'hidden' : '' ?>>
         <div class="custom-form-grid">
           <?php foreach ($page['fields'] as $field): ?>

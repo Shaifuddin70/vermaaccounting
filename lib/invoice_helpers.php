@@ -545,58 +545,172 @@ function invoice_bill_to_lines(array $invoice): array
     return $lines;
 }
 
-/** Default notes matching the PDF template (thank-you is rendered separately). */
+/** Notes from the default notes template, with company placeholders filled in. */
 function invoice_default_notes(): string
 {
-    $email = invoice_company_settings()['payment_email'] ?? 'info@vermaaccounting.ca';
-    return "Please make all payments to {$email}";
+    $template = invoice_default_template('notes');
+    return $template ? invoice_template_fill((string) $template['body']) : '';
+}
+
+/**
+ * Saved invoice note and email templates. Each list always has exactly one default.
+ *
+ * @return array{notes: list<array{id: string, name: string, body: string, is_default: bool}>, emails: list<array{id: string, name: string, subject: string, body: string, is_default: bool}>}
+ */
+function invoice_templates(): array
+{
+    $stored = (new SettingsRepository())->get('invoice_templates', null);
+    if (!is_array($stored)) {
+        $stored = [];
+    }
+    $out = [];
+    foreach (['notes', 'emails'] as $kind) {
+        $list = invoice_normalize_templates($kind, is_array($stored[$kind] ?? null) ? $stored[$kind] : []);
+        $out[$kind] = $list !== [] ? $list : invoice_builtin_templates()[$kind];
+    }
+    return $out;
+}
+
+/** @return array{notes: list<array<string, mixed>>, emails: list<array<string, mixed>>} */
+function invoice_builtin_templates(): array
+{
+    return [
+        'notes' => [[
+            'id' => 'default',
+            'name' => 'Standard',
+            'body' => 'Please make all payments to {payment_email}',
+            'is_default' => true,
+        ]],
+        'emails' => [[
+            'id' => 'default',
+            'name' => 'Standard',
+            'subject' => 'Invoice #{invoice_number} from Verma Accounting',
+            'body' => "Hi {client_name},\n\nPlease find invoice #{invoice_number} attached as a PDF.\n\nPlease make payment to {payment_email}.",
+            'is_default' => true,
+        ]],
+    ];
+}
+
+/**
+ * @param 'notes'|'emails' $kind
+ * @param array<int, mixed> $rows
+ * @return list<array<string, mixed>>
+ */
+function invoice_normalize_templates(string $kind, array $rows): array
+{
+    $list = [];
+    $seen = [];
+    $hasDefault = false;
+    foreach ($rows as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $name = mb_substr(trim((string) ($row['name'] ?? '')), 0, 80);
+        $body = str_replace("\r\n", "\n", trim((string) ($row['body'] ?? '')));
+        $subject = mb_substr(trim((string) ($row['subject'] ?? '')), 0, 200);
+        if ($body === '' && ($kind === 'notes' || $subject === '')) {
+            continue;
+        }
+        $id = preg_replace('/[^a-z0-9_-]/i', '', (string) ($row['id'] ?? '')) ?: '';
+        if ($id === '' || isset($seen[$id])) {
+            $id = bin2hex(random_bytes(4));
+        }
+        $seen[$id] = true;
+        $isDefault = !$hasDefault && !empty($row['is_default']);
+        $hasDefault = $hasDefault || $isDefault;
+        $item = [
+            'id' => $id,
+            'name' => $name !== '' ? $name : 'Template ' . (count($list) + 1),
+            'body' => mb_substr($body, 0, 5000),
+            'is_default' => $isDefault,
+        ];
+        if ($kind === 'emails') {
+            $item = ['id' => $id, 'name' => $item['name'], 'subject' => $subject, 'body' => $item['body'], 'is_default' => $isDefault];
+        }
+        $list[] = $item;
+    }
+    if ($list !== [] && !$hasDefault) {
+        $list[0]['is_default'] = true;
+    }
+    return $list;
+}
+
+/** @param array{notes?: array<int, mixed>, emails?: array<int, mixed>} $templates */
+function invoice_save_templates(array $templates): void
+{
+    (new SettingsRepository())->set('invoice_templates', [
+        'notes' => invoice_normalize_templates('notes', $templates['notes'] ?? []),
+        'emails' => invoice_normalize_templates('emails', $templates['emails'] ?? []),
+    ]);
+}
+
+/**
+ * @param 'notes'|'emails' $kind
+ * @return array<string, mixed>|null
+ */
+function invoice_default_template(string $kind): ?array
+{
+    foreach (invoice_templates()[$kind] as $template) {
+        if (!empty($template['is_default'])) {
+            return $template;
+        }
+    }
+    return invoice_templates()[$kind][0] ?? null;
+}
+
+/** @return array<string, string> placeholder => description */
+function invoice_template_placeholders(): array
+{
+    return [
+        '{client_name}' => 'Client or company name',
+        '{invoice_number}' => 'Invoice number',
+        '{amount_due}' => 'Balance due, e.g. $250.00',
+        '{due_date}' => 'Payment due date',
+        '{invoice_date}' => 'Invoice date',
+        '{payment_email}' => 'Payment email from company details',
+        '{company_name}' => 'Your company name',
+    ];
+}
+
+/**
+ * Replace {placeholders}. Invoice placeholders are left as typed when no invoice is given.
+ *
+ * @param array<string, mixed>|null $invoice
+ */
+function invoice_template_fill(string $text, ?array $invoice = null): string
+{
+    $company = invoice_company_settings();
+    $values = [
+        '{payment_email}' => (string) ($company['payment_email'] ?? ''),
+        '{company_name}' => (string) ($company['name'] ?? ''),
+    ];
+    if ($invoice !== null) {
+        $client = trim((string) ($invoice['bill_to_name'] ?? ''));
+        if ($client === '') {
+            $client = trim((string) ($invoice['bill_to_company'] ?? ''));
+        }
+        $values += [
+            '{client_name}' => $client !== '' ? $client : 'there',
+            '{invoice_number}' => (string) ($invoice['invoice_number'] ?? ''),
+            '{amount_due}' => invoice_format_money(invoice_amount_due($invoice)),
+            '{due_date}' => invoice_format_date((string) ($invoice['due_date'] ?? '')),
+            '{invoice_date}' => invoice_format_date((string) ($invoice['invoice_date'] ?? '')),
+        ];
+    }
+    return strtr($text, $values);
 }
 
 /** @return array{street: string, city: string, province: string, postal: string, country: string} */
 function invoice_extract_address_from_submission(array $submission, array $schema): array
 {
-    $data = json_decode((string) ($submission['data_json'] ?? '{}'), true) ?: [];
-    $street = '';
-    $city = '';
-    $province = '';
-    $postal = '';
-    $country = '';
-
-    foreach ($schema['fields'] ?? [] as $field) {
-        $fieldName = (string) ($field['name'] ?? '');
-        $label = strtolower((string) ($field['label'] ?? ''));
-        $haystack = strtolower($fieldName) . ' ' . $label;
-        $raw = $data[$fieldName] ?? '';
-        if (is_array($raw)) {
-            $val = trim(implode(', ', array_map('strval', $raw)));
-        } else {
-            $val = trim((string) $raw);
-        }
-        if ($val === '') {
-            continue;
-        }
-
-        if ($street === '' && preg_match('/\b(street|address\s*line|addr|address)\b/', $haystack)
-            && !preg_match('/\b(email|e-mail)\b/', $haystack)) {
-            $street = $val;
-        } elseif ($city === '' && preg_match('/\b(city|town|municipality)\b/', $haystack)) {
-            $city = $val;
-        } elseif ($province === '' && preg_match('/\b(province|state|territory)\b/', $haystack)) {
-            $province = $val;
-        } elseif ($postal === '' && preg_match('/\b(postal|postcode|zip)\b/', $haystack)) {
-            $postal = $val;
-        } elseif ($country === '' && preg_match('/\b(country)\b/', $haystack)) {
-            $country = $val;
-        }
+    $address = client_extract_address_from_submission($submission, $schema);
+    if ($address['province'] === '') {
+        $address['province'] = 'Ontario';
     }
-
-    return [
-        'street' => $street,
-        'city' => $city,
-        'province' => $province !== '' ? $province : 'Ontario',
-        'postal' => $postal,
-        'country' => $country !== '' ? $country : 'Canada',
-    ];
+    if ($address['country'] === '') {
+        $address['country'] = 'Canada';
+    }
+    return $address;
 }
 
 /**
@@ -623,6 +737,10 @@ function invoice_prefill_from_submission(int $submissionId, int $formId): ?array
     $client = $clientRepo->findBySubmissionId($submissionId);
     $extracted = extract_client_from_submission($submission, $schema);
     $address = invoice_extract_address_from_submission($submission, $schema);
+    $clientAddress = client_address_from_row($client);
+    if ($address['street'] === '' && $address['city'] === '' && $clientAddress['street'] . $clientAddress['city'] !== '') {
+        $address = array_merge($address, array_filter($clientAddress, static fn (string $v): bool => $v !== ''));
+    }
 
     $billToCompany = trim((string) ($client['company'] ?? $extracted['company'] ?? ''));
     $billToName = trim((string) ($client['name'] ?? $extracted['name'] ?? ''));
@@ -679,7 +797,8 @@ function invoice_ensure_client_from_bill_to(
     string $billToName,
     string $billToCompany,
     string $billToEmail = '',
-    string $billToPhone = ''
+    string $billToPhone = '',
+    array $billToAddress = []
 ): array {
     if ($clientId !== null && $clientId > 0) {
         return ['client_id' => $clientId, 'created' => false];
@@ -696,6 +815,7 @@ function invoice_ensure_client_from_bill_to(
         'company' => $company,
         'email' => strtolower(trim($billToEmail)),
         'phone' => trim($billToPhone),
+        'address' => $billToAddress,
     ], 'manual');
 
     if ($result === null) {
