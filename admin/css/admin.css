@@ -9498,3 +9498,88 @@ a.clients-contact-line:hover {
 .client-active-toggle input:focus-visible + span {
   box-shadow: var(--admin-focus-ring);
 }
+
+.menu-order-card {
+  margin-top: 1.25rem;
+  max-width: 40rem;
+}
+
+.menu-order-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.menu-order-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.menu-order-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  cursor: grab;
+}
+
+.menu-order-item.is-dragging {
+  opacity: 0.5;
+  border-style: dashed;
+}
+
+.menu-order-handle {
+  color: var(--admin-muted);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.menu-order-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.menu-order-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.menu-order-actions {
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  overflow: hidden;
+  gap: 0;
+}
+
+.menu-order-move {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 1.85rem;
+  padding: 0;
+  border: none;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  cursor: pointer;
+}
+
+.menu-order-move + .menu-order-move {
+  border-left: 1px solid var(--admin-border);
+}
+
+.menu-order-move:hover:not(:disabled) {
+  background: var(--admin-surface-variant);
+  color: var(--admin-primary);
+}
+
+.menu-order-move:disabled {
+  color: var(--admin-border);
+  cursor: default;
+}

@@ -924,7 +924,36 @@ final class FormRepository
                 $out[] = $form;
             }
         }
-        return $out;
+        return $this->applySubmitMenuOrder($out);
+    }
+
+    /**
+     * Saved menu order first; forms not in it yet keep alphabetical order after them.
+     *
+     * @param list<array<string, mixed>> $forms
+     * @return list<array<string, mixed>>
+     */
+    private function applySubmitMenuOrder(array $forms): array
+    {
+        $order = (new SettingsRepository())->get('submit_menu_order', []);
+        $position = is_array($order) ? array_flip(array_map('intval', array_values($order))) : [];
+        $index = 0;
+        foreach ($forms as &$form) {
+            $form['_sort'] = [$position[(int) $form['id']] ?? PHP_INT_MAX, $index++];
+        }
+        unset($form);
+        usort($forms, static fn (array $a, array $b): int => $a['_sort'] <=> $b['_sort']);
+        return array_map(static function (array $form): array {
+            unset($form['_sort']);
+            return $form;
+        }, $forms);
+    }
+
+    /** @param list<int> $formIds */
+    public function saveSubmitMenuOrder(array $formIds): void
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $formIds), static fn (int $id): bool => $id > 0)));
+        (new SettingsRepository())->set('submit_menu_order', $ids);
     }
 
     public function uniqueSlug(string $base, ?int $excludeId = null): string
