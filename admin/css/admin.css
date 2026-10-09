@@ -9498,3 +9498,63 @@ a.clients-contact-line:hover {
 .client-active-toggle input:focus-visible + span {
   box-shadow: var(--admin-focus-ring);
 }
+
+.invoice-pay-link {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.invoice-pay-link input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.6rem !important;
+  font-size: 0.8125rem;
+}
+
+.invoice-online-list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.invoice-online-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.55rem 0;
+  border-top: 1px solid var(--admin-border);
+  font-size: 0.8125rem;
+}
+
+.invoice-online-item > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 0.5rem;
+  min-width: 0;
+}
+
+.invoice-online-status {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: var(--admin-surface-variant);
+  color: var(--admin-muted);
+}
+
+.invoice-online-item.is-approved .invoice-online-status {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.invoice-online-item.is-declined .invoice-online-status,
+.invoice-online-item.is-error .invoice-online-status {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.invoice-online-meta {
+  flex-basis: 100%;
+  color: var(--admin-muted);
+}

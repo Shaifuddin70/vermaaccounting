@@ -37,7 +37,7 @@ if (isset($seoCanonicalPath) && is_string($seoCanonicalPath) && $seoCanonicalPat
   <meta name="theme-color" content="#1e3a8a" />
   <title><?= e($seoMeta['title']) ?></title>
   <meta name="description" content="<?= e($seoMeta['description']) ?>" />
-  <meta name="robots" content="index, follow" />
+  <meta name="robots" content="<?= !empty($seoNoindex) ? 'noindex, nofollow' : 'index, follow' ?>" />
   <link rel="canonical" href="<?= e($canonicalUrl) ?>" />
 
   <!-- Calendly link widget begin -->

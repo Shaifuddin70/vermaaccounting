@@ -84,10 +84,15 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
     $subject = invoice_template_fill($subject !== '' ? $subject : $draft['subject'], $invoice);
 
     $bodyHtml = '';
-    foreach (preg_split('/\n{2,}/', $body) ?: [] as $paragraph) {
-        if (trim($paragraph) !== '') {
+    foreach (preg_split('/\n{2,}/', $body) ?: [] as $paragraph) {        if (trim($paragraph) !== '') {
             $bodyHtml .= '<p style="margin:0 0 16px;color:#334155;">' . nl2br(e(trim($paragraph))) . '</p>';
         }
+    }
+    $payUrl = invoice_can_pay_online($invoice) ? invoice_pay_url($invoice) : '';
+    if ($payUrl !== '') {
+        $bodyHtml .= '<p style="margin:0 0 20px;"><a href="' . e($payUrl) . '" style="display:inline-block;padding:12px 22px;'
+            . 'background:#f97316;color:#ffffff;font-weight:700;text-decoration:none;border-radius:8px;">Pay '
+            . e($amountDue) . ' online</a></p>';
     }
     $bodyHtml .= '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 20px;">'
         . '<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;width:40%;">Amount due</td>'
@@ -106,7 +111,8 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
 
     $text = $body . "\n\n"
         . "Amount due: {$amountDue} {$currency}\n"
-        . "Payment due: {$due}\n";
+        . "Payment due: {$due}\n"
+        . ($payUrl !== '' ? "\nPay online by card: {$payUrl}\n" : '');
 
     $ok = $mailer->sendWithAttachments(
         $toEmail,

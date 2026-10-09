@@ -151,6 +151,25 @@ if ($action === 'delete_payment') {
     exit;
 }
 
+if ($action === 'check_online_payment') {
+    Auth::requireCapability('invoices.edit');
+    $attempt = online_payment_find_by_reference(trim((string) ($_POST['reference'] ?? '')));
+    if (!$attempt || (int) $attempt['invoice_id'] !== $id) {
+        $_SESSION['flash_error'] = 'Online payment not found.';
+        header('Location: ' . $redirect . '#online-payment');
+        exit;
+    }
+    $result = elavon_confirm_payment($attempt, (string) ($attempt['txn_id'] ?? ''));
+    $key = $result['status'] === 'approved' ? 'flash_success' : 'flash_error';
+    $_SESSION[$key] = match ($result['status']) {
+        'approved' => 'Card payment confirmed and recorded.',
+        'declined' => 'Elavon reports this payment was declined: ' . $result['message'],
+        default => $result['message'] . ' If the client was charged, check the Converge portal and record the payment manually.',
+    };
+    header('Location: ' . $redirect . '#online-payment');
+    exit;
+}
+
 if ($action === 'send_email') {
     Auth::requireCapability('invoices.send');
     $to = trim((string) ($_POST['to_email'] ?? ''));
