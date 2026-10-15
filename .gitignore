@@ -7,3 +7,7 @@ data/*
 !data/uploads/
 data/uploads/*
 !data/uploads/.htaccess
+
+# Server-generated files
+error_log
+/.well-known/

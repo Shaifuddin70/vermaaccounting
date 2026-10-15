@@ -1,4 +1,4 @@
 ---
 deployment:
   tasks:
-    - /bin/rsync -a --exclude='.git' --exclude='.gitignore' --exclude='.cpanel.yml' --exclude='.DS_Store' --exclude='nginx.servbay.conf' --exclude='config.local.php' --exclude='tests' --exclude='docs' --exclude='*.md' ./ "$HOME/public_html/"
+    - /bin/true
