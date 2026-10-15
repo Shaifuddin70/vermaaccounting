@@ -966,11 +966,17 @@
     const wrap = form.querySelector('[data-field-id="' + fieldId + '"]');
     if (!wrap) return '';
 
-    const radio = wrap.querySelector('input[type="radio"]:checked');
-    if (radio) return radio.value;
+    const own = (selector) =>
+      Array.from(wrap.querySelectorAll(selector)).filter((el) => !el.closest('.yes-no-reason-wrap'));
 
-    const checks = wrap.querySelectorAll('input[type="checkbox"]:checked');
-    if (checks.length) return Array.from(checks).map((c) => c.value);
+    const radios = own('input[type="radio"]');
+    if (radios.length) {
+      const radio = radios.find((r) => r.checked);
+      return radio ? radio.value : '';
+    }
+
+    const checks = own('input[type="checkbox"]');
+    if (checks.length) return checks.filter((c) => c.checked).map((c) => c.value);
 
     if (wrap.querySelector('[data-phone-field]')) {
       syncPhoneCombined(wrap);

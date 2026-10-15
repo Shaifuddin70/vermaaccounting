@@ -2654,6 +2654,29 @@ body.admin-body {
   min-height: 2.25rem;
 }
 
+.fb-page-conditions {
+  margin: 0;
+}
+
+.fb-page-conditions .fb-panel-title {
+  margin-bottom: 0.65rem;
+}
+
+.fb-page-conditions-name {
+  font-weight: 500;
+  color: var(--admin-muted);
+}
+
+.fb-page-conditions-name::before {
+  content: '· ';
+}
+
+.fb-page-conditions-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.75rem;
+  color: var(--admin-muted);
+}
+
 .fb-fields-empty {
   margin: 0 0 0.75rem;
   padding: 0.65rem 0.85rem;

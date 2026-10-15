@@ -23,7 +23,7 @@ $templateSlug = '';
 if ($templateKey === 'tax-intake' && function_exists('tax_intake_default_schema')) {
     $templateSchema = tax_intake_default_schema();
     $templateTitle = 'File Your Tax Return';
-    $templateDescription = 'Personal tax intake — about you, household, income, deductions, and documents.';
+    $templateDescription = 'Personal tax intake — about you, address, tax situation, income, deductions, documents, and e-signature.';
     // Leave slug empty so a copy does not collide with the seeded /tax-intake form.
     $templateSlug = '';
 }
@@ -163,8 +163,9 @@ require __DIR__ . '/includes/layout-start.php';
     </section>
 
     <aside class="admin-card fb-editor-card" id="field-editor-panel">
-      <h2 class="fb-panel-title">Field settings</h2>
-      <p id="no-field-selected" class="fb-editor-placeholder">Select a field to edit its label, options, and conditional logic.</p>
+      <section class="fb-page-conditions" id="fb-page-conditions" hidden></section>
+      <h2 class="fb-panel-title" id="field-settings-title">Field settings</h2>
+      <p id="no-field-selected" class="fb-editor-placeholder">Select a field to edit its label, options, and conditional logic, or a page tab to set when that page is shown.</p>
       <div id="field-editor" style="display:none;"></div>
     </aside>
   </div>
@@ -292,5 +293,5 @@ require __DIR__ . '/includes/layout-start.php';
     activePartners: <?= json_encode((new UserRepository())->activePartners(), JSON_UNESCAPED_UNICODE) ?>
   };
 </script>
-<script src="/admin/js/form-builder.js?v=30"></script>
+<script src="/admin/js/form-builder.js?v=33"></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

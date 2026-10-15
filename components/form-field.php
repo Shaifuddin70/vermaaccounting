@@ -74,11 +74,18 @@ if ($condJson) {
               </div>
             <?php endforeach; ?>
           </div>
-          <?php foreach ($followUps as $followUp):
+          <?php
+            // The follow-up template reassigns $id/$name/$type/$required, so capture the parent first.
             $parentField = $field;
             $parentId = $id;
-            include __DIR__ . '/yes-no-followup.php';
-          endforeach; ?>
+            foreach ($followUps as $followUp):
+              include __DIR__ . '/yes-no-followup.php';
+            endforeach;
+            $id = $parentId;
+            $name = e($field['name']);
+            $type = $field['type'];
+            $required = !empty($field['required']);
+          ?>
 
         <?php elseif ($type === 'checkbox'): ?>
           <div class="custom-form-options">

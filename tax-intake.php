@@ -17,7 +17,7 @@ if (!$form) {
 $schema = $repo->decodeSchema($form);
 $pageTitle = 'File Your Tax Return';
 $seoTitle = 'File Your Tax Return | Verma Accounting';
-$seoDescription = 'Start your personal tax filing with Verma Accounting. Answer a few simple questions about you, your household, income, and deductions — about 15 minutes.';
+$seoDescription = 'Start your personal tax filing with Verma Accounting. Answer a few simple questions about you, your tax situation, income, and deductions — about 15 minutes.';
 
 include __DIR__ . '/components/header.php';
 ?>
@@ -58,19 +58,19 @@ include __DIR__ . '/components/header.php';
           <ol class="vf-steps">
             <li class="vf-step">
               <span class="vf-step-num">1</span>
-              <span class="vf-step-text"><strong>About you</strong><br>Name, contact, address, and residency.</span>
+              <span class="vf-step-text"><strong>About you &amp; address</strong><br>Identification, contact, marital status, and province.</span>
             </li>
             <li class="vf-step">
               <span class="vf-step-num">2</span>
-              <span class="vf-step-text"><strong>Household</strong><br>Spouse/partner, dependants, and key CRA questions.</span>
+              <span class="vf-step-text"><strong>Your tax situation</strong><br>Quick Yes/No questions about income, expenses, and housing.</span>
             </li>
             <li class="vf-step">
               <span class="vf-step-num">3</span>
-              <span class="vf-step-text"><strong>Income &amp; deductions</strong><br>Employment, self-employment, slips, RRSP, and more.</span>
+              <span class="vf-step-text"><strong>Details that apply to you</strong><br>Spouse, dependants, business, rental, RRSP, rent, moving, and more &mdash; only if relevant.</span>
             </li>
             <li class="vf-step">
               <span class="vf-step-num">4</span>
-              <span class="vf-step-text"><strong>Documents</strong><br>Upload slips and receipts, then submit.</span>
+              <span class="vf-step-text"><strong>Documents &amp; sign</strong><br>Upload your slips and receipts, then sign and submit.</span>
             </li>
           </ol>
         </div>
@@ -87,5 +87,5 @@ include __DIR__ . '/components/header.php';
 <script>
   window.CUSTOM_FORM_SCHEMA = <?= json_encode($schema, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/components/js/custom-form.js?v=28"></script>
+<script src="/components/js/custom-form.js?v=29"></script>
 <?php include __DIR__ . '/components/footer.php'; ?>

@@ -8,6 +8,8 @@
   const noFieldSelected = el('no-field-selected');
   let selectedFieldId = state.schema.fields[0]?.id || null;
   let activePageIndex = 0;
+  /** The settings panel shows the active page's settings instead of a field's. */
+  let pageSelected = false;
 
   function ensureSchemaSettings() {
     if (!state.schema) {
@@ -160,7 +162,8 @@
     tabs.querySelectorAll('[data-page-index]').forEach((btn) => {
       btn.addEventListener('click', () => {
         activePageIndex = Number(btn.getAttribute('data-page-index')) || 0;
-        syncActivePageSelection();
+        pageSelected = true;
+        selectedFieldId = null;
         renderPageTabs();
         renderFieldList();
         renderFieldEditor();
@@ -212,6 +215,54 @@
     if (deleteBtn) {
       deleteBtn.hidden = pages.length < 2;
     }
+    renderPageConditions(pages);
+  }
+
+  /** Visibility rules for the active page; stored on the page_break that starts it. */
+  function renderPageConditions(pages) {
+    const box = el('fb-page-conditions');
+    if (!box) return;
+    const page = pages[activePageIndex];
+    if (!pageSelected || !page) {
+      box.hidden = true;
+      box.innerHTML = '';
+      return;
+    }
+
+    const titleHtml =
+      '<h2 class="fb-panel-title">Page settings <span class="fb-page-conditions-name">' +
+      escapeHtml(page.title || 'Page ' + (activePageIndex + 1)) +
+      '</span></h2>';
+    const breakField = activePageIndex > 0 ? page.breakField : null;
+    box.hidden = false;
+    if (!breakField) {
+      box.innerHTML =
+        titleHtml + '<p class="fb-editor-placeholder">The first page is always shown, so it has no visibility rules.</p>';
+      return;
+    }
+    if (!Array.isArray(breakField.conditions)) breakField.conditions = [];
+
+    // Only answers from earlier pages exist when the form decides whether to show this page.
+    const candidates = pages
+      .slice(0, activePageIndex)
+      .flatMap((p) => p.fields)
+      .filter((f) => !['heading', 'paragraph', 'page_break', 'file', 'image', 'payment'].includes(f.type));
+
+    box.innerHTML =
+      titleHtml +
+      '<div data-cond-root="page">' +
+      renderConditionBlock(breakField.conditions, candidates, 'page') +
+      '<p class="fb-page-conditions-hint">Skipped pages are not shown to the visitor, and their fields are not required.</p>' +
+      '</div>';
+
+    bindConditionBlock(
+      box.querySelector('[data-cond-root="page"]'),
+      () => breakField.conditions || [],
+      (conditions) => {
+        breakField.conditions = conditions;
+      },
+      renderPageTabs
+    );
   }
 
   let pageDragFromIndex = null;
@@ -251,6 +302,7 @@
     setPages(pages);
     activePageIndex = pages.length - 1;
     selectedFieldId = null;
+    pageSelected = true;
     renderPageTabs();
     renderFieldList();
     renderFieldEditor();
@@ -302,6 +354,7 @@
     setPages(pages);
     activePageIndex = dest;
     selectedFieldId = fieldId;
+    pageSelected = false;
     renderPageTabs();
     renderFieldList();
     renderFieldEditor();
@@ -502,6 +555,7 @@
 
   function selectField(id) {
     selectedFieldId = id;
+    pageSelected = false;
     if (id) {
       activePageIndex = findPageIndexForField(id);
     }
@@ -516,10 +570,12 @@
   }
 
   function renderFieldEditor() {
-    const field = getSelectedField();
+    const fieldTitle = el('field-settings-title');
+    if (fieldTitle) fieldTitle.hidden = pageSelected;
+    const field = pageSelected ? null : getSelectedField();
     if (!field) {
       fieldEditor.style.display = 'none';
-      noFieldSelected.style.display = 'block';
+      noFieldSelected.style.display = pageSelected ? 'none' : 'block';
       return;
     }
     noFieldSelected.style.display = 'none';
