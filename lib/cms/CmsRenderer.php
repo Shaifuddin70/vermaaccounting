@@ -10,10 +10,11 @@ declare(strict_types=1);
  */
 final class CmsRenderer
 {
-    /** Pages and city pages show only their body inside <main>; the blog home adds the article list. */
+    /** Pages and city pages show only their body inside <main>; blog home and service-area add listings. */
     public const TEMPLATES = [
         'full-width' => ['label' => 'Body only', 'types' => ['page', 'city']],
         'article-index' => ['label' => 'Article listing (blog home)', 'types' => ['page']],
+        'service-areas' => ['label' => 'City directory (service areas)', 'types' => ['page']],
         'article' => ['label' => 'Article', 'types' => ['article']],
     ];
 
@@ -67,7 +68,10 @@ final class CmsRenderer
         if ($type === 'article') {
             return 'article';
         }
-        return $type === 'page' && $template === 'article-index' ? 'article-index' : 'full-width';
+        if ($type === 'page' && isset(self::TEMPLATES[$template]) && in_array('page', self::TEMPLATES[$template]['types'], true)) {
+            return $template;
+        }
+        return 'full-width';
     }
 
     /** URL-based breadcrumbs: every ancestor path that is a live CMS page (or a hand-written page). */
@@ -131,6 +135,7 @@ final class CmsRenderer
         $terms = $repo->contentTerms((int) $content['id']);
 
         $listing = null;
+        $serviceAreas = null;
         if ($template === 'article-index') {
             $total = $repo->countPublished('article');
             $totalPages = max(1, (int) ceil($total / self::ARTICLES_PER_PAGE));
@@ -141,12 +146,14 @@ final class CmsRenderer
                 'total_pages' => $totalPages,
                 'out_of_range' => $page > $totalPages,
             ];
+        } elseif ($template === 'service-areas') {
+            $serviceAreas = $repo->serviceAreas();
         }
 
         $effective = CmsSeo::effective($content, $seo, $folder, ['page' => $page, 'preview' => !empty($opts['preview']), 'path' => $path]);
         $breadcrumbs = self::breadcrumbs($content, $path);
         $webpageType = match ($template) {
-            'article-index' => 'CollectionPage',
+            'article-index', 'service-areas' => 'CollectionPage',
             default => 'WebPage',
         };
         $schema = CmsStructuredData::build($content, $effective, [
@@ -156,6 +163,7 @@ final class CmsRenderer
             'terms' => $terms,
             'seo' => $seo,
             'webpage_type' => $webpageType,
+            'service_areas' => $serviceAreas ?? [],
         ]);
 
         return [
@@ -175,6 +183,7 @@ final class CmsRenderer
             'featured' => self::featuredImage($content),
             'related' => $content['type'] === 'article' ? $repo->related((int) $content['id'], 3) : [],
             'listing' => $listing,
+            'service_areas' => $serviceAreas,
             'path' => $path,
             'page' => $page,
             'preview' => !empty($opts['preview']),

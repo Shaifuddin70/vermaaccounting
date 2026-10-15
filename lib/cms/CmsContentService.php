@@ -781,4 +781,67 @@ final class CmsContentService
         }
         return ['created' => $created, 'errors' => $errors];
     }
+
+    /**
+     * Ensure the Service Area parent page exists at /service-area (Pages tab) with sub-pages for cities.
+     *
+     * @return array{content_id: int, folder_id: int|null}
+     */
+    public static function ensureServiceAreaPage(): array
+    {
+        $repo = new CmsContentRepository();
+        $folders = new CmsFolderRepository();
+        $existing = $repo->findByPath('/service-area');
+        if ($existing === null) {
+            $userId = class_exists('Auth') ? Auth::userId() : null;
+            $id = $repo->create([
+                'type' => 'page',
+                'folder_id' => null,
+                'internal_name' => 'Service Area',
+                'title' => 'Service Areas',
+                'h1' => 'Service Areas',
+                'slug' => 'service-area',
+                'path' => '/service-area',
+                'body_html' => '<p>Find accounting, bookkeeping, payroll and tax services in your city. We serve communities across Ontario and Canada.</p>',
+                'body_mode' => 'sanitized',
+                'template' => 'service-areas',
+                'status' => 'published',
+                'published_at' => gmdate('Y-m-d H:i:s'),
+                'faqs_json' => '[]',
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+            $repo->saveSeo($id, [
+                'seo_title' => 'Service Areas | Accountants Near You | Verma Accounting',
+                'meta_description' => 'Find accounting, bookkeeping, payroll and tax services in your city. See every community Verma Accounting serves across Ontario and Canada.',
+                'robots_index' => 'inherit',
+                'robots_follow' => 'inherit',
+                'sitemap_include' => 1,
+                'canonical_mode' => 'auto',
+                'schema_json' => '{"disabled":[]}',
+            ]);
+            $existing = $repo->find($id);
+            CmsCache::flush();
+            ActivityLog::record('cms.created', 'cms_content', $id, ['path' => '/service-area', 'title' => 'Service Areas']);
+        } elseif (($existing['template'] ?? '') !== 'service-areas' && trim((string) ($existing['body_html'] ?? '')) === '') {
+            $repo->update((int) $existing['id'], ['template' => 'service-areas']);
+            $existing['template'] = 'service-areas';
+        }
+
+        $folders->syncLanding($existing, true);
+        $folder = $folders->forLanding((int) $existing['id']);
+        if ($folder !== null && ($folder['default_type'] ?? '') !== 'city') {
+            $folders->update((int) $folder['id'], ['default_type' => 'city']);
+        }
+
+        $redirects = new CmsRedirectRepository();
+        if ($redirects->findBySource('/service-areas') === null) {
+            $redirects->save(null, '/service-areas', '/service-area', 301, 'auto', 'Renamed listing URL to /service-area');
+        }
+
+        return [
+            'content_id' => (int) $existing['id'],
+            'folder_id' => $folder !== null ? (int) $folder['id'] : null,
+        ];
+    }
 }

@@ -220,9 +220,13 @@ require __DIR__ . '/includes/layout-start.php';
           </div>
           <?php if ($type === 'page'): ?>
             <div class="admin-field">
-              <span class="cms-label">Blog listing</span>
-              <input type="hidden" name="template" value="full-width">
-              <label class="admin-checkbox-label"><input type="checkbox" name="template" value="article-index" <?= $form['template'] === 'article-index' ? 'checked' : '' ?>> <span>Show the latest blog articles on this page</span></label>
+              <label for="f-template">Page layout</label>
+              <select id="f-template" name="template">
+                <option value="full-width" <?= $form['template'] === 'full-width' || $form['template'] === '' ? 'selected' : '' ?>>Body only</option>
+                <option value="article-index" <?= $form['template'] === 'article-index' ? 'selected' : '' ?>>Show the latest blog articles</option>
+                <option value="service-areas" <?= $form['template'] === 'service-areas' ? 'selected' : '' ?>>Show the city directory</option>
+              </select>
+              <p class="admin-field-hint">City directory is used by the Service Areas page at <code>/service-area</code>.</p>
             </div>
           <?php endif; ?>
 

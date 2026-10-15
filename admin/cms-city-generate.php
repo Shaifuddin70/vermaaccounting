@@ -11,11 +11,12 @@ $caps = cms_admin_caps();
 $canPublish = (bool) $caps['publish'];
 $cityDefaults = CmsCityDefaults::get();
 
+$serviceArea = CmsContentService::ensureServiceAreaPage();
 $input = [
     'cities' => '',
     'service' => '',
-    'folder_id' => 0,
-    'prefix' => '/locations',
+    'folder_id' => (int) ($serviceArea['folder_id'] ?? 0),
+    'prefix' => '/service-area',
     'publish' => false,
 ];
 $preview = null;
@@ -116,7 +117,7 @@ require __DIR__ . '/includes/layout-start.php';
       <div class="admin-field">
         <label for="g-prefix">URL prefix</label>
         <input type="text" id="g-prefix" name="prefix" value="<?= e($input['prefix']) ?>">
-        <p class="admin-field-hint">Each page's URL is the prefix plus the city name, e.g. <code>/locations/orleans</code>.</p>
+        <p class="admin-field-hint">Each page's URL is the prefix plus the city name, e.g. <code>/service-area/orleans</code>. City pages belong under the Service Areas page in Pages.</p>
       </div>
     </div>
   </div>

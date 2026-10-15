@@ -23,7 +23,7 @@ final class CmsStructuredData
     /**
      * @param array $content
      * @param array $effective CmsSeo::effective() result
-     * @param array{breadcrumbs?: list<array{name: string, path: string}>, faqs?: list<array{question: string, answer: string}>, city?: array, terms?: list<array>, webpage_type?: string, seo?: array} $extra
+     * @param array{breadcrumbs?: list<array{name: string, path: string}>, faqs?: list<array{question: string, answer: string}>, city?: array, terms?: list<array>, webpage_type?: string, seo?: array, service_areas?: list<array{path: string, name: string, region: string}>} $extra
      * @return list<array> JSON-LD objects (each with @context)
      */
     public static function build(array $content, array $effective, array $extra = []): array
@@ -64,6 +64,23 @@ final class CmsStructuredData
             }
             if ($effective['social']['image'] !== '') {
                 $page['primaryImageOfPage'] = ['@type' => 'ImageObject', 'url' => $effective['social']['image']];
+            }
+            $areas = $extra['service_areas'] ?? [];
+            if ($areas !== []) {
+                $items = [];
+                foreach ($areas as $i => $area) {
+                    $items[] = [
+                        '@type' => 'ListItem',
+                        'position' => $i + 1,
+                        'name' => $area['name'],
+                        'url' => $base . $area['path'],
+                    ];
+                }
+                $page['mainEntity'] = [
+                    '@type' => 'ItemList',
+                    'numberOfItems' => count($items),
+                    'itemListElement' => $items,
+                ];
             }
             $out[] = $page;
         }

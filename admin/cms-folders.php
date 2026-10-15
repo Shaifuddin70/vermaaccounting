@@ -202,7 +202,7 @@ require __DIR__ . '/includes/layout-start.php';
         </div>
         <div class="admin-field">
           <label for="fo-prefix">Default URL prefix</label>
-          <input type="text" id="fo-prefix" name="url_prefix" value="<?= e((string) $editing['url_prefix']) ?>" placeholder="/locations">
+          <input type="text" id="fo-prefix" name="url_prefix" value="<?= e((string) $editing['url_prefix']) ?>" placeholder="/service-area">
           <p class="admin-field-hint">New content in this folder gets URLs like <code><?= e(((string) $editing['url_prefix'] ?: '/prefix')) ?>/page-name</code>. Leave blank for root-level URLs.</p>
         </div>
         <div class="admin-field">

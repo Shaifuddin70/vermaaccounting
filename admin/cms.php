@@ -42,6 +42,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     cms_admin_back('/admin/cms', null, 'Unknown action.');
 }
 
+CmsContentService::ensureServiceAreaPage();
+
 $types = ['page' => 'Pages', 'article' => 'Blog articles', 'city' => 'City pages'];
 $counts = [];
 foreach (array_keys($types) as $type) {

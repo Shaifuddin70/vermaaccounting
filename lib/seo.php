@@ -80,6 +80,10 @@ function seo_meta_for_path(string $path): array
             'title' => 'Editorial Policy | Verma Accounting',
             'description' => 'How Verma Accounting writes, reviews, sources, and updates the tax and accounting information published on this website.',
         ],
+        '/service-area' => [
+            'title' => 'Service Areas | Accountants Near You | Verma Accounting',
+            'description' => 'Find accounting, bookkeeping, payroll and tax services in your city. See every community Verma Accounting serves across Ontario and Canada.',
+        ],
         '/service-areas' => [
             'title' => 'Service Areas | Accountants Near You | Verma Accounting',
             'description' => 'Find accounting, bookkeeping, payroll and tax services in your city. See every community Verma Accounting serves across Ontario and Canada.',
@@ -373,7 +377,7 @@ function seo_page_schema(string $path): ?array
         ];
     }
 
-    if ($path === '/service-areas') {
+    if ($path === '/service-area' || $path === '/service-areas') {
         $items = [];
         try {
             foreach ((new CmsContentRepository())->serviceAreas() as $i => $area) {
@@ -385,8 +389,8 @@ function seo_page_schema(string $path): ?array
         return [
             '@context' => 'https://schema.org',
             '@type' => 'CollectionPage',
-            '@id' => $base . '/service-areas#webpage',
-            'url' => $base . '/service-areas',
+            '@id' => $base . '/service-area#webpage',
+            'url' => $base . '/service-area',
             'name' => $meta['title'],
             'description' => $meta['description'],
             'isPartOf' => ['@id' => $websiteId],
