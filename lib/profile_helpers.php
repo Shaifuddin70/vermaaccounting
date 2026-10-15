@@ -71,7 +71,7 @@ function profile_for_current_user(): array
             'id' => null,
             'name' => $profile['name'],
             'email' => $profile['email'],
-            'role' => 'admin',
+            'role' => 'super_admin',
             'avatar_path' => $profile['avatar_path'],
             'reference_code' => null,
             'username' => app_config()['admin_username'] ?? 'admin',

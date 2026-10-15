@@ -1,0 +1,136 @@
+/* Styles for pages rendered by the website CMS (templates/cms). Site-wide styles live in styles.css. */
+
+.cms-preview-bar {
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+  padding: 0.5rem 1rem;
+  background: #fef3c7;
+  color: #78350f;
+  font-size: 0.9rem;
+  text-align: center;
+  border-bottom: 1px solid #f59e0b;
+}
+
+.cms-body {
+  max-width: 860px;
+  margin: 0 auto;
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+.cms-body h2 {
+  margin: 2rem 0 1rem;
+}
+
+.cms-body h3 {
+  margin: 1.5rem 0 0.75rem;
+}
+
+.cms-body img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+
+.cms-body figure {
+  margin: 1.5rem 0;
+}
+
+.cms-body figcaption,
+.cms-featured figcaption {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.cms-body table {
+  width: 100%;
+  margin: 1.5rem 0;
+  border-collapse: collapse;
+}
+
+.cms-body th,
+.cms-body td {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  text-align: left;
+  vertical-align: top;
+}
+
+.cms-body th {
+  background: #f3f4f6;
+}
+
+.cms-body blockquote {
+  margin: 1.5rem 0;
+  padding: 0.75rem 1.25rem;
+  border-left: 4px solid #1e3a8a;
+  background: #f8fafc;
+}
+
+.cms-body iframe {
+  max-width: 100%;
+}
+
+.cms-body .video-embed,
+.cms-body iframe[src*="youtube"],
+.cms-body iframe[src*="vimeo"] {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  height: auto;
+  border: 0;
+}
+
+.cms-featured {
+  margin: 0 auto 2rem;
+  max-width: 960px;
+}
+
+.cms-featured img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+}
+
+.cms-featured.blog-article-hero-media {
+  margin: 0;
+}
+
+.cms-tags {
+  margin-top: 2rem;
+}
+
+.cms-tags .blog-article-tag {
+  margin-right: 0.25rem;
+}
+
+.cms-submit-menu {
+  list-style: none;
+  padding: 0;
+}
+
+.blog-index-dek.cms-body {
+  margin: 0;
+  max-width: none;
+  font-size: inherit;
+}
+
+.blog-index-dek.cms-body p:last-child {
+  margin-bottom: 0;
+}
+
+/* Shown only in previews when a {{block:…}} token has no active block */
+.cms-block-missing {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 2px dashed #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  font-size: 0.9rem;
+}
+
+/* {{social_links}} */
+.company-social { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.company-social a { display: inline-flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: #ef6012; color: #fff; text-decoration: none; transition: filter 0.15s; }
+.company-social a:hover { color: #fff; filter: brightness(0.9); }

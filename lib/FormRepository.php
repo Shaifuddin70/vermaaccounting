@@ -151,6 +151,9 @@ final class FormRepository
             $wantCta = !empty($data['is_site_cta']) && ($data['status'] ?? $existing['status']) === 'published';
             $this->setSiteCta($wantCta ? $id : null);
         }
+        if ($ok) {
+            self::flushPageCache();
+        }
 
         return $ok;
     }
@@ -180,7 +183,17 @@ final class FormRepository
         }
 
         $stmt = $this->db->prepare('DELETE FROM forms WHERE id = ?');
-        return $stmt->execute([$id]);
+        $ok = $stmt->execute([$id]);
+        self::flushPageCache();
+        return $ok;
+    }
+
+    /** Cached CMS pages embed the Submit Document menu and site CTA, which depend on forms. */
+    private static function flushPageCache(): void
+    {
+        if (class_exists('CmsCache')) {
+            CmsCache::flush();
+        }
     }
 
     /**
@@ -954,6 +967,7 @@ final class FormRepository
     {
         $ids = array_values(array_unique(array_filter(array_map('intval', $formIds), static fn (int $id): bool => $id > 0)));
         (new SettingsRepository())->set('submit_menu_order', $ids);
+        self::flushPageCache();
     }
 
     public function uniqueSlug(string $base, ?int $excludeId = null): string

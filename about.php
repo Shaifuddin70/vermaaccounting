@@ -35,7 +35,7 @@
             <picture class="img-box scroll-animate-right animate-in">
 
               <source media="(max-width:991px)" srcset="/images/rishab-verma.jpg">
-              <img src="images/rishab-verma-lg.jpg" alt="Rishab Verma" class="about-image" />
+              <img src="/images/rishab-verma-lg.jpg" alt="Rishab Verma" class="about-image" />
             </picture>
           </div>
           <div class="col-lg-8">
@@ -195,11 +195,11 @@
         <h2>Ready to Make Your Numbers Work for You?</h2>
         <p>Take the uncertainty out of accounting. Partner with Verma Accounting for bookkeeping, payroll, tax, and registration support anywhere in Canada.</p>
         <div class="cta-buttons">
-          <a href="contact" class="cta-button primary">
+          <a href="/contact" class="cta-button primary">
             <i class="fas fa-phone"></i>
             Get Free Consultation
           </a>
-          <a href="services" class="cta-button secondary">
+          <a href="/services" class="cta-button secondary">
             <i class="fas fa-calculator"></i>
             View Our Services
           </a>

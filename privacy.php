@@ -67,8 +67,8 @@ include __DIR__ . '/components/header.php';
         <p>
           Subject to applicable Canadian privacy laws, you may request access to, correction of, or deletion of your personal
           data. To exercise these rights, contact us at
-          <a href="mailto:info@vermaaccounting.ca">info@vermaaccounting.ca</a>
-          or call <a href="tel:613-318-6478">+1 (613) 318-6478</a>.
+          <a href="<?= e(company_email_href()) ?>"><?= e(company_email()) ?></a>
+          or call <a href="<?= e(company_phone_href()) ?>"><?= e(company_phone()) ?></a>.
         </p>
 
         <h2>Changes to this policy</h2>
@@ -80,7 +80,7 @@ include __DIR__ . '/components/header.php';
         <h2>Contact</h2>
         <p>
           Questions about this Privacy Policy? Email
-          <a href="mailto:info@vermaaccounting.ca">info@vermaaccounting.ca</a>
+          <a href="<?= e(company_email_href()) ?>"><?= e(company_email()) ?></a>
           or visit our <a href="/contact">Contact</a> page.
         </p>
       </article>

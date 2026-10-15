@@ -33,12 +33,6 @@ include 'components/header.php';
 <main class="main-content">
   <section class="blog-index-hero">
     <div class="container blog-index-hero-inner">
-      <nav class="blog-article-breadcrumb" aria-label="Breadcrumb">
-        <a href="/">Home</a>
-        <span class="blog-article-sep" aria-hidden="true">/</span>
-        <span>Blog</span>
-      </nav>
-
       <div class="blog-index-hero-top">
         <div class="blog-index-hero-copy">
           <span class="blog-article-tag">Insights</span>

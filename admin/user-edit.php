@@ -14,6 +14,12 @@ if ($editId && !$editUser) {
     header('Location: /admin/users');
     exit;
 }
+$isSuper = Auth::isSuperAdmin();
+if ($editUser && permission_is_privileged_role((string) $editUser['role']) && !$isSuper) {
+    $_SESSION['flash_error'] = 'Only a super admin can change admin and super admin accounts.';
+    header('Location: /admin/users');
+    exit;
+}
 
 $errors = $_SESSION['user_edit_errors'] ?? [];
 $old    = $_SESSION['user_edit_old'] ?? [];
@@ -83,12 +89,15 @@ require __DIR__ . '/includes/layout-start.php';
     <div class="user-edit-row">
       <div class="admin-field">
         <label for="ue-role">Role <span class="required">*</span></label>
+        <?php $currentRole = (string) ($old['role'] ?? $editUser['role'] ?? 'reviewer'); ?>
         <select id="ue-role" name="role" required>
-          <option value="reviewer" <?= ($old['role'] ?? $editUser['role'] ?? 'reviewer') === 'reviewer' ? 'selected' : '' ?>>Reviewer</option>
-          <option value="partner"  <?= ($old['role'] ?? $editUser['role'] ?? '') === 'partner' ? 'selected' : '' ?>>Partner</option>
-          <option value="admin"    <?= ($old['role'] ?? $editUser['role'] ?? '') === 'admin' ? 'selected' : '' ?>>Admin</option>
+          <?php foreach (array_reverse(permission_roles(), true) as $roleKey => $roleLabel): ?>
+            <?php if ($isSuper || !permission_is_privileged_role($roleKey)): ?>
+              <option value="<?= e($roleKey) ?>" <?= $currentRole === $roleKey ? 'selected' : '' ?>><?= e($roleLabel) ?></option>
+            <?php endif; ?>
+          <?php endforeach; ?>
         </select>
-        <small class="admin-field-hint">Partners only see submissions where clients selected them. Reviewers see all published form responses. Admins have full access. Use the Team page modal to customize permissions.</small>
+        <small class="admin-field-hint">Partners only see submissions where clients selected them. Reviewers see all published form responses. Admins have everything except Website content unless a super admin allows it. Super admins have full access and manage admins. Use the Team page modal to customize permissions.</small>
       </div>
 
       <div class="admin-field">

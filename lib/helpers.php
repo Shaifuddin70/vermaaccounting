@@ -47,6 +47,57 @@ function asset(string $path): string
     return '/' . ltrim($path, '/');
 }
 
+/** Asset URL with a ?v= stamp from the file's modification time, so browsers fetch edited files right away. */
+function asset_versioned(string $path): string
+{
+    $url = asset($path);
+    $file = PROJECT_ROOT . $url;
+    return is_file($file) && !str_contains($url, '..') ? $url . '?v=' . filemtime($file) : $url;
+}
+
+/**
+ * <img> for a site image, preferring the .webp copy next to it and any "name-<width>.webp" sizes for srcset.
+ * Width/height come from the file so the browser can reserve space. Lazy-loaded unless 'loading' => 'eager'.
+ *
+ * @param array<string, string> $attrs extra attributes (class, sizes, loading, fetchpriority, …)
+ */
+function site_image(string $src, string $alt, array $attrs = []): string
+{
+    $src = asset($src);
+    $base = preg_replace('/\.(jpe?g|png|gif)$/i', '', $src) ?? $src;
+    $url = $src;
+    $srcset = [];
+    if ($base !== $src && is_file(PROJECT_ROOT . $base . '.webp')) {
+        $url = $base . '.webp';
+        foreach (glob(PROJECT_ROOT . $base . '-*.webp') ?: [] as $file) {
+            if (preg_match('/-(\d+)\.webp$/', $file, $m)) {
+                $srcset[(int) $m[1]] = $base . '-' . $m[1] . '.webp';
+            }
+        }
+    }
+    $size = @getimagesize(PROJECT_ROOT . $url);
+    if ($srcset !== [] && $size) {
+        $srcset[(int) $size[0]] = $url;
+        ksort($srcset);
+        $attrs['srcset'] = implode(', ', array_map(static fn (int $w, string $u): string => $u . ' ' . $w . 'w', array_keys($srcset), $srcset));
+        $attrs['sizes'] ??= '(min-width: 992px) 50vw, 100vw';
+    } else {
+        unset($attrs['sizes']);
+    }
+    $attrs += ['loading' => 'lazy', 'decoding' => 'async'];
+    if ($attrs['loading'] === 'eager') {
+        unset($attrs['loading']);
+    }
+    $html = '<img src="' . e($url) . '" alt="' . e($alt) . '"';
+    if ($size) {
+        $html .= ' width="' . (int) $size[0] . '" height="' . (int) $size[1] . '"';
+    }
+    foreach ($attrs as $name => $value) {
+        $html .= ' ' . $name . '="' . e($value) . '"';
+    }
+    return $html . '>';
+}
+
 /** Clean app URL without .php extension (requires Apache mod_rewrite). */
 function app_url(string $path, array $query = []): string
 {
@@ -383,6 +434,16 @@ function app_strip_html_comments(string $html): string
     return preg_replace('/<!--(?!\s*\[if).*?-->/s', '', $html) ?? $html;
 }
 
+/** Collapse runs of whitespace to one space/newline, leaving pre, textarea, script and style contents untouched. */
+function app_collapse_html_whitespace(string $html): string
+{
+    return preg_replace_callback(
+        '#<(pre|textarea|script|style)\b.*?</\1\s*>|\s{2,}#si',
+        static fn (array $m): string => ($m[1] ?? '') !== '' ? $m[0] : (str_contains($m[0], "\n") ? "\n" : ' '),
+        $html
+    ) ?? $html;
+}
+
 function app_begin_output_filter(): void
 {
     if (app_is_local() || !empty($GLOBALS['app_output_filter_active'])) {
@@ -390,7 +451,7 @@ function app_begin_output_filter(): void
     }
 
     ob_start(static function (string $buffer): string {
-        return app_strip_html_comments($buffer);
+        return app_collapse_html_whitespace(app_strip_html_comments($buffer));
     });
     $GLOBALS['app_output_filter_active'] = true;
 }
@@ -1520,11 +1581,6 @@ function site_submit_menu_forms(): array
                 'title' => (string) $form['title'],
                 'url' => form_public_url($slug),
                 'description' => $description !== '' ? $description : 'Secure online form',
-                'icon' => match ($slug) {
-                    'tax-intake' => 'fa-file-invoice-dollar',
-                    'submit-documents' => 'fa-cloud-arrow-up',
-                    default => 'fa-file-lines',
-                },
             ];
         }
     } catch (Throwable) {

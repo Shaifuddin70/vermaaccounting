@@ -28,7 +28,7 @@ $isNew    = ($editId === null);
 $name     = trim($_POST['name'] ?? '');
 $email    = trim(strtolower($_POST['email'] ?? ''));
 $password = $_POST['password'] ?? '';
-$role     = in_array($_POST['role'] ?? '', ['admin', 'reviewer', 'partner'], true) ? $_POST['role'] : 'reviewer';
+$role     = isset(permission_roles()[$_POST['role'] ?? '']) ? (string) $_POST['role'] : 'reviewer';
 $status   = in_array($_POST['status'] ?? '', ['active', 'inactive'], true) ? $_POST['status'] : 'active';
 $referenceCode = trim((string) ($_POST['reference_code'] ?? ''));
 $customPermissions = ($_POST['permissions_custom'] ?? '') === '1' || ($_POST['permissions_custom'] ?? '') === 'on';
@@ -37,33 +37,50 @@ if (!is_array($postedPermissions)) {
     $postedPermissions = [];
 }
 
-// Always persist the checkbox set for reviewer/partner so Team UI matches access.
+$errors = [];
+$actorIsSuper = Auth::isSuperAdmin();
+$targetUser = $isNew ? null : (new UserRepository())->find((int) $editId);
+
+if (permission_is_privileged_role($role) && !$actorIsSuper) {
+    $errors[] = 'Only a super admin can give someone the admin or super admin role.';
+}
+if ($targetUser && permission_is_privileged_role((string) ($targetUser['role'] ?? '')) && !$actorIsSuper) {
+    $errors[] = 'Only a super admin can change admin and super admin accounts.';
+}
+
+// Super admins always have full access. Otherwise store the posted checkbox set; a form without
+// the permission panel keeps the member's existing permissions unless their role changes.
 $permissionsJson = null;
-if ($role !== 'admin') {
-    if ($customPermissions || $postedPermissions !== []) {
+if ($role !== 'super_admin') {
+    if (!array_key_exists('permissions_custom', $_POST) && !array_key_exists('permissions', $_POST)) {
+        if ($targetUser && ($targetUser['role'] ?? '') === $role) {
+            $permissionsJson = permission_encode_for_storage(permission_parse_stored($targetUser['permissions_json'] ?? null));
+        }
+    } elseif ($customPermissions || $postedPermissions !== []) {
         $permissionsJson = permission_encode_for_storage($postedPermissions);
     }
 }
-
-$errors = [];
-
-$actor = Auth::currentUser();
-$actorIsFullAdmin = ($actor['is_config_admin'] ?? false) || Auth::userRole() === 'admin';
-if ($role === 'admin' && !$actorIsFullAdmin) {
-    $errors[] = 'Only admins can assign the admin role.';
-}
-if ($permissionsJson !== null && !$actorIsFullAdmin) {
-    // Non-admin managers can only grant capabilities they hold themselves.
+if (!$actorIsSuper && $role !== 'super_admin') {
+    // Other managers can only grant capabilities they hold themselves, never team access or
+    // website content; website content the member already has is left as a super admin set it.
+    $restricted = permission_restricted_keys();
     $filtered = array_values(array_filter(
         permission_parse_stored($permissionsJson) ?? [],
-        static fn(string $key): bool => $key !== 'team.manage' && Auth::can($key)
+        static fn(string $key): bool => $key !== 'team.manage' && !in_array($key, $restricted, true) && Auth::can($key)
     ));
-    $permissionsJson = permission_encode_for_storage($filtered);
+    $kept = array_values(array_intersect(permission_parse_stored($targetUser['permissions_json'] ?? null) ?? [], $restricted));
+    if ($kept !== []) {
+        $filtered = array_merge($filtered ?: permission_defaults_for_role($role), $kept);
+    }
+    $permissionsJson = $filtered === [] && $permissionsJson === null ? null : permission_encode_for_storage($filtered);
 }
-if (!$isNew && !$actorIsFullAdmin) {
-    $targetUser = (new UserRepository())->find((int) $editId);
-    if ($targetUser && ($targetUser['role'] ?? '') === 'admin') {
-        $errors[] = 'Only admins can edit admin accounts.';
+if ($permissionsJson !== null) {
+    $chosen = permission_parse_stored($permissionsJson) ?? [];
+    $defaults = permission_defaults_for_role($role);
+    sort($chosen);
+    sort($defaults);
+    if ($chosen === $defaults) {
+        $permissionsJson = null;
     }
 }
 

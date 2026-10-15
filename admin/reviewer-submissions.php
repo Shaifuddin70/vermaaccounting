@@ -140,7 +140,7 @@ require __DIR__ . '/includes/layout-start.php';
 
 <div class="admin-header">
   <h1><?= e($pageTitle) ?></h1>
-  <?php if ($role === 'admin' && $formId > 0): ?>
+  <?php if (permission_is_privileged_role($role) && $formId > 0): ?>
     <?php $purgeCount = (int) ($formSubmissionCounts[$formId]['all'] ?? 0); ?>
     <?php if ($purgeCount > 0): ?>
       <div class="admin-header-actions">
@@ -309,7 +309,7 @@ require __DIR__ . '/includes/layout-start.php';
                 </td>
                 <td class="admin-table-actions">
                   <a href="/admin/submission?id=<?= $sid ?>&form_id=<?= $fid ?>" class="admin-btn admin-btn-primary admin-btn-sm">View</a>
-                  <?php if ($role === 'admin'): ?>
+                  <?php if (permission_is_privileged_role($role)): ?>
                     <a href="<?= e(invoice_edit_url_from_submission($sid, $fid)) ?>" class="admin-btn admin-btn-secondary admin-btn-sm">Invoice</a>
                     <form method="post" action="/admin/submission-delete" class="inline-form"
                       onsubmit="return confirm('Delete submission #<?= $sid ?>? This cannot be undone.');">

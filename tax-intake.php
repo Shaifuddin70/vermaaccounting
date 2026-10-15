@@ -21,7 +21,7 @@ $seoDescription = 'Start your personal tax filing with Verma Accounting. Answer 
 
 include __DIR__ . '/components/header.php';
 ?>
-<link rel="stylesheet" href="/css/custom-form.css?v=21">
+<link rel="stylesheet" href="<?= e(asset_versioned('css/custom-form.css')) ?>">
 <main class="main-content vf-page doc-submit-page">
   <div class="vf-container">
     <div class="vf-layout">

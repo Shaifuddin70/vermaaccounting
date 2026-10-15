@@ -20,7 +20,7 @@
       Speak with Verma Accounting today. Call us, book an appointment, or send a message — we’re here to help across Ontario and Canada.
     </p>
     <div class="verma-engagement-modal__actions">
-      <a href="tel:+16133186478" class="cta-button primary verma-engagement-modal__btn">
+      <a href="<?= e(company_phone_href()) ?>" class="cta-button primary verma-engagement-modal__btn">
         <i class="fas fa-phone" aria-hidden="true"></i>
         Call now
       </a>

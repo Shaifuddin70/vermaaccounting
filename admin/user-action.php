@@ -29,11 +29,9 @@ if (!$user || $id < 1) {
     exit;
 }
 
-$actor = Auth::currentUser();
-$actorIsFullAdmin = ($actor['is_config_admin'] ?? false) || Auth::userRole() === 'admin';
-if (($user['role'] ?? '') === 'admin' && !$actorIsFullAdmin) {
-    if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['error' => 'Only admins can change admin accounts.']); exit; }
-    $_SESSION['flash_error'] = 'Only admins can change admin accounts.';
+if (permission_is_privileged_role((string) ($user['role'] ?? '')) && !Auth::isSuperAdmin()) {
+    if ($isAjax) { header('Content-Type: application/json'); echo json_encode(['error' => 'Only a super admin can change admin and super admin accounts.']); exit; }
+    $_SESSION['flash_error'] = 'Only a super admin can change admin and super admin accounts.';
     header('Location: /admin/users');
     exit;
 }

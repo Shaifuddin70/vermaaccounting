@@ -49,9 +49,10 @@ $renderInquiryField = static function (array $field, bool $withLabels): void {
     $placeholder = trim((string) ($field['placeholder'] ?? $label));
     $required = !empty($field['required']);
     $reqAttr = $required ? ' required' : '';
-
     if ($withLabels && $label !== '') {
         echo '<label for="' . e($id) . '">' . e($label) . ($required ? '' : ' <span class="inquiry-optional">(optional)</span>') . '</label>';
+    } else {
+        $reqAttr .= ' aria-label="' . e($label !== '' ? $label : $name) . '"';
     }
 
     if ($type === 'textarea') {
@@ -119,17 +120,17 @@ $renderInquiryField = static function (array $field, bool $withLabels): void {
     <?php endforeach; ?>
   <?php else: ?>
     <?php if ($withLabels): ?><label for="inquiry-name">Name</label><?php endif; ?>
-    <input type="text" id="inquiry-name" name="name" placeholder="Name" required autocomplete="name">
+    <input type="text" id="inquiry-name" name="name" placeholder="Name" required autocomplete="name"<?= $withLabels ? '' : ' aria-label="Name"' ?>>
 
     <?php if ($withLabels): ?><label for="inquiry-phone">Phone</label><?php endif; ?>
-    <input type="text" id="inquiry-phone" name="phone" placeholder="Phone" required autocomplete="tel">
+    <input type="text" id="inquiry-phone" name="phone" placeholder="Phone" required autocomplete="tel"<?= $withLabels ? '' : ' aria-label="Phone"' ?>>
 
     <?php if ($withLabels): ?><label for="inquiry-email">Email</label><?php endif; ?>
-    <input type="email" id="inquiry-email" name="email" placeholder="Email" required autocomplete="email">
+    <input type="email" id="inquiry-email" name="email" placeholder="Email" required autocomplete="email"<?= $withLabels ? '' : ' aria-label="Email"' ?>>
 
     <?php if ($includeService): ?>
       <?php if ($withLabels): ?><label for="service-select">Service</label><?php endif; ?>
-      <select name="service" id="service-select" required>
+      <select name="service" id="service-select" required<?= $withLabels ? '' : ' aria-label="Service"' ?>>
         <option value="">Select a Service</option>
         <option value="Bookkeeping">Bookkeeping</option>
         <option value="Financial Accounting">Financial Accounting</option>
@@ -142,7 +143,7 @@ $renderInquiryField = static function (array $field, bool $withLabels): void {
     <?php endif; ?>
 
     <?php if ($withLabels): ?><label for="inquiry-message">Message</label><?php endif; ?>
-    <textarea id="inquiry-message" name="message" rows="4" placeholder="Message" required></textarea>
+    <textarea id="inquiry-message" name="message" rows="4" placeholder="Message" required<?= $withLabels ? '' : ' aria-label="Message"' ?>></textarea>
   <?php endif; ?>
 
   <button type="submit" id="my-form-button">Send message</button>

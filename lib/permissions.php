@@ -6,6 +6,8 @@ declare(strict_types=1);
  * Capability-based access control for admin team members.
  *
  * Roles supply defaults; optional per-user permissions_json overrides the full set.
+ * Super admins (and the config-file account) always hold everything. Website content (cms.*)
+ * is off by default for every other role and only a super admin can allow it per member.
  * Partner data scoping (which submissions) remains separate in partner_helpers.php.
  */
 
@@ -127,16 +129,6 @@ function permission_catalog(): array
             'description' => 'Build, publish, and delete forms',
             'group' => 'Content',
         ],
-        'blogs.view' => [
-            'label' => 'View blogs',
-            'description' => 'Browse blog posts in admin',
-            'group' => 'Content',
-        ],
-        'blogs.manage' => [
-            'label' => 'Manage blogs',
-            'description' => 'Create, edit, and publish blog posts',
-            'group' => 'Content',
-        ],
         'files.view' => [
             'label' => 'View files',
             'description' => 'Browse uploaded files',
@@ -146,6 +138,37 @@ function permission_catalog(): array
             'label' => 'Manage files',
             'description' => 'Upload, download zip, and delete files',
             'group' => 'Content',
+        ],
+
+        'cms.view' => [
+            'label' => 'View website content',
+            'description' => 'Browse pages, articles, city pages, media and reports',
+            'group' => 'Website',
+        ],
+        'cms.edit' => [
+            'label' => 'Edit content',
+            'description' => 'Create and edit drafts, folders, tags and media',
+            'group' => 'Website',
+        ],
+        'cms.publish' => [
+            'label' => 'Publish content',
+            'description' => 'Publish, schedule, unpublish and archive pages',
+            'group' => 'Website',
+        ],
+        'cms.seo' => [
+            'label' => 'Technical SEO',
+            'description' => 'Canonical URLs, robots directives, schema, sitemap and robots.txt',
+            'group' => 'Website',
+        ],
+        'cms.redirects' => [
+            'label' => 'Redirects & migration',
+            'description' => 'Manage redirects and run website migrations',
+            'group' => 'Website',
+        ],
+        'cms.code' => [
+            'label' => 'Site code',
+            'description' => 'Header, footer, head markup, CSS, JavaScript, tracking scripts and raw HTML bodies',
+            'group' => 'Website',
         ],
 
         'campaigns.view' => [
@@ -230,13 +253,50 @@ function permission_all_keys(): array
     return array_keys(permission_catalog());
 }
 
+/** @return array<string, string> role => label, most senior first */
+function permission_roles(): array
+{
+    return [
+        'super_admin' => 'Super admin',
+        'admin' => 'Admin',
+        'reviewer' => 'Reviewer',
+        'partner' => 'Partner',
+    ];
+}
+
+function permission_role_label(string $role): string
+{
+    return permission_roles()[$role] ?? ucfirst($role);
+}
+
+/** Roles whose accounts only a super admin may create, edit or (de)activate. */
+function permission_is_privileged_role(string $role): bool
+{
+    return $role === 'super_admin' || $role === 'admin';
+}
+
+/**
+ * Website content capabilities: no role has them by default (except super admin), and only a
+ * super admin can allow or remove them for a team member.
+ *
+ * @return list<string>
+ */
+function permission_restricted_keys(): array
+{
+    return array_values(array_filter(permission_all_keys(), static fn (string $key): bool => str_starts_with($key, 'cms.')));
+}
+
 /**
  * @return array<string, list<array{key: string, label: string, description: string}>>
  */
-function permission_catalog_grouped(): array
+function permission_catalog_grouped(bool $withoutRestricted = false): array
 {
     $grouped = [];
+    $restricted = $withoutRestricted ? array_flip(permission_restricted_keys()) : [];
     foreach (permission_catalog() as $key => $meta) {
+        if (isset($restricted[$key])) {
+            continue;
+        }
         $group = $meta['group'];
         $grouped[$group] ??= [];
         $grouped[$group][] = [
@@ -251,9 +311,9 @@ function permission_catalog_grouped(): array
 /** @return array<string, list<string>> */
 function permission_role_defaults(): array
 {
-    $all = permission_all_keys();
     return [
-        'admin' => $all,
+        'super_admin' => permission_all_keys(),
+        'admin' => array_values(array_diff(permission_all_keys(), permission_restricted_keys())),
         'reviewer' => [
             'dashboard.view',
             'submissions.view',
@@ -341,11 +401,8 @@ function permission_resolve_for_user(?array $user): array
     if ($user === null) {
         return [];
     }
-    if (!empty($user['is_config_admin'])) {
-        return permission_all_keys();
-    }
     $role = (string) ($user['role'] ?? 'reviewer');
-    if ($role === 'admin') {
+    if (!empty($user['is_config_admin']) || $role === 'super_admin') {
         return permission_all_keys();
     }
     $custom = permission_parse_stored($user['permissions_json'] ?? null);
@@ -389,7 +446,8 @@ function permission_implies_map(): array
             'submissions.delete',
         ],
         'forms.view' => ['forms.manage'],
-        'blogs.view' => ['blogs.manage'],
+        'cms.view' => ['cms.edit', 'cms.publish', 'cms.seo', 'cms.redirects', 'cms.code'],
+        'cms.edit' => ['cms.publish', 'cms.code'],
         'files.view' => ['files.manage'],
         'campaigns.view' => ['campaigns.manage'],
     ];

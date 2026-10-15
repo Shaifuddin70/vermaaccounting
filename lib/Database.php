@@ -74,6 +74,40 @@ final class Database
         ]);
     }
 
+    /**
+     * Run migrate() only when the schema code or target database changed since the last successful run.
+     * Web requests skip dozens of DDL/introspection queries this way; CLI always migrates.
+     */
+    public function migrateIfChanged(): void
+    {
+        if (PHP_SAPI === 'cli') {
+            $this->migrate();
+            return;
+        }
+        $db = app_config()['database'] ?? [];
+        $files = [
+            __FILE__,
+            __DIR__ . '/cms/CmsSchema.php',
+            __DIR__ . '/contact_form.php',
+            __DIR__ . '/document_submission_form.php',
+            __DIR__ . '/tax_intake_form.php',
+        ];
+        $parts = [$this->driver, (string) ($db['host'] ?? ''), (string) ($db['name'] ?? ''), (string) ($db['path'] ?? '')];
+        foreach ($files as $file) {
+            $parts[] = $file . ':' . (is_file($file) ? (string) filemtime($file) . ':' . (string) filesize($file) : '-');
+        }
+        $fingerprint = sha1(implode('|', $parts));
+        $stamp = DATA_DIR . '/cache/schema-migrated.txt';
+        if (is_file($stamp) && trim((string) @file_get_contents($stamp)) === $fingerprint) {
+            return;
+        }
+        $this->migrate();
+        if (!is_dir(dirname($stamp))) {
+            @mkdir(dirname($stamp), 0755, true);
+        }
+        @file_put_contents($stamp, $fingerprint, LOCK_EX);
+    }
+
     public function migrate(): void
     {
         if ($this->driver === 'mysql') {
@@ -135,7 +169,7 @@ final class Database
                 name VARCHAR(191) NOT NULL,
                 email VARCHAR(191) NOT NULL,
                 password_hash VARCHAR(255) NOT NULL,
-                role ENUM("admin", "reviewer") NOT NULL DEFAULT "reviewer",
+                role ENUM("super_admin", "admin", "reviewer", "partner") NOT NULL DEFAULT "reviewer",
                 status ENUM("active", "inactive") NOT NULL DEFAULT "active",
                 created_at DATETIME NOT NULL,
                 updated_at DATETIME NOT NULL,
@@ -193,6 +227,7 @@ final class Database
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
         $this->ensureTaxIntakeForm();
+        CmsSchema::ensure($this->pdo, $this->driver);
     }
 
     private function migrateSqlite(): void
@@ -291,6 +326,7 @@ final class Database
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
         $this->ensureTaxIntakeForm();
+        CmsSchema::ensure($this->pdo, $this->driver);
     }
 
     private function ensureDocumentSubmissionForm(): void
@@ -765,8 +801,8 @@ final class Database
         $stmt = $this->pdo->query("SHOW COLUMNS FROM users LIKE 'role'");
         $col = $stmt->fetch();
         $type = (string) ($col['Type'] ?? '');
-        if ($type !== '' && !str_contains($type, 'partner')) {
-            $this->pdo->exec("ALTER TABLE users MODIFY role ENUM('admin', 'reviewer', 'partner') NOT NULL DEFAULT 'reviewer'");
+        if ($type !== '' && (!str_contains($type, 'partner') || !str_contains($type, 'super_admin'))) {
+            $this->pdo->exec("ALTER TABLE users MODIFY role ENUM('super_admin', 'admin', 'reviewer', 'partner') NOT NULL DEFAULT 'reviewer'");
         }
     }
 
@@ -1446,6 +1482,9 @@ final class Database
         if (!preg_match('/^[a-z_]+$/', $table) || !preg_match('/^[a-z_]+$/', $column)) {
             return false;
         }
+        if ($this->driver === 'sqlite') {
+            return $this->sqliteColumnExists($table, $column);
+        }
         $stmt = $this->pdo->query("SHOW COLUMNS FROM `{$table}` LIKE " . $this->pdo->quote($column));
         return (bool) $stmt->fetch();
     }
@@ -1454,6 +1493,10 @@ final class Database
     {
         if (!preg_match('/^[a-z_]+$/', $table) || !preg_match('/^[a-z_]+$/', $index)) {
             return false;
+        }
+        if ($this->driver === 'sqlite') {
+            $stmt = $this->pdo->query("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = " . $this->pdo->quote($index));
+            return (bool) $stmt->fetch();
         }
         $stmt = $this->pdo->query("SHOW INDEX FROM `{$table}` WHERE Key_name = " . $this->pdo->quote($index));
         return (bool) $stmt->fetch();

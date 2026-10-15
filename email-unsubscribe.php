@@ -33,7 +33,7 @@ include __DIR__ . '/components/header.php';
       <p style="color:#b91c1c;"><?= e($error) ?></p>
     <?php elseif ($parsed === null): ?>
       <p>This unsubscribe link is invalid. If you continue to receive unwanted mail, contact us at
-        <a href="mailto:info@vermaaccounting.ca">info@vermaaccounting.ca</a>.</p>
+        <a href="<?= e(company_email_href()) ?>"><?= e(company_email()) ?></a>.</p>
     <?php else: ?>
       <p>Unsubscribe <strong><?= e($parsed['email']) ?></strong> from Verma Accounting marketing emails?</p>
       <form method="post" action="/email-unsubscribe" style="margin-top:1.25rem;">

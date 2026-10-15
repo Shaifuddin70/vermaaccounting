@@ -16,36 +16,10 @@ require_once $projectRoot . '/lib/bootstrap.php';
 $holidayResult = process_due_holiday_sends();
 $birthdayResult = process_due_birthday_sends();
 $result = process_due_campaign_batches();
-$blogResult = [
-    'ok' => false,
-    'skipped' => true,
-    'fetched' => 0,
-    'created' => 0,
-    'updated' => 0,
-    'error' => null,
-];
-
 try {
-    $client = new UpliftAiClient();
-    if (!$client->isConfigured()) {
-        $blogResult['error'] = 'Uplift AI token not configured';
-    } else {
-        $sync = blog_sync_from_uplift($client);
-        $blogResult = [
-            'ok' => true,
-            'skipped' => false,
-            'fetched' => $sync['fetched'],
-            'created' => $sync['created'],
-            'updated' => $sync['updated'],
-            'error' => null,
-        ];
-        if ($sync['created'] > 0 || $sync['updated'] > 0) {
-            ActivityLog::record('blog.synced', 'blog', null, $sync + ['source' => 'cron']);
-        }
-    }
+    $cmsResult = cms_process_schedule() + ['error' => null];
 } catch (Throwable $e) {
-    $blogResult['skipped'] = false;
-    $blogResult['error'] = $e->getMessage();
+    $cmsResult = ['published' => 0, 'expired' => 0, 'error' => $e->getMessage()];
 }
 
 $env = app_environment();
@@ -72,15 +46,11 @@ if (PHP_SAPI === 'cli') {
     if ($birthdayResult['errors'] !== []) {
         $line .= ' | birthday errors: ' . implode('; ', $birthdayResult['errors']);
     }
-    if (!empty($blogResult['ok'])) {
-        $line .= sprintf(
-            ' | blogs: fetched=%d created=%d updated=%d',
-            $blogResult['fetched'],
-            $blogResult['created'],
-            $blogResult['updated']
-        );
-    } elseif (!empty($blogResult['error'])) {
-        $line .= ' | blog sync error: ' . $blogResult['error'];
+    if ($cmsResult['published'] > 0 || $cmsResult['expired'] > 0) {
+        $line .= sprintf(' | website: published=%d expired=%d', $cmsResult['published'], $cmsResult['expired']);
+    }
+    if ($cmsResult['error'] !== null) {
+        $line .= ' | website schedule error: ' . $cmsResult['error'];
     }
     if ($result['campaigns'] === 0) {
         $diag = campaign_queue_diagnostics();
@@ -112,5 +82,5 @@ echo json_encode([
     'ok' => true,
     'holidays' => $holidayResult,
     'birthdays' => $birthdayResult,
-    'blogs' => $blogResult,
+    'website' => $cmsResult,
 ] + $result, JSON_UNESCAPED_UNICODE);

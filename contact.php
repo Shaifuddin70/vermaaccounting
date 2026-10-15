@@ -11,12 +11,14 @@
           Serving Nepean, Ottawa, and clients across Canada.
         </p>
         <div class="contact-hero-actions">
-          <a href="tel:+16133186478" class="cta-button primary">
+          <a href="<?= e(company_phone_href()) ?>" class="cta-button primary">
             <i class="fas fa-phone" aria-hidden="true"></i>
-            +1 (613) 318-6478
+            <?= e(company_phone()) ?>
           </a>
           <a
-            href=""
+            href="https://calendly.com/vermaaccounting-info/30min"
+            target="_blank"
+            rel="noopener"
             class="cta-button secondary"
             onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;">
             <i class="fas fa-calendar-alt" aria-hidden="true"></i>
@@ -40,48 +42,54 @@
 
         <aside class="contact-page-aside">
           <div class="contact-page-info-list">
-            <a href="tel:+16133186478" class="contact-page-info-item">
+            <a href="<?= e(company_phone_href()) ?>" class="contact-page-info-item">
               <span class="contact-page-info-icon" aria-hidden="true"><i class="fas fa-phone"></i></span>
               <span class="contact-page-info-body">
                 <strong>Phone</strong>
-                <span>+1 (613) 318-6478</span>
+                <span><?= e(company_phone()) ?></span>
                 <small>Call or WhatsApp for a free consultation</small>
               </span>
             </a>
 
-            <a href="mailto:info@vermaaccounting.ca" class="contact-page-info-item">
+            <a href="<?= e(company_email_href()) ?>" class="contact-page-info-item">
               <span class="contact-page-info-icon" aria-hidden="true"><i class="fas fa-envelope"></i></span>
               <span class="contact-page-info-body">
                 <strong>Email</strong>
-                <span>info@vermaaccounting.ca</span>
+                <span><?= e(company_email()) ?></span>
                 <small>We reply within one business day</small>
               </span>
             </a>
 
+            <?php if (CmsCompany::addressLine() !== ''): ?>
             <div class="contact-page-info-item contact-page-info-item--static">
               <span class="contact-page-info-icon" aria-hidden="true"><i class="fas fa-map-marker-alt"></i></span>
               <span class="contact-page-info-body">
                 <strong>Location</strong>
-                <span>Les Emmerson Drive, Nepean, ON K2J 7L6</span>
+                <span><?= e(CmsCompany::addressLine()) ?></span>
                 <small>Serving Ontario and Canada-wide</small>
               </span>
             </div>
+            <?php endif; ?>
 
+            <?php if (CmsCompany::hours() !== ''): ?>
             <div class="contact-page-info-item contact-page-info-item--static">
               <span class="contact-page-info-icon" aria-hidden="true"><i class="fas fa-clock"></i></span>
               <span class="contact-page-info-body">
                 <strong>Business hours</strong>
-                <span>Monday – Sunday, 9:00 AM – 6:00 PM ET</span>
+                <span><?= e(CmsCompany::hours()) ?></span>
                 <small>Remote appointments available province-wide</small>
               </span>
             </div>
+            <?php endif; ?>
           </div>
 
           <div class="contact-page-aside-card">
             <h3>Prefer to talk first?</h3>
             <p>Schedule a free 30-minute consultation and we’ll walk through your questions.</p>
             <a
-              href=""
+              href="https://calendly.com/vermaaccounting-info/30min"
+              target="_blank"
+              rel="noopener"
               class="cta-button orange"
               onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;">
               <i class="fas fa-calendar-check" aria-hidden="true"></i>
@@ -91,20 +99,22 @@
         </aside>
       </div>
 
+      <?php if (CmsCompany::addressLine() !== ''): ?>
       <div class="contact-page-map">
         <div class="contact-page-map-header">
           <h2>Find us</h2>
-          <p>Verma Accounting &amp; Financial Services — Les Emmerson Drive, Nepean, ON</p>
+          <p>Verma Accounting &amp; Financial Services — <?= e(CmsCompany::addressLine()) ?></p>
         </div>
         <div class="contact-map-wrap">
           <iframe
-            title="Verma Accounting — Les Emmerson Drive, Nepean, ON"
-            src="https://maps.google.com/maps?q=Les%20Emmerson%20Drive%2C%20Nepean%2C%20ON%20K2J%207L6&z=15&output=embed"
+            title="Verma Accounting — <?= e(CmsCompany::addressLine()) ?>"
+            src="https://maps.google.com/maps?q=<?= e(rawurlencode(CmsCompany::addressLine())) ?>&z=15&output=embed"
             loading="lazy"
             referrerpolicy="no-referrer-when-downgrade"
             allowfullscreen></iframe>
         </div>
       </div>
+      <?php endif; ?>
     </div>
   </section>
 </main>

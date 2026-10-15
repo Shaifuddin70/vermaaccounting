@@ -27,6 +27,12 @@ function app_config(): array
         throw new RuntimeException('Missing config.local.php — copy config.example.php and set admin credentials.');
     }
 
+    $testDb = PHP_SAPI === 'cli' ? getenv('VERMA_TEST_SQLITE') : false;
+    if (is_string($testDb) && $testDb !== '') {
+        $config['database'] = ['driver' => 'sqlite', 'path' => $testDb];
+        $config['cms']['page_cache'] = false;
+    }
+
     return $config;
 }
 
@@ -94,11 +100,12 @@ require_once __DIR__ . '/contact_form.php';
 require_once __DIR__ . '/document_submission_form.php';
 require_once __DIR__ . '/tax_intake_form.php';
 require_once __DIR__ . '/form_spam_guard.php';
+require_once __DIR__ . '/cms/bootstrap.php';
 
 ensure_data_dirs();
 
 try {
-    Database::instance()->migrate();
+    Database::instance()->migrateIfChanged();
 } catch (PDOException $e) {
     $msg = app_database_connection_error($e);
     if (PHP_SAPI === 'cli') {

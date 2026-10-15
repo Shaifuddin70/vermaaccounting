@@ -28,6 +28,7 @@ final class Auth
         static $verifiedFor = null;
         $userId = $_SESSION['admin_user_id'] ?? null;
         if ($userId === null) {
+            $_SESSION['admin_user_role'] = 'super_admin';
             return true;
         }
         if ($verifiedFor === (int) $userId) {
@@ -60,13 +61,13 @@ final class Auth
 
     /**
      * Require the logged-in user to have at least one of the given roles.
-     * Users with role=admin always pass. Prefer requireCapability() for feature gates.
+     * Admins and super admins always pass. Prefer requireCapability() for feature gates.
      */
     public static function requireRole(string ...$roles): void
     {
         self::requireLogin();
         $current = self::userRole();
-        if ($current === 'admin') {
+        if (permission_is_privileged_role($current)) {
             return;
         }
         foreach ($roles as $role) {
@@ -102,7 +103,7 @@ final class Auth
 
         if ($userId === null) {
             $cached = permission_resolve_for_user([
-                'role' => 'admin',
+                'role' => 'super_admin',
                 'is_config_admin' => true,
             ]);
             $cacheKey = $key;
@@ -163,7 +164,7 @@ final class Auth
             $_SESSION['admin_user_id']   = null;          // null = config admin
             $_SESSION['admin_username']  = $configUser;
             $_SESSION['admin_user_name'] = 'Admin';
-            $_SESSION['admin_user_role'] = 'admin';
+            $_SESSION['admin_user_role'] = 'super_admin';
             $_SESSION['admin_user_email'] = '';
             $profile = config_admin_profile();
             if ($profile['name'] !== '') {
@@ -229,7 +230,7 @@ final class Auth
             'id'    => $_SESSION['admin_user_id'] ?? null,
             'name'  => $_SESSION['admin_user_name'] ?? ($_SESSION['admin_username'] ?? 'Admin'),
             'email' => $_SESSION['admin_user_email'] ?? '',
-            'role'  => $_SESSION['admin_user_role'] ?? 'admin',
+            'role'  => $_SESSION['admin_user_role'] ?? 'reviewer',
             'avatar_path' => (string) ($_SESSION['admin_user_avatar'] ?? ''),
             'is_config_admin' => ($_SESSION['admin_user_id'] ?? null) === null,
         ];
@@ -269,13 +270,19 @@ final class Auth
         return (string) ($_SESSION['admin_user_name'] ?? $_SESSION['admin_username'] ?? 'Admin');
     }
 
-    /** Currently logged-in user role: admin, reviewer, or partner. */
+    /** Currently logged-in user role: super_admin, admin, reviewer, or partner. */
     public static function userRole(): string
     {
         if (!self::check()) {
             return '';
         }
-        return (string) ($_SESSION['admin_user_role'] ?? 'admin');
+        return (string) ($_SESSION['admin_user_role'] ?? 'reviewer');
+    }
+
+    /** Super admins (including the config-file account) supervise admins and own the website content module. */
+    public static function isSuperAdmin(): bool
+    {
+        return self::userRole() === 'super_admin';
     }
 
     public static function csrfToken(): string

@@ -22,8 +22,11 @@ if (function_exists('app_begin_output_filter')) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/css/admin.css?v=122">
+  <link rel="stylesheet" href="/admin/css/admin.css?v=125">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.css">
+  <?php if (!empty($loadCmsAdmin)): ?>
+  <link rel="stylesheet" href="<?= e(asset_versioned('admin/css/cms-admin.css')) ?>">
+  <?php endif; ?>
 </head>
 <body class="admin-body">
   <div class="admin-sidebar-overlay" id="admin-sidebar-overlay" aria-hidden="true"></div>
@@ -74,18 +77,43 @@ if (function_exists('app_begin_output_filter')) {
         </a>
       <?php endif; ?>
 
-      <?php if (Auth::can('forms.view') || Auth::can('blogs.view') || Auth::can('files.view')): ?>
+      <?php if (Auth::can('cms.view')): ?>
+        <?php
+          $__cmsNav = [
+              ['cms', '/admin/cms', 'Website overview', 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z', null],
+              ['cms-page', '/admin/cms-content?type=page', 'Pages', 'M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm4 18H6V4h7v5h5v11z', null],
+              ['cms-article', '/admin/cms-content?type=article', 'Blog articles', 'M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z', null],
+              ['cms-city', '/admin/cms-content?type=city', 'City pages', 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 0 1 0-5 2.5 2.5 0 0 1 0 5z', null],
+              ['cms-navigation', '/admin/cms-navigation', 'Navigation', 'M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z', 'cms.publish'],
+              ['cms-folders', '/admin/cms-folders', 'Folders & tags', 'M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z', null],
+              ['cms-media', '/admin/cms-media', 'Media library', 'M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z', null],
+              ['cms-redirects', '/admin/cms-redirects', 'Redirects', 'M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z', 'cms.redirects'],
+              ['cms-seo', '/admin/cms-seo', 'SEO audit', 'M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z', null],
+              ['cms-technical', '/admin/cms-technical', 'Sitemap & robots', 'M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z', 'cms.seo'],
+              ['cms-site-config', '/admin/cms-site-config', 'Site configuration', 'M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z', 'cms.code'],
+              ['cms-blocks', '/admin/cms-blocks', 'Blocks', 'M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z', 'cms.code'],
+              ['cms-stylesheets', '/admin/cms-stylesheets', 'Stylesheets', 'M12 3a9 9 0 0 0 0 18c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3-4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm3 4a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z', 'cms.code'],
+              ['cms-migration', '/admin/cms-migration', 'Migration', 'M19 8l-4 4h3c0 3.31-2.69 6-6 6-1.01 0-1.97-.25-2.8-.7l-1.46 1.46C8.97 19.54 10.43 20 12 20c4.42 0 8-3.58 8-8h3l-4-4zM6 12c0-3.31 2.69-6 6-6 1.01 0 1.97.25 2.8.7l1.46-1.46C15.03 4.46 13.57 4 12 4c-4.42 0-8 3.58-8 8H1l4 4 4-4H6z', 'cms.redirects'],
+              ['cms-integrations', '/admin/cms-integrations', 'Search data', 'M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z', null],
+          ];
+        ?>
+        <span class="admin-nav-section">Website</span>
+        <?php foreach ($__cmsNav as [$__key, $__href, $__label, $__icon, $__cap]): ?>
+          <?php if ($__cap === null || Auth::can($__cap)): ?>
+          <a href="<?= e($__href) ?>" class="admin-nav-item <?= $activeNav === $__key ? 'active' : '' ?>">
+            <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="<?= e($__icon) ?>"/></svg></span>
+            <span class="admin-nav-label"><?= e($__label) ?></span>
+          </a>
+          <?php endif; ?>
+        <?php endforeach; ?>
+      <?php endif; ?>
+
+      <?php if (Auth::can('forms.view') || Auth::can('files.view')): ?>
         <span class="admin-nav-section">Content</span>
         <?php if (Auth::can('forms.view')): ?>
         <a href="/admin/forms" class="admin-nav-item <?= $activeNav === 'forms' ? 'active' : '' ?>">
           <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg></span>
           <span class="admin-nav-label">All forms</span>
-        </a>
-        <?php endif; ?>
-        <?php if (Auth::can('blogs.view')): ?>
-        <a href="/admin/blogs" class="admin-nav-item <?= $activeNav === 'blogs' ? 'active' : '' ?>">
-          <span class="admin-nav-icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 5v14H5V5h14m0-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg></span>
-          <span class="admin-nav-label">Blogs</span>
         </a>
         <?php endif; ?>
         <?php if (Auth::can('files.view')): ?>
@@ -172,7 +200,7 @@ if (function_exists('app_begin_output_filter')) {
           <?php endif; ?>
           <span class="admin-topbar-user-meta">
             <span class="admin-topbar-user-name"><?= e($__displayName) ?></span>
-            <span class="admin-topbar-user-role"><?= e(ucfirst($__currentUser['role'] ?? 'admin')) ?></span>
+            <span class="admin-topbar-user-role"><?= e(permission_role_label((string) ($__currentUser['role'] ?? ''))) ?></span>
           </span>
         </a>
         <div class="admin-topbar-user-tools">

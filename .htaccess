@@ -1,4 +1,4 @@
-# Enable URL rewriting for clean URLs (requires mod_rewrite on Apache)
+# Enable URL rewriting for clean URLs (requires mod_rewrite on Apache / LiteSpeed)
 <IfModule mod_rewrite.c>
 RewriteEngine On
 RewriteBase /
@@ -7,8 +7,17 @@ RewriteBase /
 RewriteCond %{HTTP_HOST} ^www\.(.+)$ [NC]
 RewriteRule ^ https://%1%{REQUEST_URI} [R=301,L]
 
-# Blog posts: drop a trailing slash (/blog/slug/ -> /blog/slug)
-RewriteRule ^blog/([a-zA-Z0-9_-]+)/$ /blog/$1 [R=301,L]
+# Internal folders and files are never served
+RewriteRule ^(lib|templates|tests|docs|database|data)(/|$) - [F,L]
+RewriteRule ^nginx\.servbay\.conf$ - [F,L]
+RewriteRule \.md$ - [F,L]
+RewriteRule ^config\.(local|example)\.php$ - [F,L]
+
+# Fixed SEO redirects (other redirects are managed in Admin → Website → Redirects)
+RewriteRule ^home/?$ / [R=301,L]
+RewriteRule ^contact-us/?$ /contact [R=301,L]
+RewriteRule ^our-services/?$ /services [R=301,L]
+RewriteRule ^about-us/?$ /about [R=301,L]
 
 # Redirect index.php to root first (single redirect)
 RewriteCond %{THE_REQUEST} \s/index\.php[\s?] [NC]
@@ -29,11 +38,10 @@ RewriteRule ^(.*)$ / [R=301,L]
 # Custom forms: /form/client-intake -> form.php?slug=client-intake
 RewriteRule ^form/([a-zA-Z0-9_-]+)/?$ form.php?slug=$1 [L,QSA]
 
-# Blog posts: /blog/slug -> blog-post.php?slug=slug
-RewriteRule ^blog/([a-zA-Z0-9_-]+)/?$ blog-post.php?slug=$1 [L,QSA]
-
-# Dynamic sitemap (includes published blog posts)
-RewriteRule ^sitemap\.xml$ sitemap.php [L]
+# Dynamic sitemap index and parts, and robots.txt
+RewriteRule ^sitemap\.xml$ sitemap.php [L,QSA]
+RewriteRule ^sitemap-([a-z]+)\.xml$ sitemap.php?part=$1 [L,QSA]
+RewriteRule ^robots\.txt$ robots.php [L]
 
 # AI crawler guidance file
 RewriteRule ^llms\.txt$ llms.txt [L]
@@ -50,32 +58,76 @@ RewriteRule ^admin/?$ admin/index.php [L]
 # API: /api/submit -> api/submit.php
 RewriteRule ^api/([a-zA-Z0-9_-]+)/?$ api/$1.php [L,QSA]
 
-# Clean URLs - internally rewrite /page to page.php
+# Clean URLs - internally rewrite /page to page.php when that file exists
 RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^\.]+)$ $1.php [L]
+
+# Everything else (CMS pages, articles, city pages, redirects, 404s) goes to the CMS
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^([^\.]+)$ $1.php [NC,L]
-
-# SEO redirects
-RewriteCond %{REQUEST_URI} ^/home/?$
-RewriteRule ^(.*)$ / [R=301,L]
-
-RewriteCond %{REQUEST_URI} ^/contact-us/?$
-RewriteRule ^(.*)$ /contact [R=301,L]
-
-RewriteCond %{REQUEST_URI} ^/our-services/?$
-RewriteRule ^(.*)$ /services [R=301,L]
-
-RewriteCond %{REQUEST_URI} ^/about-us/?$
-RewriteRule ^(.*)$ /about [R=301,L]
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ cms.php [L,QSA]
 </IfModule>
 
-# Custom Error Pages
-ErrorDocument 404 /index.php
-ErrorDocument 403 /index.php
-ErrorDocument 500 /index.php
+# Custom Error Pages (the CMS returns a real 404 status with the site design)
+ErrorDocument 404 /cms.php
+ErrorDocument 403 /cms.php
 
 # Set default charset
 AddDefaultCharset UTF-8
+
+AddType font/woff2 .woff2
+AddType image/webp .webp
+AddType text/vtt .vtt
+AddType video/webm .webm
+AddType video/mp4 .mp4
+
+# Security headers
+<IfModule mod_headers.c>
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "SAMEORIGIN"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
+  Header always set Content-Security-Policy "upgrade-insecure-requests; frame-ancestors 'self'; base-uri 'self'; object-src 'self'"
+  Header unset X-Powered-By
+</IfModule>
+
+# Text compression (Brotli where the server supports it, gzip otherwise)
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/xml text/markdown application/javascript text/javascript application/json application/ld+json application/xml application/rss+xml image/svg+xml
+</IfModule>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml text/markdown application/javascript text/javascript application/json application/ld+json application/xml application/rss+xml image/svg+xml
+</IfModule>
+
+# Browser caching for static assets. Bump the ?v= stamp (or use asset_versioned()) when a CSS/JS file changes.
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 30 days"
+  ExpiresByType application/javascript "access plus 30 days"
+  ExpiresByType text/javascript "access plus 30 days"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType image/webp "access plus 6 months"
+  ExpiresByType image/jpeg "access plus 6 months"
+  ExpiresByType image/png "access plus 6 months"
+  ExpiresByType image/gif "access plus 6 months"
+  ExpiresByType image/svg+xml "access plus 6 months"
+  ExpiresByType image/x-icon "access plus 6 months"
+  ExpiresByType video/mp4 "access plus 6 months"
+  ExpiresByType video/webm "access plus 6 months"
+</IfModule>
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js)$">
+    Header set Cache-Control "public, max-age=2592000"
+  </FilesMatch>
+  <FilesMatch "\.woff2$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(webp|jpe?g|png|gif|svg|ico|mp4|webm)$">
+    Header set Cache-Control "public, max-age=15552000"
+  </FilesMatch>
+</IfModule>
 
 # Hide PHP errors from visitors (server must allow php_flag)
 <IfModule mod_php.c>

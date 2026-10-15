@@ -82,7 +82,7 @@ require __DIR__ . '/includes/layout-start.php';
       <?php if (!$isConfigAdmin): ?>
         <div class="admin-field">
           <label>Role</label>
-          <input type="text" value="<?= e(ucfirst($role)) ?>" disabled>
+          <input type="text" value="<?= e(permission_role_label($role)) ?>" disabled>
         </div>
       <?php endif; ?>
 
@@ -109,7 +109,7 @@ require __DIR__ . '/includes/layout-start.php';
         </div>
         <div class="admin-field">
           <label>Role</label>
-          <input type="text" value="<?= e(ucfirst($role ?: 'admin')) ?>" disabled>
+          <input type="text" value="<?= e(permission_role_label($role ?: 'super_admin')) ?>" disabled>
         </div>
         <div class="admin-alert admin-alert-info profile-config-admin-note">
           Your login password is managed in the server config file. Contact your site administrator to change it.

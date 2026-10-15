@@ -13,8 +13,11 @@ $pagination = pagination_meta($userTotal, $page, $perPage);
 $users = $userRepo->allPaginated($pagination['per_page'], $pagination['offset']);
 $counts = $userRepo->counts();
 $csrf = Auth::csrfToken();
-$permissionGroups = permission_catalog_grouped();
+$isSuper = Auth::isSuperAdmin();
+$permissionGroups = permission_catalog_grouped(!$isSuper);
 $rolePermissionDefaults = permission_role_defaults();
+$restrictedGroups = array_unique(array_map(static fn (string $k): string => permission_catalog()[$k]['group'], permission_restricted_keys()));
+$assignableRoles = array_filter(permission_roles(), static fn (string $r): bool => $isSuper || !permission_is_privileged_role($r), ARRAY_FILTER_USE_KEY);
 
 $paginationPath = '/admin/users';
 $paginationQuery = [];
@@ -94,7 +97,7 @@ require __DIR__ . '/includes/layout-start.php';
             <td><?= e($u['email']) ?></td>
             <td>
               <span class="role-badge role-badge--<?= e($u['role']) ?>">
-                <?= e(ucfirst($u['role'])) ?>
+                <?= e(permission_role_label((string) $u['role'])) ?>
               </span>
             </td>
             <td>
@@ -103,6 +106,9 @@ require __DIR__ . '/includes/layout-start.php';
             </td>
             <td class="dashboard-date"><?= e(substr($u['created_at'], 0, 10)) ?></td>
             <td class="admin-table-actions">
+              <?php if (permission_is_privileged_role((string) $u['role']) && !$isSuper): ?>
+                <span class="admin-field-hint">Managed by a super admin</span>
+              <?php else: ?>
               <button type="button"
                 class="admin-btn admin-btn-sm btn-edit-user"
                 data-user-id="<?= (int) $u['id'] ?>"
@@ -131,6 +137,7 @@ require __DIR__ . '/includes/layout-start.php';
                   Activate
                 </button>
               <?php endif; ?>
+              <?php endif; ?>
             </td>
           </tr>
         <?php endforeach; ?>
@@ -143,11 +150,9 @@ require __DIR__ . '/includes/layout-start.php';
   <?php endif; ?>
 </div>
 
-<?php if (app_is_local()): ?>
 <p class="admin-note">
-  The super-admin account configured in <code>config.local.php</code> always has full access and is not listed here.
+  Website content is available to super admins and to members a super admin allows it for. Only super admins manage admin accounts. The account configured in the server config file is always a super admin and is not listed here.
 </p>
-<?php endif; ?>
 
 <!-- ======================== USER MODAL ======================== -->
 <div id="user-modal" class="umodal-backdrop" aria-modal="true" role="dialog" aria-labelledby="umodal-title" aria-hidden="true">
@@ -195,11 +200,11 @@ require __DIR__ . '/includes/layout-start.php';
           <div class="admin-field">
             <label for="umodal-role">Role <span class="required">*</span></label>
             <select id="umodal-role" name="role" required>
-              <option value="reviewer">Reviewer</option>
-              <option value="partner">Partner</option>
-              <option value="admin">Admin</option>
+              <?php foreach (array_reverse($assignableRoles, true) as $roleKey => $roleLabel): ?>
+                <option value="<?= e($roleKey) ?>"><?= e($roleLabel) ?></option>
+              <?php endforeach; ?>
             </select>
-            <small class="admin-field-hint">Partners only see submissions where they are selected as a reference.</small>
+            <small class="admin-field-hint">Partners only see submissions where they are selected as a reference.<?= $isSuper ? ' Super admins have full access, including Website content.' : '' ?></small>
           </div>
 
           <div class="admin-field">
@@ -233,6 +238,9 @@ require __DIR__ . '/includes/layout-start.php';
             <?php foreach ($permissionGroups as $groupLabel => $items): ?>
               <div class="umodal-perm-group">
                 <div class="umodal-perm-group-title"><?= e($groupLabel) ?></div>
+                <?php if (in_array($groupLabel, $restrictedGroups, true)): ?>
+                  <small class="admin-field-hint">Off by default. Only a super admin can allow these.</small>
+                <?php endif; ?>
                 <?php foreach ($items as $item): ?>
                   <label class="umodal-perm-item">
                     <input type="checkbox" name="permissions[]" value="<?= e($item['key']) ?>" data-perm-key="<?= e($item['key']) ?>">
@@ -312,19 +320,20 @@ require __DIR__ . '/includes/layout-start.php';
   }
 
   function syncPermissionUi(forceDefaults) {
-    const isAdmin = roleSelect.value === 'admin';
-    if (permWrap) permWrap.hidden = isAdmin;
-    if (permCustom) permCustom.value = isAdmin ? '0' : '1';
-    if (isAdmin) {
+    const isSuper = roleSelect.value === 'super_admin';
+    if (permWrap) permWrap.hidden = isSuper;
+    if (permCustom) permCustom.value = isSuper ? '0' : '1';
+    if (isSuper) {
       return;
     }
     if (forceDefaults) {
       setPermissionChecks(roleDefaults[roleSelect.value] || roleDefaults.reviewer || []);
     }
     if (permHint) {
-      permHint.textContent = roleSelect.value === 'partner'
+      permHint.textContent = (roleSelect.value === 'partner'
         ? 'Check each action this partner can use. Data stays limited to their reference code.'
-        : 'Check each action this member can use. Unchecked actions stay hidden.';
+        : 'Check each action this member can use. Unchecked actions stay hidden.')
+        + <?= json_encode($isSuper ? '' : ' Only a super admin can allow Website content.') ?>;
     }
   }
 

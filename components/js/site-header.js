@@ -11,11 +11,45 @@
   var mobileMq = window.matchMedia("(max-width: 991px)");
   var hoverMq = window.matchMedia("(hover: hover) and (pointer: fine)");
 
-  function onScroll() {
-    header.classList.toggle("is-scrolled", window.scrollY > 12);
+  var rootStyle = document.documentElement.style;
+  var lastY = window.scrollY;
+  var fullHeight = header.offsetHeight;
+
+  /*
+   * The menu row can wrap, so page offsets follow the real header height. While the breadcrumb row is
+   * tucked away only the sticky offset changes, so the page content does not jump.
+   */
+  function measure() {
+    var height = header.offsetHeight;
+    if (!header.classList.contains("is-condensed")) {
+      fullHeight = height;
+      rootStyle.setProperty("--sh-offset", height + "px");
+    }
+    rootStyle.setProperty("--sh-sticky", height + "px");
   }
+
+  function setCondensed(on) {
+    if (header.classList.contains("is-condensed") === on) return;
+    header.classList.toggle("is-condensed", on);
+  }
+
+  function onScroll() {
+    var y = window.scrollY;
+    header.classList.toggle("is-scrolled", y > 12);
+    if (!header.classList.contains("sh--crumbs") || y <= fullHeight || header.querySelector(".sh-item.is-open")) {
+      setCondensed(false);
+    } else if (Math.abs(y - lastY) > 6) {
+      setCondensed(y > lastY);
+    }
+    lastY = y;
+  }
+
+  measure();
   onScroll();
   window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("resize", measure);
+  window.addEventListener("load", measure);
+  if (window.ResizeObserver) new ResizeObserver(measure).observe(header);
 
   markActiveLinks();
 
@@ -25,9 +59,21 @@
   var closeTimer = null;
 
   function setOpen(item, open) {
+    if (open) fitPanel(item);
     item.classList.toggle("is-open", open);
     var trigger = item.querySelector(".sh-trigger");
     if (trigger) trigger.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  /* Panels open under their own menu item; shift left if they would run off the screen. */
+  function fitPanel(item) {
+    var panel = item.querySelector(".sh-mega");
+    if (!panel) return;
+    var gap = 14;
+    var left = item.getBoundingClientRect().left;
+    var overflow = left + panel.offsetWidth - (document.documentElement.clientWidth - gap);
+    var shift = overflow > 0 ? Math.max(-overflow, gap - left) : 0;
+    panel.style.setProperty("--sh-mega-shift", shift + "px");
   }
 
   function closeAll(except) {

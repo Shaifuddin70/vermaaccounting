@@ -10,7 +10,7 @@ include 'components/header.php';
     <div class="container">
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
-          <div class="img-box scroll-animate-right"><img src="images/rishab-verma-3.jpg" alt="Rishab Verma" /></div>
+          <div class="img-box scroll-animate-right"><img src="/images/rishab-verma-3.jpg" alt="Rishab Verma" /></div>
         </div>
         <div class="col-lg-6">
           <h1 class="section-title">Professional Personal Tax Services in Canada | Expert Tax Preparers</h1>
@@ -18,7 +18,7 @@ include 'components/header.php';
           <div class="cta-buttons left">
             <a href="/tax-intake" class="cta-button primary">File Your Taxes</a>
             <a href="/contact" class="cta-button orange">Get Free Consultation</a>
-            <a href="tel:613-318-6478" class="cta-button orange"><i class="fas fa-phone"></i> 613-318-6478</a>
+            <a href="<?= e(company_phone_href()) ?>" class="cta-button orange"><i class="fas fa-phone"></i> <?= e(company_phone()) ?></a>
           </div>
         </div>
       </div>
@@ -33,7 +33,7 @@ include 'components/header.php';
           <span id="typing-text">Personal Tax?</span>
         </div>
         <div class="cta-action">
-          <a class="appointment-button" href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"><i class="fas fa-calendar-alt"></i> Book an Appointment</a>
+          <a class="appointment-button" href="https://calendly.com/vermaaccounting-info/30min" target="_blank" rel="noopener" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"><i class="fas fa-calendar-alt"></i> Book an Appointment</a>
         </div>
       </div>
     </div>
@@ -45,7 +45,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/personal-tax.jpg" alt="Personal Tax Services" />
+            <img src="/images/personal-tax.jpg" alt="Personal Tax Services" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -100,7 +100,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/calculation.jpg" alt="Professional Personal Tax Services Canada" />
+            <img src="/images/calculation.jpg" alt="Professional Personal Tax Services Canada" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -190,7 +190,7 @@ include 'components/header.php';
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/tax-discussion.jpg" alt="CRA Compliant Personal Tax Services" />
+            <img src="/images/tax-discussion.jpg" alt="CRA Compliant Personal Tax Services" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -356,14 +356,14 @@ include 'components/header.php';
                 <i class="fas fa-phone"></i>
                 <div>
                   <h4>Call Us</h4>
-                  <a href="tel:613-318-6478">613-318-6478</a>
+                  <a href="<?= e(company_phone_href()) ?>"><?= e(company_phone()) ?></a>
                 </div>
               </div>
               <div class="contact-item">
                 <i class="fas fa-envelope"></i>
                 <div>
                   <h4>Email Us</h4>
-                  <a href="mailto:info@vermaaccounting.ca">info@vermaaccounting.ca</a>
+                  <a href="<?= e(company_email_href()) ?>"><?= e(company_email()) ?></a>
                 </div>
               </div>
             </div>
@@ -389,15 +389,15 @@ include 'components/header.php';
     "@type": "AccountingService",
     "name": "Verma Accounting & Financial Services",
     "url": "https://vermaaccounting.ca/personal-tax",
-    "telephone": "613-318-6478",
-    "email": "info@vermaaccounting.ca",
+    "telephone": <?= json_encode(CmsCompany::phoneSchema()) ?>,
+    "email": <?= json_encode(CmsCompany::email()) ?>,
     "address": {
       "@type": "PostalAddress",
-      "streetAddress": "Les Emmerson Drive",
-      "addressLocality": "Nepean",
-      "addressRegion": "ON",
-      "postalCode": "K2J 7L6",
-      "addressCountry": "CA"
+      "streetAddress": <?= json_encode(CmsCompany::address()['street']) ?>,
+      "addressLocality": <?= json_encode(CmsCompany::address()['city']) ?>,
+      "addressRegion": <?= json_encode(CmsCompany::address()['region']) ?>,
+      "postalCode": <?= json_encode(CmsCompany::address()['postal_code']) ?>,
+      "addressCountry": <?= json_encode(CmsCompany::address()['country']) ?>
     },
     "areaServed": {
       "@type": "Country",

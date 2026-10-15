@@ -20,7 +20,7 @@
           <span id="typing-text">Payroll?</span>
         </div>
         <div class="cta-action">
-          <a class="appointment-button" href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"> <i class="fas fa-calendar-alt"></i>Book an Appointment</a>
+          <a class="appointment-button" href="https://calendly.com/vermaaccounting-info/30min" target="_blank" rel="noopener" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"> <i class="fas fa-calendar-alt"></i>Book an Appointment</a>
         </div>
       </div>
     </div>
@@ -96,7 +96,7 @@
           </div>
         </div>
         <div class="text-center mt-4">
-          <a href="bookkeeping" class="cta-button primary">Learn More About Bookkeeping</a>
+          <a href="/bookkeeping" class="cta-button primary">Learn More About Bookkeeping</a>
         </div>
       </div>
 
@@ -133,7 +133,7 @@
           </div>
         </div>
         <div class="text-center mt-4">
-          <a href="accounting" class="cta-button primary">Learn More About Financial Accounting</a>
+          <a href="/accounting" class="cta-button primary">Learn More About Financial Accounting</a>
         </div>
       </div>
 
@@ -170,7 +170,7 @@
           </div>
         </div>
         <div class="text-center mt-4">
-          <a href="payroll" class="cta-button primary">Learn More About Payroll</a>
+          <a href="/payroll" class="cta-button primary">Learn More About Payroll</a>
         </div>
       </div>
 
@@ -207,7 +207,7 @@
           </div>
         </div>
         <div class="text-center mt-4">
-          <a href="personal-tax" class="cta-button primary">Learn More About Personal Tax</a>
+          <a href="/personal-tax" class="cta-button primary">Learn More About Personal Tax</a>
         </div>
       </div>
 
@@ -244,7 +244,7 @@
           </div>
         </div>
         <div class="text-center mt-4">
-          <a href="corporate-tax" class="cta-button primary">Learn More About Corporate Tax</a>
+          <a href="/corporate-tax" class="cta-button primary">Learn More About Corporate Tax</a>
         </div>
       </div>
 
@@ -281,7 +281,7 @@
           </div>
         </div>
         <div class="text-center mt-4">
-          <a href="business-registration" class="cta-button primary">Learn More About Business Registration</a>
+          <a href="/business-registration" class="cta-button primary">Learn More About Business Registration</a>
         </div>
       </div>
 
@@ -332,7 +332,7 @@
           </div>
         </div>
         <div class="text-center mt-4">
-          <a href="loan" class="cta-button primary">Learn More About Business Loans</a>
+          <a href="/loan" class="cta-button primary">Learn More About Business Loans</a>
         </div>
       </div>
     </div>
@@ -431,14 +431,14 @@
                 <i class="fas fa-phone"></i>
                 <div>
                   <h4>Call Us</h4>
-                  <a href="tel:613-318-6478">613-318-6478</a>
+                  <a href="<?= e(company_phone_href()) ?>"><?= e(company_phone()) ?></a>
                 </div>
               </div>
               <div class="contact-item">
                 <i class="fas fa-envelope"></i>
                 <div>
                   <h4>Email Us</h4>
-                  <a href="mailto:info@vermaaccounting.ca">info@vermaaccounting.ca</a>
+                  <a href="<?= e(company_email_href()) ?>"><?= e(company_email()) ?></a>
                 </div>
               </div>
             </div>

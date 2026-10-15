@@ -17,6 +17,13 @@
   <?php if (!empty($loadEmailEditor)): ?>
   <script src="/admin/js/email-editor.js?v=8" defer></script>
   <?php endif; ?>
+  <?php if (!empty($loadCmsEditor)): ?>
+  <script src="/admin/vendor/tinymce/tinymce.min.js?v=8" defer></script>
+  <script src="<?= e(asset_versioned('admin/js/cms-editor.js')) ?>" defer></script>
+  <?php endif; ?>
+  <?php if (!empty($loadCmsAdmin)): ?>
+  <script src="<?= e(asset_versioned('admin/js/cms-admin.js')) ?>" defer></script>
+  <?php endif; ?>
   <?php if (!empty($loadEmailTemplateImage)): ?>
   <script src="/admin/js/email-template-image.js?v=5" defer></script>
   <?php endif; ?>

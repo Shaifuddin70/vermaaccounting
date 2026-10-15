@@ -5091,6 +5091,11 @@ a.md-form-slug:hover { color: var(--admin-primary); }
   letter-spacing: 0.03em;
 }
 
+.role-badge--super_admin {
+  background: var(--admin-secondary);
+  color: #fff;
+}
+
 .role-badge--admin {
   background: var(--admin-secondary-container);
   color: var(--admin-secondary);

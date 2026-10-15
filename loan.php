@@ -7,14 +7,14 @@
     <div class="container">
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
-          <div class="img-box scroll-animate-right"><img src="images/rishab-verma-3.jpg" alt="Rishab Verma" /></div>
+          <div class="img-box scroll-animate-right"><img src="/images/rishab-verma-3.jpg" alt="Rishab Verma" /></div>
         </div>
         <div class="col-lg-6">
           <h1 class="section-title">Business Loans in Canada | Small Business & Commercial Financing | Expert Loan Services</h1>
           <p>Looking for business loans in Canada? We help startups, small businesses, and established companies secure fast, flexible, and affordable business financing across Canada. Whether you need working capital, expansion funding, or startup financing, we connect you with the right business loan solution. Serving businesses across Ontario, Toronto, Vancouver, Montreal, and all of Canada.</p>
           <div class="cta-buttons left">
             <a href="/contact" class="cta-button primary">Get Free Consultation</a>
-            <a href="tel:613-318-6478" class="cta-button orange"><i class="fas fa-phone"></i> 613-318-6478</a>
+            <a href="<?= e(company_phone_href()) ?>" class="cta-button orange"><i class="fas fa-phone"></i> <?= e(company_phone()) ?></a>
           </div>
         </div>
       </div>
@@ -29,7 +29,7 @@
           <span id="typing-text">Business Loans?</span>
         </div>
         <div class="cta-action">
-          <a class="appointment-button" href="" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"><i class="fas fa-calendar-alt"></i> Book an Appointment</a>
+          <a class="appointment-button" href="https://calendly.com/vermaaccounting-info/30min" target="_blank" rel="noopener" onclick="Calendly.initPopupWidget({url: 'https://calendly.com/vermaaccounting-info/30min?hide_gdpr_banner=1'});return false;"><i class="fas fa-calendar-alt"></i> Book an Appointment</a>
         </div>
       </div>
     </div>
@@ -76,7 +76,7 @@
       <div class="row align-items-center">
         <div class="col-lg-6">
           <div class="img-box scroll-animate-left">
-            <img src="images/business-growth.jpg" alt="Business Loans Canada" />
+            <img src="/images/business-growth.jpg" alt="Business Loans Canada" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -107,7 +107,7 @@
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/expert-help.jpg" alt="Business financing guidance" />
+            <img src="/images/expert-help.jpg" alt="Business financing guidance" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -133,7 +133,7 @@
       <div class="row align-items-center">
         <div class="col-lg-6">
           <div class="img-box scroll-animate-left">
-            <img src="images/business-loan.jpg" alt="Loan documentation" />
+            <img src="/images/business-loan.jpg" alt="Loan documentation" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -160,7 +160,7 @@
       <div class="row align-items-center">
         <div class="col-lg-6 order-lg-last">
           <div class="img-box scroll-animate-right">
-            <img src="images/calculation.jpg" alt="Loan application process" />
+            <img src="/images/calculation.jpg" alt="Loan application process" />
           </div>
         </div>
         <div class="col-lg-6">
@@ -388,14 +388,14 @@
                 <i class="fas fa-phone"></i>
                 <div>
                   <h4>Call now for a free consultation</h4>
-                  <a href="tel:613-318-6478">613-318-6478</a>
+                  <a href="<?= e(company_phone_href()) ?>"><?= e(company_phone()) ?></a>
                 </div>
               </div>
               <div class="contact-item">
                 <i class="fas fa-envelope"></i>
                 <div>
                   <h4>Email us to apply for a business loan</h4>
-                  <a href="mailto:info@vermaaccounting.ca">info@vermaaccounting.ca</a>
+                  <a href="<?= e(company_email_href()) ?>"><?= e(company_email()) ?></a>
                 </div>
               </div>
               <div class="contact-item">
@@ -428,15 +428,15 @@
     "@type": "AccountingService",
     "name": "Verma Accounting & Financial Services",
     "url": "https://vermaaccounting.ca/loan",
-    "telephone": "613-318-6478",
-    "email": "info@vermaaccounting.ca",
+    "telephone": <?= json_encode(CmsCompany::phoneSchema()) ?>,
+    "email": <?= json_encode(CmsCompany::email()) ?>,
     "address": {
       "@type": "PostalAddress",
-      "streetAddress": "Les Emmerson Drive",
-      "addressLocality": "Nepean",
-      "addressRegion": "ON",
-      "postalCode": "K2J 7L6",
-      "addressCountry": "CA"
+      "streetAddress": <?= json_encode(CmsCompany::address()['street']) ?>,
+      "addressLocality": <?= json_encode(CmsCompany::address()['city']) ?>,
+      "addressRegion": <?= json_encode(CmsCompany::address()['region']) ?>,
+      "postalCode": <?= json_encode(CmsCompany::address()['postal_code']) ?>,
+      "addressCountry": <?= json_encode(CmsCompany::address()['country']) ?>
     },
     "areaServed": {
       "@type": "Country",

@@ -14,7 +14,7 @@ function seo_meta_for_path(string $path): array
     $pages = [
         '/' => [
             'title' => 'Accounting & Tax Services in Ontario | Verma Accounting',
-            'description' => 'Verma Accounting offers personal & corporate tax, bookkeeping, and payroll across Ontario. Certified accountants maximize savings and keep you CRA-compliant.',
+            'description' => 'Personal and corporate tax, bookkeeping, and payroll for Ontario. Certified accountants who maximize savings and keep you CRA-compliant.',
         ],
         '/accounting' => [
             'title' => 'Accounting Services in Ontario | Verma Accounting',
@@ -54,7 +54,7 @@ function seo_meta_for_path(string $path): array
         ],
         '/contact' => [
             'title' => 'Contact Verma Accounting | Ontario Tax Accountants',
-            'description' => 'Contact Verma Accounting for tax, bookkeeping, and payroll help across Ontario. Call +1 (613) 318-6478 or email info@vermaaccounting.ca.',
+            'description' => 'Contact Verma Accounting for tax, bookkeeping, and payroll help across Ontario. Call ' . CmsCompany::phone() . ' or email ' . CmsCompany::email() . '.',
         ],
         '/submit-documents' => [
             'title' => 'Submit Tax Documents | Verma Accounting',
@@ -71,6 +71,18 @@ function seo_meta_for_path(string $path): array
         '/privacy' => [
             'title' => 'Privacy Policy | Verma Accounting',
             'description' => 'Learn how Verma Accounting collects, uses, and protects personal information for tax, bookkeeping, payroll, and related services in Ontario.',
+        ],
+        '/terms' => [
+            'title' => 'Terms of Service | Verma Accounting',
+            'description' => 'The terms that apply when you use the Verma Accounting website, contact us, or book an appointment online.',
+        ],
+        '/editorial-policy' => [
+            'title' => 'Editorial Policy | Verma Accounting',
+            'description' => 'How Verma Accounting writes, reviews, sources, and updates the tax and accounting information published on this website.',
+        ],
+        '/service-areas' => [
+            'title' => 'Service Areas | Accountants Near You | Verma Accounting',
+            'description' => 'Find accounting, bookkeeping, payroll and tax services in your city. See every community Verma Accounting serves across Ontario and Canada.',
         ],
         '/services' => [
             'title' => 'Our Accounting Services in Ontario | Verma Accounting',
@@ -102,6 +114,15 @@ function seo_normalize_path(string $path): string
 
 function seo_site_base_url(): string
 {
+    if (class_exists('CmsSiteConfig', false)) {
+        return CmsSiteConfig::baseUrl();
+    }
+    if (function_exists('app_config') && function_exists('app_base_url')) {
+        $base = app_base_url();
+        if ($base !== '') {
+            return $base;
+        }
+    }
     return 'https://vermaaccounting.ca';
 }
 
@@ -147,29 +168,46 @@ function seo_home_faqs(): array
 {
     return [
         [
-            'question' => 'Do you offer online or remote accounting services?',
-            'answer' => 'Yes. Using secure, cloud-based systems, we can manage your accounts, filings, and financial documents remotely, no matter where you are in Canada.',
+            'question' => 'Do you offer online or remote services?',
+            'answer' => 'Yes. With secure cloud systems, we can manage your books, filings, and documents remotely, wherever you are in Canada.',
         ],
         [
             'question' => 'Can you help with both personal and corporate taxes?',
-            'answer' => 'Absolutely. We prepare and file personal and corporate tax returns with full CRA compliance while maximizing eligible deductions and credits.',
+            'answer' => 'Yes. We prepare and file personal and corporate returns in line with CRA rules, and we claim every deduction and credit you qualify for.',
         ],
         [
             'question' => 'Do you assist with business registration?',
-            'answer' => 'Yes. We handle CRA business numbers, GST/HST registration, payroll accounts, and other compliance steps to ensure your business is legally registered and ready to operate.',
+            'answer' => 'Yes. We set up CRA business numbers, GST/HST and payroll accounts, and the other steps your business needs to be legally registered and ready to operate.',
         ],
         [
-            'question' => 'How do you ensure accuracy in accounting and tax filings?',
-            'answer' => 'Every ledger, statement, and return is double-checked. Our accountants combine professional expertise with advanced tools and secure systems to ensure precision and CRA compliance.',
+            'question' => 'How do you make sure my filings are accurate?',
+            'answer' => 'We double-check every ledger, statement, and return. Our team pairs professional judgment with modern tools and secure systems.',
         ],
         [
-            'question' => 'Will I receive ongoing support after tax filing or setup?',
-            'answer' => 'Yes. We provide continuous updates, insights, and guidance to help you make informed financial decisions throughout the year.',
+            'question' => 'Will I receive ongoing support after filing or setup?',
+            'answer' => 'Yes. We send regular updates and insights, and we are here to guide your financial decisions all year.',
         ],
         [
-            'question' => 'What makes your bookkeeping and accounting services different?',
-            'answer' => 'Our approach blends accuracy, clarity, and compliance. Using cloud-based tools, we provide real-time access to organized records, detailed reports, and audit-ready financial statements.',
+            'question' => 'What makes your bookkeeping different?',
+            'answer' => 'We focus on accuracy, clarity, and compliance. Cloud tools give you real-time access to organized records, detailed reports, and audit-ready statements.',
         ],
+    ];
+}
+
+/**
+ * Who last reviewed the homepage content, and when (shown as a byline and in WebPage schema).
+ * Update the date whenever the homepage copy is reviewed.
+ *
+ * @return array{name: string, role: string, date: string, image: string, url: string}
+ */
+function seo_home_review(): array
+{
+    return [
+        'name' => 'Rishab Verma',
+        'role' => 'tax and accounting professional at Verma Accounting with 7+ years of experience',
+        'date' => '2026-10-16',
+        'image' => '/images/rishab-verma-lg.jpg',
+        'url' => '/about',
     ];
 }
 
@@ -222,6 +260,14 @@ function seo_page_schema(string $path): ?array
     $websiteId = $base . '/#website';
 
     if ($path === '/') {
+        $review = seo_home_review();
+        $reviewer = [
+            '@type' => 'Person',
+            'name' => $review['name'],
+            'url' => $base . $review['url'],
+            'image' => seo_absolute_url($review['image']),
+            'worksFor' => ['@id' => $businessId],
+        ];
         return [
             '@context' => 'https://schema.org',
             '@type' => 'WebPage',
@@ -229,11 +275,18 @@ function seo_page_schema(string $path): ?array
             'url' => $base . '/',
             'name' => $meta['title'],
             'description' => $meta['description'],
+            'inLanguage' => 'en-CA',
             'isPartOf' => ['@id' => $websiteId],
             'about' => ['@id' => $businessId],
+            'author' => ['@id' => $businessId],
+            'reviewedBy' => $reviewer,
+            'lastReviewed' => $review['date'],
+            'dateModified' => $review['date'],
             'primaryImageOfPage' => [
                 '@type' => 'ImageObject',
-                'url' => seo_absolute_url(brand_logo_url()),
+                'url' => seo_absolute_url('/images/og-image.jpg'),
+                'width' => 1200,
+                'height' => 630,
             ],
         ];
     }
@@ -320,6 +373,28 @@ function seo_page_schema(string $path): ?array
         ];
     }
 
+    if ($path === '/service-areas') {
+        $items = [];
+        try {
+            foreach ((new CmsContentRepository())->serviceAreas() as $i => $area) {
+                $items[] = ['@type' => 'ListItem', 'position' => $i + 1, 'name' => $area['name'], 'url' => $base . $area['path']];
+            }
+        } catch (Throwable) {
+            $items = [];
+        }
+        return [
+            '@context' => 'https://schema.org',
+            '@type' => 'CollectionPage',
+            '@id' => $base . '/service-areas#webpage',
+            'url' => $base . '/service-areas',
+            'name' => $meta['title'],
+            'description' => $meta['description'],
+            'isPartOf' => ['@id' => $websiteId],
+            'about' => ['@id' => $businessId],
+            'mainEntity' => ['@type' => 'ItemList', 'numberOfItems' => count($items), 'itemListElement' => $items],
+        ];
+    }
+
     // Service pages already emit Service + FAQPage JSON-LD in their templates.
     return null;
 }
@@ -365,7 +440,7 @@ function seo_local_business_schema(): array
     $base = seo_site_base_url();
     $logo = seo_absolute_url(brand_logo_url());
 
-    return [
+    return array_filter([
         '@context' => 'https://schema.org',
         '@type' => ['LocalBusiness', 'AccountingService'],
         '@id' => $base . '/#business',
@@ -375,19 +450,12 @@ function seo_local_business_schema(): array
         'image' => $logo,
         'logo' => $logo,
         'description' => 'Certified accountants providing personal tax, corporate tax, bookkeeping, payroll, and business registration services across Ontario, Canada.',
-        'email' => 'info@vermaaccounting.ca',
-        'telephone' => '+1-613-318-6478',
+        'email' => CmsCompany::email(),
+        'telephone' => CmsCompany::phoneSchema(),
         'priceRange' => '$$',
         'currenciesAccepted' => 'CAD',
         'paymentAccepted' => 'Cash, Credit Card, Debit Card, Interac e-Transfer',
-        'address' => [
-            '@type' => 'PostalAddress',
-            'streetAddress' => 'Les Emmerson Drive',
-            'addressLocality' => 'Nepean',
-            'addressRegion' => 'ON',
-            'postalCode' => 'K2J 7L6',
-            'addressCountry' => 'CA',
-        ],
+        'address' => CmsCompany::postalAddressSchema(),
         'geo' => [
             '@type' => 'GeoCoordinates',
             'latitude' => 45.2691,
@@ -396,9 +464,9 @@ function seo_local_business_schema(): array
         'contactPoint' => [
             [
                 '@type' => 'ContactPoint',
-                'telephone' => '+1-613-318-6478',
+                'telephone' => CmsCompany::phoneSchema(),
                 'contactType' => 'customer service',
-                'email' => 'info@vermaaccounting.ca',
+                'email' => CmsCompany::email(),
                 'areaServed' => 'CA-ON',
                 'availableLanguage' => ['English'],
                 'hoursAvailable' => [
@@ -468,9 +536,6 @@ function seo_local_business_schema(): array
                 seo_service_catalog()
             ),
         ],
-        'sameAs' => [
-            'https://www.facebook.com/profile.php?id=61570236688782',
-            'https://www.instagram.com/vermaaccounting.ca/',
-        ],
-    ];
+        'sameAs' => CmsCompany::sameAs(),
+    ]);
 }

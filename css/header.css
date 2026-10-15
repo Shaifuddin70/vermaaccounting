@@ -1,9 +1,11 @@
-/* Public site header: full-width bar, mega menus, mobile drawer. */
+/* Public site header: logo + actions row, menu row, breadcrumb row; mega menus; mobile drawer. */
 
 :root {
   --sh-gap: 14px;
   --sh-h: 68px;
-  --sh-offset: var(--sh-h);
+  --sh-nav-h: 50px;
+  --sh-crumb-h: 38px;
+  --sh-offset: calc(var(--sh-h) + var(--sh-nav-h));
   --sh-navy: #1e3a8a;
   --sh-ink: #0f172a;
   --sh-text: #1e293b;
@@ -12,6 +14,14 @@
   --sh-orange-dark: #ea580c;
   --sh-line: #e2e8f0;
   --sh-ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+:root:has(.sh--crumbs) {
+  --sh-offset: calc(var(--sh-h) + var(--sh-nav-h) + var(--sh-crumb-h));
+}
+
+html {
+  scroll-padding-top: calc(var(--sh-sticky, var(--sh-offset)) + 0.75rem);
 }
 
 .main-content {
@@ -47,12 +57,110 @@
 .sh-bar {
   position: relative;
   max-width: 1320px;
-  height: var(--sh-h);
   margin: 0 auto;
   display: flex;
   align-items: center;
   gap: 1rem;
   padding: 0 1.25rem;
+}
+
+.sh-top .sh-bar {
+  height: var(--sh-h);
+  justify-content: space-between;
+}
+
+.sh-navrow .sh-bar {
+  min-height: var(--sh-nav-h);
+}
+
+/* ---------- Breadcrumbs ---------- */
+
+.sh-crumbs {
+  max-height: calc(var(--sh-crumb-h) + 1px);
+  overflow: hidden;
+  background: #f8fafc;
+  border-top: 1px solid var(--sh-line);
+  transition:
+    max-height 0.25s var(--sh-ease),
+    opacity 0.2s ease,
+    border-color 0.25s ease;
+}
+
+/* Scrolling down tucks the breadcrumb row away; the logo and menu rows stay. */
+.sh.is-condensed .sh-crumbs {
+  max-height: 0;
+  opacity: 0;
+  border-top-color: transparent;
+}
+
+.sh-crumbs .sh-bar {
+  height: var(--sh-crumb-h);
+}
+
+.sh-crumb-list {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+  line-height: 1;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sh-crumb-list::-webkit-scrollbar {
+  display: none;
+}
+
+.sh-crumb-list li {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.sh-crumb-list li:last-child {
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+.sh-crumb-list li + li::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin: 0 0.7rem 0 0.55rem;
+  border-top: 1.5px solid #94a3b8;
+  border-right: 1.5px solid #94a3b8;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.sh-crumb-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--sh-muted);
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.sh-crumb-list a:hover {
+  color: var(--sh-navy);
+  text-decoration: underline;
+}
+
+.sh-crumb-list a i {
+  font-size: 0.75rem;
+}
+
+.sh-crumb-list [aria-current="page"] {
+  max-width: 42ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--sh-ink);
+  font-weight: 600;
 }
 
 .sh-logo {
@@ -72,25 +180,30 @@
 .sh-nav {
   flex: 1 1 auto;
   display: flex;
-  justify-content: center;
   min-width: 0;
+  margin-left: -0.7rem;
 }
 
 .sh-list {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.15rem;
+  gap: 0.1rem 0.15rem;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.3rem 0;
+}
+
+.sh-item {
+  position: relative;
 }
 
 .sh-link {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  height: 40px;
-  padding: 0 0.95rem;
+  height: 38px;
+  padding: 0 0.85rem;
   border: 0;
   border-radius: 999px;
   background: transparent;
@@ -140,9 +253,10 @@
 
 .sh-mega {
   position: absolute;
-  top: calc(100% + 10px);
-  left: 50%;
-  width: min(640px, calc(100vw - var(--sh-gap) * 2));
+  z-index: 2;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(480px, calc(100vw - var(--sh-gap) * 2));
   background: #fff;
   border: 1px solid var(--sh-line);
   border-radius: 22px;
@@ -150,7 +264,7 @@
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
-  transform: translate(-50%, 8px);
+  transform: translate(var(--sh-mega-shift, 0px), 8px);
   transition:
     opacity 0.2s ease,
     transform 0.2s var(--sh-ease),
@@ -158,7 +272,7 @@
 }
 
 .sh-mega--compact {
-  width: min(400px, calc(100vw - var(--sh-gap) * 2));
+  width: min(260px, calc(100vw - var(--sh-gap) * 2));
 }
 
 .sh-mega--compact .sh-mega-grid {
@@ -171,15 +285,15 @@
   position: absolute;
   left: 0;
   right: 0;
-  top: -12px;
-  height: 12px;
+  top: -10px;
+  height: 10px;
 }
 
 .sh-item.is-open .sh-mega {
   opacity: 1;
   visibility: visible;
   pointer-events: auto;
-  transform: translate(-50%, 0);
+  transform: translate(var(--sh-mega-shift, 0px), 0);
 }
 
 .sh-mega-main {
@@ -198,11 +312,15 @@
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  padding: 0.75rem 0.85rem;
-  border-radius: 14px;
+  padding: 0.6rem 0.85rem;
+  border-radius: 12px;
   color: var(--sh-ink);
   text-decoration: none;
   transition: background 0.18s ease;
+}
+
+.sh-mega-link:hover .sh-mega-title {
+  color: var(--sh-navy);
 }
 
 .sh-mega-link:hover {
@@ -211,40 +329,10 @@
   text-decoration: none;
 }
 
-.sh-mega-icon {
-  width: 42px;
-  height: 42px;
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  border-radius: 12px;
-  background: rgba(30, 58, 138, 0.08);
-  color: var(--sh-navy);
-  font-size: 1rem;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    transform 0.18s ease;
-}
-
-.sh-mega-link:hover .sh-mega-icon,
-.sh-mega-link.is-active .sh-mega-icon {
-  background: linear-gradient(135deg, var(--sh-orange), var(--sh-orange-dark));
-  color: #fff;
-  transform: scale(1.04);
-}
-
-.sh-mega-text {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  min-width: 0;
-}
-
 .sh-mega-title {
   font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.25;
+  font-weight: 500;
+  line-height: 1.3;
 }
 
 .sh-mega-link.is-active .sh-mega-title {
@@ -253,12 +341,6 @@
 
 .sh-ext {
   font-size: 0.65rem;
-  color: var(--sh-muted);
-}
-
-.sh-mega-desc {
-  font-size: 0.8rem;
-  line-height: 1.35;
   color: var(--sh-muted);
 }
 
@@ -428,47 +510,14 @@ body.sh-menu-open {
 
 /* ---------- Responsive ---------- */
 
-@media (max-width: 1339px) {
-  .sh-phone {
-    padding: 0.3rem;
-  }
-
-  .sh-phone-text {
-    display: none;
-  }
-
-  .sh-link {
-    padding: 0 0.8rem;
-  }
-}
-
 @media (max-width: 1179px) {
   .sh-bar {
-    gap: 0.6rem;
-    padding-left: 1rem;
-  }
-
-  .sh-logo img {
-    width: 132px;
+    padding: 0 1rem;
   }
 
   .sh-link {
-    padding: 0 0.62rem;
-    font-size: 0.9rem;
-  }
-
-  .sh-book {
-    width: 46px;
-    padding: 0;
-  }
-
-  .sh-book-text {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
+    padding: 0 0.7rem;
+    font-size: 0.92rem;
   }
 }
 
@@ -476,9 +525,11 @@ body.sh-menu-open {
   :root {
     --sh-gap: 10px;
     --sh-h: 62px;
+    --sh-nav-h: 0px;
+    --sh-crumb-h: 36px;
   }
 
-  .sh-bar {
+  .sh-top .sh-bar {
     padding: 0 0.6rem 0 1rem;
   }
 
@@ -487,13 +538,25 @@ body.sh-menu-open {
     height: 38px;
   }
 
-  .sh-nav,
+  .sh-navrow,
   .sh-book {
     display: none;
   }
 
-  .sh-actions {
-    margin-left: auto;
+  .sh-phone {
+    padding: 0.3rem;
+  }
+
+  .sh-phone-text {
+    display: none;
+  }
+
+  .sh-crumbs .sh-bar {
+    padding: 0 1rem;
+  }
+
+  .sh-crumb-list [aria-current="page"] {
+    max-width: none;
   }
 
   .sh-burger {
@@ -606,25 +669,6 @@ body.sh-menu-open {
     color: #c2410c;
   }
 
-  .sh-dicon {
-    width: 38px;
-    height: 38px;
-    flex-shrink: 0;
-    display: grid;
-    place-items: center;
-    border-radius: 11px;
-    background: #fff;
-    color: var(--sh-navy);
-    font-size: 0.9rem;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
-  }
-
-  .sh-dlink.is-active .sh-dicon,
-  .sh-dtoggle[aria-expanded="true"] .sh-dicon {
-    background: linear-gradient(135deg, var(--sh-orange), var(--sh-orange-dark));
-    color: #fff;
-  }
-
   .sh-dlabel {
     flex: 1 1 auto;
   }
@@ -634,7 +678,7 @@ body.sh-menu-open {
   }
 
   .sh-dsub {
-    margin: 0.25rem 0 0.5rem 1.6rem;
+    margin: 0.15rem 0 0.5rem 0.9rem;
     padding-left: 1rem;
     border-left: 2px solid var(--sh-line);
     display: flex;
@@ -657,23 +701,11 @@ body.sh-menu-open {
     text-decoration: none;
   }
 
-  .sh-dsub-link i {
-    width: 1rem;
-    text-align: center;
-    color: var(--sh-muted);
-    font-size: 0.85rem;
-  }
-
   .sh-dsub-link:hover,
   .sh-dsub-link.is-active {
     background: #fff;
     color: var(--sh-orange-dark);
     text-decoration: none;
-  }
-
-  .sh-dsub-link:hover i,
-  .sh-dsub-link.is-active i {
-    color: var(--sh-orange-dark);
   }
 
   .sh-dsub-all {
@@ -720,7 +752,9 @@ body.sh-menu-open {
 
 @media (prefers-reduced-motion: reduce) {
   .sh,
+  .sh-crumbs,
   .sh-bar,
+  .sh-crumb-list a,
   .sh-mega,
   .sh-drawer,
   .sh-overlay,

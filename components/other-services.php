@@ -6,44 +6,44 @@
 $all_services = [
   'bookkeeping' => [
     'title' => 'Bookkeeping',
-    'url' => 'bookkeeping',
-    'image' => 'images/book-keeping.jpg',
+    'url' => '/bookkeeping',
+    'image' => '/images/book-keeping.jpg',
     'description' => 'Maintain organized ledgers and reconciliations, tracking every transaction and categorizing expenses to provide clear, accurate reports.'
   ],
   'accounting' => [
     'title' => 'Financial Accounting',
-    'url' => 'accounting',
-    'image' => 'images/financial-accounting.jpg',
+    'url' => '/accounting',
+    'image' => '/images/financial-accounting.jpg',
     'description' => 'Deliver transparent financial statements, including balance sheets and income statements, offering insights into business performance.'
   ],
   'payroll' => [
     'title' => 'Payroll Services',
-    'url' => 'payroll',
-    'image' => 'images/payroll.jpg',
+    'url' => '/payroll',
+    'image' => '/images/payroll.jpg',
     'description' => 'Ensure accurate payroll processing, deductions, and T4 filings, complying with Canadian regulations while keeping employee payments timely.'
   ],
   'personal-tax' => [
     'title' => 'Personal Tax Services',
-    'url' => 'personal-tax',
-    'image' => 'images/personal-tax.jpg',
+    'url' => '/personal-tax',
+    'image' => '/images/personal-tax.jpg',
     'description' => 'Prepare personal tax returns with full CRA compliance, maximizing eligible deductions and credits to ensure accurate filings and optimized refunds.'
   ],
   'corporate-tax' => [
     'title' => 'Corporate Tax Services',
-    'url' => 'corporate-tax',
-    'image' => 'images/corporate-tax.jpg',
+    'url' => '/corporate-tax',
+    'image' => '/images/corporate-tax.jpg',
     'description' => 'Provide corporate tax planning and filing that aligns with regulations, protects profits, and identifies opportunities for credits and savings.'
   ],
   'business-registration' => [
     'title' => 'Business Registration',
-    'url' => 'business-registration',
-    'image' => 'images/business-registration.jpg',
+    'url' => '/business-registration',
+    'image' => '/images/business-registration.jpg',
     'description' => 'Assist with CRA business number, GST/HST registration, and compliance steps to ensure your business is correctly registered and ready to operate.'
   ],
   'loan' => [
     'title' => 'Business Loans',
-    'url' => 'loan',
-    'image' => 'images/business-loan.jpg',
+    'url' => '/loan',
+    'image' => '/images/business-loan.jpg',
     'description' => 'Help startups, small businesses, and established companies secure fast, flexible, and affordable business financing across Canada.'
   ]
 ];

@@ -22,9 +22,9 @@ include 'components/header.php';
                     <a href="/contact" class="cta-button primary">
                         Get Free Consultation
                     </a>
-                    <a href="tel:613-318-6478" class="cta-button orange">
+                    <a href="<?= e(company_phone_href()) ?>" class="cta-button orange">
                         <i class="fas fa-phone"></i>
-                        613-318-6478
+                        <?= e(company_phone()) ?>
                     </a>
                 </div>
             </div>
@@ -231,7 +231,7 @@ include 'components/header.php';
                         <li>Proof of foreign taxes paid or income earned abroad</li>
                     </ul>
                 </div>
-                <a href="resources-pdf/New-Comer.pdf" class="resource-download-button" download>
+                <a href="/resources-pdf/New-Comer.pdf" class="resource-download-button" download>
                     <i class="fas fa-download"></i> Download Documents
                 </a>
             </div>
@@ -273,7 +273,7 @@ include 'components/header.php';
                         <li>Broker interest summary</li>
                     </ul>
                 </div>
-                <a href="resources-pdf/Student.pdf" class="resource-download-button" download>
+                <a href="/resources-pdf/Student.pdf" class="resource-download-button" download>
                     <i class="fas fa-download"></i> Download Documents
                 </a>
             </div>
@@ -315,7 +315,7 @@ include 'components/header.php';
                         <li>Broker or credit interest summary</li>
                     </ul>
                 </div>
-                <a href="resources-pdf/Employed.pdf" class="resource-download-button" download>
+                <a href="/resources-pdf/Employed.pdf" class="resource-download-button" download>
                     <i class="fas fa-download"></i> Download Documents
                 </a>
             </div>
@@ -361,7 +361,7 @@ include 'components/header.php';
                         <li>Broker interest summary</li>
                     </ul>
                 </div>
-                <a href="resources-pdf/Self-Employed-Business-Income.pdf" class="resource-download-button" download>
+                <a href="/resources-pdf/Self-Employed-Business-Income.pdf" class="resource-download-button" download>
                     <i class="fas fa-download"></i> Download Documents
                 </a>
             </div>
@@ -408,7 +408,7 @@ include 'components/header.php';
                         <li>Broker interest summary</li>
                     </ul>
                 </div>
-                <a href="resources-pdf/Rideshare-Driver-Uber-Lyft-Taxi.pdf" class="resource-download-button" download>
+                <a href="/resources-pdf/Rideshare-Driver-Uber-Lyft-Taxi.pdf" class="resource-download-button" download>
                     <i class="fas fa-download"></i> Download Documents
                 </a>
             </div>
@@ -455,7 +455,7 @@ include 'components/header.php';
                         <li>Broker interest summary</li>
                     </ul>
                 </div>
-                <a href="resources-pdf/Rental-Income.pdf" class="resource-download-button" download>
+                <a href="/resources-pdf/Rental-Income.pdf" class="resource-download-button" download>
                     <i class="fas fa-download"></i> Download Documents
                 </a>
             </div>
@@ -503,7 +503,7 @@ include 'components/header.php';
                             <li>Broker interest summary</li>
                         </ul>
                     </div>
-                    <a href="resources-pdf/residential-or-commercial-sale-of-property.pdf" class="resource-download-button" download>
+                    <a href="/resources-pdf/residential-or-commercial-sale-of-property.pdf" class="resource-download-button" download>
                         <i class="fas fa-download"></i> Download Documents
                     </a>
             </div>

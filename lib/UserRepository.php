@@ -242,7 +242,7 @@ final class UserRepository
             SELECT
                 COUNT(*) AS total,
                 SUM(CASE WHEN status = \'active\' THEN 1 ELSE 0 END) AS active,
-                SUM(CASE WHEN role = \'admin\' THEN 1 ELSE 0 END) AS admins,
+                SUM(CASE WHEN role IN (\'admin\', \'super_admin\') THEN 1 ELSE 0 END) AS admins,
                 SUM(CASE WHEN role = \'reviewer\' THEN 1 ELSE 0 END) AS reviewers,
                 SUM(CASE WHEN role = \'partner\' THEN 1 ELSE 0 END) AS partners
             FROM users

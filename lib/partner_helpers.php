@@ -403,7 +403,7 @@ function format_partner_submission_value(mixed $value): string
 function assert_submission_access(array $form, array $submission): void
 {
     $role = Auth::userRole();
-    if ($role === 'admin') {
+    if (permission_is_privileged_role($role)) {
         return;
     }
 
@@ -434,7 +434,7 @@ function assert_submission_access(array $form, array $submission): void
 function assert_form_submissions_access(array $form): void
 {
     $role = Auth::userRole();
-    if ($role === 'admin') {
+    if (permission_is_privileged_role($role)) {
         return;
     }
 
