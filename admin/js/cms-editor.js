@@ -34,21 +34,27 @@
 
   function cityDefault(field) {
     if (!cityDefaults || !cityDefaults[field]) return '';
+    var phone = val('city_phone').trim() || cityDefaults.phone || '';
+    var email = val('city_email').trim() || cityDefaults.email || '';
     var vars = {
       city: val('city_city').trim(), region: val('city_region').trim(), country: val('city_country').trim(),
       service: val('city_primary_service').trim() || cityDefaults.service || '',
-      phone: val('city_phone').trim(), email: val('city_email').trim(), site_name: cityDefaults.site_name || ''
+      phone: phone, email: email, site_name: cityDefaults.site_name || '',
+      phone_link: phone ? 'tel:' + phone.replace(/[^\d+]/g, '') : '',
+      email_link: email ? 'mailto:' + email : '',
+      h1: valOrDefault('h1') || valOrDefault('title'),
+      summary: valOrDefault('excerpt')
     };
-    var tokens = /\{(city|region|country|service|phone|email|site_name)\}/g;
+    var tokens = /\{(city|region|country|service|phone|email|site_name|phone_link|email_link|h1|summary)\}/g;
     if (field === 'body_html') {
-      return cityDefaults[field].replace(tokens, function (m, key) { return escapeHtml(vars[key]); });
+      return cityDefaults[field].replace(tokens, function (m, key) { return escapeHtml(vars[key] || ''); });
     }
     if (follows(field)) return '';
     var template = cityDefaults[field];
-    Object.keys(vars).forEach(function (key) {
+    ['city', 'region', 'country', 'service', 'phone', 'email', 'site_name'].forEach(function (key) {
       if (vars[key] === '') template = template.split(new RegExp('\\s*,\\s*\\{' + key + '\\}|\\{' + key + '\\}\\s*,\\s*')).join('');
     });
-    return template.replace(tokens, function (m, key) { return vars[key]; }).replace(/\s*,\s*(?=,|$|\s[|\-–]|\))/g, '').replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').replace(/^[\s,]+|[\s,]+$/g, '');
+    return template.replace(tokens, function (m, key) { return vars[key] || ''; }).replace(/\s*,\s*(?=,|$|\s[|\-–]|\))/g, '').replace(/\(\s*\)/g, '').replace(/\s{2,}/g, ' ').replace(/^[\s,]+|[\s,]+$/g, '');
   }
 
   // The H1 and SEO title follow a custom title; the meta description follows a custom summary.
@@ -348,7 +354,11 @@
       el.setAttribute('placeholder', cityDefault(field) || fallback);
     });
     var note = document.getElementById('cms-city-default-note');
-    if (note) note.hidden = !usingDefaultBody;
+    if (note) {
+      note.hidden = !usingDefaultBody;
+      // display:flex on .cms-default-note can override [hidden] in some browsers
+      note.style.display = usingDefaultBody ? '' : 'none';
+    }
   }
 
   function refresh() {

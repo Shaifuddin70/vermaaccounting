@@ -393,8 +393,9 @@ require __DIR__ . '/includes/layout-start.php';
           <div class="cms-body-readonly"><pre><?= e((string) $form['body_html']) ?></pre></div>
         <?php else: ?>
           <?php if ($isCity): ?>
-            <div class="admin-alert admin-alert-info cms-default-note" id="cms-city-default-note" <?= CmsCityDefaults::bodyIsEmpty((string) $form['body_html']) ? '' : 'hidden' ?>>
-              <span>The body is empty, so this page shows the default city content<?= $cityDefault['body_html'] === '' ? ' (no default body is set yet)' : '' ?>. Write your own content here to replace it on this page only.</span>
+            <?php $bodyUsesDefault = CmsCityDefaults::bodyIsEmpty((string) $form['body_html']); ?>
+            <div class="admin-alert admin-alert-info cms-default-note" id="cms-city-default-note" <?= $bodyUsesDefault ? '' : 'hidden style="display:none"' ?>>
+              <span>This page’s body field is empty, so visitors see the shared city default<?= $cityDefault['body_html'] === '' ? ' (no default body is set yet)' : '' ?>. Title, summary and location fields do not replace the body — type in this editor (or start from the default) and save.</span>
               <?php if (CmsCityDefaults::get()['body_html'] !== ''): ?>
                 <button type="button" class="admin-btn admin-btn-sm admin-btn-secondary" data-city-default-body>Start from the default content</button>
               <?php endif; ?>
