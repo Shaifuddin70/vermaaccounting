@@ -6,6 +6,9 @@
   const successPanel = document.getElementById('custom-form-success');
   const successMessageEl = document.getElementById('custom-form-success-message');
   const successResetBtn = document.getElementById('custom-form-success-reset');
+  const successPayWrap = document.getElementById('custom-form-success-pay');
+  const successPayNote = document.getElementById('custom-form-success-pay-note');
+  const successPayBtn = document.getElementById('custom-form-success-pay-btn');
   const fields = form.querySelectorAll('[data-field-id]');
   const taxYearStep = document.getElementById('tax-year-step');
   const taxYearInput = document.getElementById('tax-year-input');
@@ -863,9 +866,10 @@
 
   function hideSuccessConfirmation() {
     if (successPanel) successPanel.hidden = true;
+    if (successPayWrap) successPayWrap.hidden = true;
   }
 
-  function showSuccessConfirmation(message) {
+  function showSuccessConfirmation(message, payOptions) {
     const prefillModal = document.getElementById('prefill-modal');
     if (prefillModal) prefillModal.hidden = true;
     document.body.style.overflow = '';
@@ -877,6 +881,33 @@
     form.hidden = true;
     if (successMessageEl) {
       successMessageEl.textContent = message || 'Thank you! Your response has been received.';
+    }
+    const payUrl = payOptions && payOptions.payUrl ? String(payOptions.payUrl) : '';
+    const payLabel = payOptions && payOptions.payAmountLabel ? String(payOptions.payAmountLabel) : '';
+    const payUnavailable = payOptions && payOptions.payUnavailable ? String(payOptions.payUnavailable) : '';
+    if (successPayWrap && successPayBtn) {
+      if (payUrl) {
+        successPayBtn.href = payUrl;
+        successPayBtn.textContent = payLabel ? 'Pay ' + payLabel + ' by card' : 'Pay by card';
+        successPayBtn.hidden = false;
+        if (successPayNote) {
+          successPayNote.textContent = payLabel
+            ? 'Next step: complete your ' + payLabel + ' advance payment securely by card.'
+            : 'Next step: complete your advance payment securely by card.';
+        }
+        successPayWrap.hidden = false;
+      } else if (payUnavailable) {
+        successPayBtn.hidden = true;
+        successPayBtn.removeAttribute('href');
+        if (successPayNote) {
+          successPayNote.textContent = payUnavailable;
+        }
+        successPayWrap.hidden = false;
+      } else {
+        successPayWrap.hidden = true;
+        successPayBtn.hidden = false;
+        successPayBtn.removeAttribute('href');
+      }
     }
     if (successPanel) {
       successPanel.hidden = false;
@@ -1425,7 +1456,12 @@
         throw new Error(json.error || 'Submission failed');
       }
       showSuccessConfirmation(
-        json.message || (window.CUSTOM_FORM_SCHEMA?.settings?.successMessage) || 'Thank you! Your response has been received.'
+        json.message || (window.CUSTOM_FORM_SCHEMA?.settings?.successMessage) || 'Thank you! Your response has been received.',
+        {
+          payUrl: json.pay_url || '',
+          payAmountLabel: json.pay_amount_label || '',
+          payUnavailable: json.pay_unavailable || '',
+        }
       );
     } catch (err) {
       statusEl.textContent = err.message;

@@ -1049,7 +1049,7 @@
         <div class="admin-field admin-field--full">
           <label for="fe-pay-amount">Amount due (CAD)</label>
           <input type="number" id="fe-pay-amount" min="0" step="0.01" inputmode="decimal" value="${escapeAttr(field.amount || '')}" placeholder="e.g. 50.00">
-          <small class="admin-field-hint">Fixed amount the client pays. Each submission records a pending payment for it; once verified it’s applied to the client’s invoice and counts toward income. Leave blank to only collect payment details.</small>
+          <small class="admin-field-hint">Fixed amount the client pays. Methods recorded as Credit card use Elavon after submit when the gateway is enabled (no reference/screenshot on the form). Other methods stay pending until staff verify them, then can be applied to an invoice.</small>
         </div>
         <div class="admin-field">
           <label for="fe-pay-ref-label">Reference field label</label>
@@ -1778,9 +1778,9 @@
           {
             label: 'Card payment',
             value: 'card_payment',
-            instructions: '',
-            reference: 'required',
-            screenshot: 'optional',
+            instructions: 'After you submit this form, you’ll be able to pay securely by card.',
+            reference: 'off',
+            screenshot: 'off',
             recordAs: 'credit_card',
           },
         ],

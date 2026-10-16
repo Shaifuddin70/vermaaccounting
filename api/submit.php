@@ -211,7 +211,37 @@ send_submission_notification_emails(
     $taxYear > 0 ? $taxYear : null
 );
 
-json_response([
+$response = [
     'ok' => true,
     'message' => $schema['settings']['successMessage'] ?? 'Thank you!',
-]);
+];
+
+$payTarget = submission_elavon_pay_target($submissionId, $schema, $data);
+if ($payTarget !== null) {
+    $submission = $repo->findSubmission($submissionId);
+    if ($submission) {
+        $response['pay_url'] = submission_pay_url($submission);
+        $response['pay_amount'] = $payTarget['amount'];
+        $response['pay_amount_label'] = payment_format_amount($payTarget['amount']);
+    }
+} else {
+    // Card chosen but gateway off / amount missing — surface why the pay button is absent.
+    foreach ($schema['fields'] as $field) {
+        if (($field['type'] ?? '') !== 'payment') {
+            continue;
+        }
+        $value = trim((string) ($data[(string) ($field['name'] ?? '')] ?? ''));
+        $method = $value !== '' ? payment_method_for_value($field, $value) : null;
+        if ($method === null || ($method['recordAs'] ?? '') !== 'credit_card') {
+            continue;
+        }
+        if (payment_field_amount($field) <= 0) {
+            $response['pay_unavailable'] = 'Card payment needs an amount on this form’s Advance payment field.';
+        } elseif (!elavon_enabled()) {
+            $response['pay_unavailable'] = 'Card payment is not enabled in this environment yet. Ask the site admin to turn on Elavon.';
+        }
+        break;
+    }
+}
+
+json_response($response);

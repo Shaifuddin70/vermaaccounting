@@ -104,6 +104,10 @@ $documentSubmissionMode = !empty($documentSubmissionMode);
   </div>
   <h2 class="custom-form-success-title">Submission received</h2>
   <p id="custom-form-success-message" class="custom-form-success-message"></p>
+  <div id="custom-form-success-pay" class="custom-form-success-pay" hidden>
+    <p id="custom-form-success-pay-note" class="custom-form-success-pay-note"></p>
+    <a id="custom-form-success-pay-btn" class="cta-button primary custom-form-success-pay-btn" href="#">Pay by card</a>
+  </div>
   <button type="button" class="cta-button secondary custom-form-success-reset" id="custom-form-success-reset">
     Submit another response
   </button>

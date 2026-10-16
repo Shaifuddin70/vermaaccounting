@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 /**
- * Elavon Converge card payments for invoices, using the Converge Hosted Payment Page so card
- * details are entered on Elavon's site and never reach this server.
+ * Elavon Converge card payments for invoices and form advance payments, using the Converge
+ * Hosted Payment Page so card details are entered on Elavon's site and never reach this server.
  *
  * Flow: public pay link -> session token (server to Converge) -> client pays on the hosted page
  * -> Converge redirects back -> the transaction is re-queried server-side before anything is recorded.
@@ -112,6 +112,44 @@ function invoice_can_pay_online(array $invoice): bool
         && invoice_amount_due($invoice) > 0;
 }
 
+/** Public pay link for a form submission advance; the token is created on first use. */
+function submission_pay_url(array $submission): string
+{
+    $token = trim((string) ($submission['pay_token'] ?? ''));
+    if ($token === '') {
+        $token = bin2hex(random_bytes(20));
+        $stmt = Database::instance()->pdo()->prepare(
+            'UPDATE submissions SET pay_token = ? WHERE id = ? AND (pay_token IS NULL OR pay_token = \'\')'
+        );
+        $stmt->execute([$token, (int) $submission['id']]);
+        if ($stmt->rowCount() === 0) {
+            $fresh = (new FormRepository())->findSubmission((int) $submission['id']);
+            $token = (string) ($fresh['pay_token'] ?? $token);
+        }
+    }
+    return app_base_url() . '/pay?t=' . $token;
+}
+
+function submission_find_by_pay_token(string $token): ?array
+{
+    if (!preg_match('/^[a-f0-9]{40}$/', $token)) {
+        return null;
+    }
+    $stmt = Database::instance()->pdo()->prepare('SELECT id FROM submissions WHERE pay_token = ? LIMIT 1');
+    $stmt->execute([$token]);
+    $id = (int) $stmt->fetchColumn();
+    return $id > 0 ? (new FormRepository())->findSubmission($id) : null;
+}
+
+/**
+ * @param array<string, mixed> $schema
+ * @param array<string, mixed> $data
+ */
+function submission_can_pay_online(array $submission, array $schema, array $data): bool
+{
+    return submission_elavon_pay_target((int) $submission['id'], $schema, $data) !== null;
+}
+
 function online_payment_status_label(string $status): string
 {
     return [
@@ -136,6 +174,16 @@ function online_payments_for_invoice(int $invoiceId): array
         'SELECT * FROM online_payments WHERE invoice_id = ? ORDER BY id DESC'
     );
     $stmt->execute([$invoiceId]);
+    return $stmt->fetchAll();
+}
+
+/** @return list<array<string, mixed>> */
+function online_payments_for_submission(int $submissionId): array
+{
+    $stmt = Database::instance()->pdo()->prepare(
+        'SELECT * FROM online_payments WHERE submission_id = ? ORDER BY id DESC'
+    );
+    $stmt->execute([$submissionId]);
     return $stmt->fetchAll();
 }
 
@@ -181,22 +229,85 @@ function elavon_start_invoice_payment(array $invoice): array
 
     $pdo = Database::instance()->pdo();
     $pdo->prepare('
-        INSERT INTO online_payments (invoice_id, gateway, environment, reference, amount, status, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO online_payments (
+            invoice_id, submission_id, submission_payment_id, gateway, environment,
+            reference, amount, status, created_at, updated_at
+        ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)
     ')->execute([(int) $invoice['id'], 'elavon', $config['environment'], $reference, $amount, 'pending', $now, $now]);
     $attemptId = (int) $pdo->lastInsertId();
 
+    return elavon_hosted_redirect($attemptId, $reference, $amount, 'Invoice #' . (string) ($invoice['invoice_number'] ?? ''), trim((string) ($invoice['bill_to_email'] ?? '')));
+}
+
+/**
+ * Start a hosted-page payment for a form submission's advance card amount.
+ *
+ * @param array<string, mixed> $schema
+ * @param array<string, mixed> $data
+ * @return array{ok: bool, redirect?: string, error?: string}
+ */
+function elavon_start_submission_payment(array $submission, array $schema, array $data): array
+{
+    $target = submission_elavon_pay_target((int) $submission['id'], $schema, $data);
+    if ($target === null) {
+        return ['ok' => false, 'error' => 'This form payment cannot be paid online.'];
+    }
+
+    $amount = invoice_money($target['amount']);
+    $paymentId = isset($target['payment']['id']) ? (int) $target['payment']['id'] : 0;
+    $reference = 'S' . (int) $submission['id'] . '-' . strtoupper(bin2hex(random_bytes(4)));
+    $reference = mb_substr($reference, 0, 25);
+    $config = elavon_config();
+    $now = now_iso();
+    $form = (new FormRepository())->find((int) $submission['form_id']);
+    $label = trim((string) ($form['title'] ?? 'Form')) ?: 'Form';
+
+    $pdo = Database::instance()->pdo();
+    $pdo->prepare('
+        INSERT INTO online_payments (
+            invoice_id, submission_id, submission_payment_id, gateway, environment,
+            reference, amount, status, created_at, updated_at
+        ) VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ')->execute([
+        (int) $submission['id'],
+        $paymentId > 0 ? $paymentId : null,
+        'elavon',
+        $config['environment'],
+        $reference,
+        $amount,
+        'pending',
+        $now,
+        $now,
+    ]);
+    $attemptId = (int) $pdo->lastInsertId();
+
+    $email = '';
+    foreach (['email', 'Email', 'client_email', 'your_email'] as $key) {
+        $candidate = trim((string) ($data[$key] ?? ''));
+        if ($candidate !== '' && filter_var($candidate, FILTER_VALIDATE_EMAIL)) {
+            $email = $candidate;
+            break;
+        }
+    }
+
+    return elavon_hosted_redirect($attemptId, $reference, $amount, 'Advance: ' . $label, $email);
+}
+
+/**
+ * @return array{ok: bool, redirect?: string, error?: string}
+ */
+function elavon_hosted_redirect(int $attemptId, string $reference, float $amount, string $description, string $email = ''): array
+{
     $returnUrl = app_base_url() . '/pay-return?ref=' . rawurlencode($reference);
     $fields = elavon_credentials() + [
         'ssl_transaction_type' => 'ccsale',
         'ssl_amount' => number_format($amount, 2, '.', ''),
         'ssl_invoice_number' => $reference,
-        'ssl_description' => mb_substr('Invoice #' . (string) ($invoice['invoice_number'] ?? ''), 0, 255),
+        'ssl_description' => mb_substr($description, 0, 255),
         'ssl_result_format' => 'HTML',
         'ssl_receipt_link_method' => 'REDG',
         'ssl_receipt_link_url' => $returnUrl,
     ];
-    $email = trim((string) ($invoice['bill_to_email'] ?? ''));
     if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $fields['ssl_email'] = $email;
     }
@@ -346,6 +457,36 @@ function elavon_apply_txn(array $attempt, array $match, string $txnId = ''): arr
 
     $amount = invoice_money((float) ($match['ssl_amount'] ?? $attempt['amount']));
     $approval = mb_substr((string) ($match['ssl_approval_code'] ?? ''), 0, 32);
+    $referenceNote = mb_substr('Elavon ' . $foundTxnId . ($approval !== '' ? ' / auth ' . $approval : ''), 0, 191);
+
+    $submissionId = (int) ($attempt['submission_id'] ?? 0);
+    if ($submissionId > 0) {
+        try {
+            (new SubmissionPaymentRepository())->markVerifiedFromOnline(
+                $submissionId,
+                (int) ($attempt['submission_payment_id'] ?? 0),
+                $amount,
+                $referenceNote
+            );
+        } catch (Throwable $e) {
+            online_payment_update((int) $attempt['id'], ['status' => 'pending', 'result_message' => 'Approved but not recorded yet']);
+            error_log('Recording Elavon submission payment ' . $foundTxnId . ' failed: ' . $e->getMessage());
+            return ['status' => 'pending', 'message' => 'Your payment was approved and is being recorded.'];
+        }
+        online_payment_update((int) $attempt['id'], [
+            'amount' => $amount,
+            'approval_code' => $approval,
+            'card_summary' => mb_substr($card, 0, 64),
+            'result_message' => $resultMessage !== '' ? $resultMessage : 'APPROVAL',
+        ]);
+        ActivityLog::record('submission.paid_online', 'submission', $submissionId, [
+            'amount' => $amount,
+            'txn_id' => $foundTxnId,
+            'reference' => (string) $attempt['reference'],
+        ]);
+        return ['status' => 'approved', 'message' => 'Payment received.'];
+    }
+
     $repo = new InvoiceRepository();
     $paymentId = null;
     try {
@@ -353,7 +494,7 @@ function elavon_apply_txn(array $attempt, array $match, string $txnId = ''): arr
             'amount' => $amount,
             'payment_date' => date('Y-m-d'),
             'method' => 'credit_card',
-            'reference' => mb_substr('Elavon ' . $foundTxnId . ($approval !== '' ? ' / auth ' . $approval : ''), 0, 191),
+            'reference' => $referenceNote,
             'note' => 'Paid online by card' . ($card !== '' ? ' (' . $card . ')' : '') . '.',
             'recorded_by_user_id' => null,
             'recorded_by_name' => 'Online payment',

@@ -180,6 +180,86 @@ final class SubmissionPaymentRepository
         ]);
     }
 
+    /**
+     * Mark a form advance as verified after Elavon confirms the card charge.
+     * Creates the row if the client chose card but the pending record is missing.
+     */
+    public function markVerifiedFromOnline(int $submissionId, int $paymentId, float $amount, string $reference): void
+    {
+        $now = now_iso();
+        $amount = invoice_money($amount);
+        $reference = mb_substr($reference, 0, 200);
+
+        if ($paymentId > 0) {
+            $stmt = $this->db->prepare("
+                UPDATE submission_payments
+                SET status = 'verified',
+                    method = 'credit_card',
+                    method_label = COALESCE(NULLIF(method_label, ''), 'Card payment'),
+                    reference = ?,
+                    amount = ?,
+                    reviewed_by_user_id = NULL,
+                    reviewed_by_name = 'Online payment',
+                    reviewed_at = ?
+                WHERE id = ? AND submission_id = ? AND invoice_id IS NULL AND status IN ('pending', 'verified')
+            ");
+            $stmt->execute([$reference, $amount, $now, $paymentId, $submissionId]);
+            if ($stmt->rowCount() > 0) {
+                return;
+            }
+        }
+
+        $find = $this->db->prepare("
+            SELECT id FROM submission_payments
+            WHERE submission_id = ? AND invoice_id IS NULL AND status = 'pending' AND method = 'credit_card'
+            ORDER BY id DESC LIMIT 1
+        ");
+        $find->execute([$submissionId]);
+        $fallbackId = (int) $find->fetchColumn();
+        if ($fallbackId > 0) {
+            $stmt = $this->db->prepare("
+                UPDATE submission_payments
+                SET status = 'verified',
+                    method = 'credit_card',
+                    method_label = COALESCE(NULLIF(method_label, ''), 'Card payment'),
+                    reference = ?,
+                    amount = ?,
+                    reviewed_by_user_id = NULL,
+                    reviewed_by_name = 'Online payment',
+                    reviewed_at = ?
+                WHERE id = ? AND invoice_id IS NULL
+            ");
+            $stmt->execute([$reference, $amount, $now, $fallbackId]);
+            if ($stmt->rowCount() > 0) {
+                return;
+            }
+        }
+
+        $submission = (new FormRepository())->findSubmission($submissionId);
+        $formId = (int) ($submission['form_id'] ?? 0);
+        $sql = Database::instance()->driver() === 'mysql'
+            ? 'INSERT IGNORE INTO submission_payments'
+            : 'INSERT OR IGNORE INTO submission_payments';
+        $this->db->prepare($sql . '
+            (submission_id, form_id, field_id, amount, method, method_label, reference, payment_date, status,
+             reviewed_by_user_id, reviewed_by_name, reviewed_at, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?, ?, ?)
+        ')->execute([
+            $submissionId,
+            $formId,
+            'elavon_online',
+            $amount,
+            'credit_card',
+            'Card payment',
+            $reference,
+            date('Y-m-d'),
+            'verified',
+            'Online payment',
+            $now,
+            $now,
+        ]);
+    }
+
     /** @return bool False when the payment was already applied elsewhere or is no longer verified. */
     public function markApplied(int $id, int $invoiceId, float $appliedAmount): bool
     {

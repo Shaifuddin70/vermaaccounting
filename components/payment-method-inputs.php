@@ -10,8 +10,13 @@ declare(strict_types=1);
  * @var string $parentId HTML-escaped parent field id
  */
 $when = e($method['value']);
+$onlineCard = payment_method_uses_elavon($method);
+$instructions = (string) ($method['instructions'] ?? '');
+if ($onlineCard && $instructions === '') {
+    $instructions = 'After you submit this form, you’ll be able to pay securely by card.';
+}
 ?>
-<?php if ($method['instructions'] !== ''): ?>
+<?php if ($instructions !== ''): ?>
   <div class="yes-no-reason-wrap payment-instructions"
     data-yes-no-reason-for="<?= $parentId ?>"
     data-reason-when="<?= $when ?>"
@@ -19,11 +24,11 @@ $when = e($method['value']);
     data-reason-type="note"
     hidden>
     <i class="fas fa-circle-info" aria-hidden="true"></i>
-    <p><?= nl2br(e($method['instructions'])) ?></p>
+    <p><?= nl2br(e($instructions)) ?></p>
   </div>
 <?php endif; ?>
 
-<?php if ($method['reference'] !== 'off'):
+<?php if (!$onlineCard && $method['reference'] !== 'off'):
   $ref = payment_method_reference_field($field, $method);
   $refId = e($ref['id']);
 ?>
@@ -43,7 +48,7 @@ $when = e($method['value']);
   </div>
 <?php endif; ?>
 
-<?php if ($method['screenshot'] !== 'off'):
+<?php if (!$onlineCard && $method['screenshot'] !== 'off'):
   $shot = payment_method_screenshot_field($field, $method);
   $shotId = e($shot['id']);
 ?>

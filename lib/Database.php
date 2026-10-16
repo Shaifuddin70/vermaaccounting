@@ -770,7 +770,7 @@ final class Database
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_submission_payments_invoice ON submission_payments(invoice_id)');
     }
 
-    /** Card payments started from an invoice's public pay link (Elavon Converge hosted page). */
+    /** Card payments from an invoice or form-submission pay link (Elavon Converge hosted page). */
     private function ensureOnlinePaymentsTable(): void
     {
         if (!$this->columnExists('invoices', 'pay_token')) {
@@ -783,11 +783,23 @@ final class Database
             }
         }
 
+        if (!$this->columnExists('submissions', 'pay_token')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE submissions ADD COLUMN pay_token VARCHAR(64) DEFAULT NULL');
+                $this->pdo->exec('CREATE UNIQUE INDEX uq_submissions_pay_token ON submissions(pay_token)');
+            } else {
+                $this->pdo->exec('ALTER TABLE submissions ADD COLUMN pay_token TEXT DEFAULT NULL');
+                $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS uq_submissions_pay_token ON submissions(pay_token)');
+            }
+        }
+
         if ($this->driver === 'mysql') {
             $this->pdo->exec("
                 CREATE TABLE IF NOT EXISTS online_payments (
                     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                    invoice_id INT UNSIGNED NOT NULL,
+                    invoice_id INT UNSIGNED DEFAULT NULL,
+                    submission_id INT UNSIGNED DEFAULT NULL,
+                    submission_payment_id INT UNSIGNED DEFAULT NULL,
                     gateway VARCHAR(32) NOT NULL DEFAULT 'elavon',
                     environment VARCHAR(16) NOT NULL DEFAULT 'demo',
                     reference VARCHAR(32) NOT NULL,
@@ -803,33 +815,70 @@ final class Database
                     UNIQUE KEY uq_online_payments_reference (reference),
                     UNIQUE KEY uq_online_payments_txn (txn_id),
                     KEY idx_online_payments_invoice (invoice_id),
-                    CONSTRAINT fk_online_payments_invoice
-                        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+                    KEY idx_online_payments_submission (submission_id)
                 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
             ");
-            return;
+        } else {
+            $this->pdo->exec("
+                CREATE TABLE IF NOT EXISTS online_payments (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    invoice_id INTEGER,
+                    submission_id INTEGER,
+                    submission_payment_id INTEGER,
+                    gateway TEXT NOT NULL DEFAULT 'elavon',
+                    environment TEXT NOT NULL DEFAULT 'demo',
+                    reference TEXT NOT NULL UNIQUE,
+                    amount REAL NOT NULL DEFAULT 0,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    txn_id TEXT UNIQUE,
+                    approval_code TEXT,
+                    card_summary TEXT,
+                    result_message TEXT,
+                    invoice_payment_id INTEGER,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                )
+            ");
+            $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_online_payments_invoice ON online_payments(invoice_id)');
+            $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_online_payments_submission ON online_payments(submission_id)');
         }
 
-        $this->pdo->exec("
-            CREATE TABLE IF NOT EXISTS online_payments (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                invoice_id INTEGER NOT NULL,
-                gateway TEXT NOT NULL DEFAULT 'elavon',
-                environment TEXT NOT NULL DEFAULT 'demo',
-                reference TEXT NOT NULL UNIQUE,
-                amount REAL NOT NULL DEFAULT 0,
-                status TEXT NOT NULL DEFAULT 'pending',
-                txn_id TEXT UNIQUE,
-                approval_code TEXT,
-                card_summary TEXT,
-                result_message TEXT,
-                invoice_payment_id INTEGER,
-                created_at TEXT NOT NULL,
-                updated_at TEXT NOT NULL,
-                FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
-            )
-        ");
-        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_online_payments_invoice ON online_payments(invoice_id)');
+        $this->ensureOnlinePaymentsSubmissionColumns();
+    }
+
+    /** Allow online_payments rows for form submissions (invoice_id optional). */
+    private function ensureOnlinePaymentsSubmissionColumns(): void
+    {
+        if ($this->driver === 'mysql') {
+            $stmt = $this->pdo->query("SHOW COLUMNS FROM online_payments LIKE 'invoice_id'");
+            $col = $stmt ? $stmt->fetch() : false;
+            if (is_array($col) && strtoupper((string) ($col['Null'] ?? '')) === 'NO') {
+                try {
+                    $this->pdo->exec('ALTER TABLE online_payments DROP FOREIGN KEY fk_online_payments_invoice');
+                } catch (Throwable) {
+                    // Index may already be gone on older installs.
+                }
+                $this->pdo->exec('ALTER TABLE online_payments MODIFY invoice_id INT UNSIGNED NULL');
+            }
+        }
+
+        if (!$this->columnExists('online_payments', 'submission_id')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE online_payments ADD COLUMN submission_id INT UNSIGNED DEFAULT NULL AFTER invoice_id');
+                $this->pdo->exec('ALTER TABLE online_payments ADD KEY idx_online_payments_submission (submission_id)');
+            } else {
+                $this->pdo->exec('ALTER TABLE online_payments ADD COLUMN submission_id INTEGER');
+                $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_online_payments_submission ON online_payments(submission_id)');
+            }
+        }
+
+        if (!$this->columnExists('online_payments', 'submission_payment_id')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE online_payments ADD COLUMN submission_payment_id INT UNSIGNED DEFAULT NULL AFTER submission_id');
+            } else {
+                $this->pdo->exec('ALTER TABLE online_payments ADD COLUMN submission_payment_id INTEGER');
+            }
+        }
     }
 
     private function ensureInvoiceStatusColumns(): void

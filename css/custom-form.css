@@ -1025,6 +1025,33 @@
   margin-right: auto;
 }
 
+.custom-form-success-pay {
+  margin: 0 auto 1.25rem;
+  max-width: 28rem;
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #bbf7d0;
+}
+
+.custom-form-success-pay[hidden] {
+  display: none !important;
+}
+
+.custom-form-success-pay-note {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--verma-text);
+}
+
+.custom-form-success-pay-btn {
+  width: 100% !important;
+  display: inline-flex !important;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .custom-form-success-reset {
   width: auto;
   min-width: 12rem;

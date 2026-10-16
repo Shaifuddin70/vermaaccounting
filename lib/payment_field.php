@@ -47,12 +47,20 @@ function payment_default_methods(): array
         [
             'value' => 'card_payment',
             'label' => 'Card payment',
-            'instructions' => '',
-            'reference' => 'required',
-            'screenshot' => 'optional',
+            'instructions' => 'After you submit this form, you’ll be able to pay securely by card.',
+            'reference' => 'off',
+            'screenshot' => 'off',
             'recordAs' => 'credit_card',
         ],
     ];
+}
+
+/** True when this method should collect the card on Elavon after submit (not on the form). */
+function payment_method_uses_elavon(array $method): bool
+{
+    return function_exists('elavon_enabled')
+        && elavon_enabled()
+        && ($method['recordAs'] ?? '') === 'credit_card';
 }
 
 /** Best-guess invoice payment method key for a form payment method label. */
@@ -284,6 +292,11 @@ function payment_field_from_post(
     }
     $out[$name] = $method['value'];
 
+    // Card via Elavon is collected on the thank-you page, not here.
+    if (payment_method_uses_elavon($method)) {
+        return [$out, []];
+    }
+
     if ($method['reference'] !== 'off') {
         $refField = payment_method_reference_field($field, $method);
         $reference = trim((string) ($post[$refField['name']] ?? ''));
@@ -312,6 +325,46 @@ function payment_field_from_post(
     }
 
     return [$out, $filesMeta];
+}
+
+/**
+ * First payment field on this submission that should open Elavon after submit.
+ *
+ * @param array<string, mixed> $schema
+ * @param array<string, mixed> $data
+ * @return array{field: array<string, mixed>, method: array<string, string>, amount: float, payment: ?array<string, mixed>}|null
+ */
+function submission_elavon_pay_target(int $submissionId, array $schema, array $data): ?array
+{
+    if (!elavon_enabled()) {
+        return null;
+    }
+    $recorded = (new SubmissionPaymentRepository())->forSubmission($submissionId);
+    foreach ($schema['fields'] ?? [] as $field) {
+        if (($field['type'] ?? '') !== 'payment') {
+            continue;
+        }
+        $amount = payment_field_amount($field);
+        if ($amount <= 0) {
+            continue;
+        }
+        $value = trim((string) ($data[(string) ($field['name'] ?? '')] ?? ''));
+        $method = payment_method_for_value($field, $value);
+        if ($method === null || !payment_method_uses_elavon($method)) {
+            continue;
+        }
+        $payment = $recorded[(string) $field['id']] ?? null;
+        if ($payment && in_array((string) ($payment['status'] ?? ''), ['verified', 'applied'], true)) {
+            continue;
+        }
+        return [
+            'field' => $field,
+            'method' => $method,
+            'amount' => $amount,
+            'payment' => $payment,
+        ];
+    }
+    return null;
 }
 
 /** One-line summary for emails and exports, e.g. "E-transfer — Reference: ABC123". */
