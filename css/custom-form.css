@@ -1381,3 +1381,122 @@ body.form-embed-body {
 .prefill-decline-btn:hover {
   color: var(--verma-heading);
 }
+
+/* ============================================================
+   ONLINE INVOICE PAYMENT (/pay, /pay-return)
+   ============================================================ */
+.pay-container {
+  max-width: 560px;
+}
+
+.pay-summary {
+  margin: 0 0 1.25rem;
+  border: 1px solid var(--verma-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.pay-summary > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--verma-border);
+}
+
+.pay-summary > div:last-child {
+  border-bottom: none;
+}
+
+.pay-summary dt {
+  color: var(--verma-muted);
+  font-size: 0.9rem;
+}
+
+.pay-summary dd {
+  margin: 0;
+  font-weight: 600;
+  color: var(--verma-heading);
+  text-align: right;
+}
+
+.pay-summary-total {
+  background: #fafbfd;
+}
+
+.pay-summary-total dd {
+  font-size: 1.15rem;
+  color: var(--verma-navy);
+}
+
+.pay-button {
+  display: inline-flex;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  padding: 0.85rem 1.25rem;
+  border: none;
+  border-radius: 10px;
+  background: var(--verma-orange, #f97316);
+  color: #fff;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.pay-button:hover {
+  filter: brightness(0.95);
+  color: #fff;
+}
+
+.pay-secure {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  margin: 0.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--verma-muted);
+}
+
+.pay-secure svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.pay-test-mode {
+  margin: 0.75rem 0 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 0.8125rem;
+  text-align: center;
+}
+
+.pay-note {
+  margin: 0 0 1rem;
+  color: var(--verma-text);
+  line-height: 1.5;
+}
+
+.pay-alert {
+  margin: 0 0 1rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+}
+
+.pay-alert-success {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  color: #065f46;
+}
+
+.pay-alert-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}

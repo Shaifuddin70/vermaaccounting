@@ -39,6 +39,9 @@ $emailDraft = invoice_email_draft($invoice);
 $defaultSubject = (string) ($sendOld['email_subject'] ?? $emailDraft['subject']);
 $defaultMessage = (string) ($sendOld['email_message'] ?? $emailDraft['body']);
 $canManageTemplates = Auth::can('invoices.settings') && partner_user_id() === null;
+$onlineEnabled = elavon_enabled();
+$onlinePayUrl = invoice_can_pay_online($invoice) ? invoice_pay_url($invoice) : '';
+$onlineAttempts = online_payments_for_invoice($id);
 
 $payments = $repo->payments($id);
 $invoiceDue = (float) $dueState['invoice_due'];
@@ -248,6 +251,53 @@ require __DIR__ . '/includes/layout-start.php';
       <?php endif; ?>
     </section>
 
+    <?php if ($onlineEnabled || $onlineAttempts !== []): ?>
+    <section class="admin-card invoice-side-card" id="online-payment">
+      <h2 class="invoice-side-title">Online card payment</h2>
+      <?php if ($onlinePayUrl !== ''): ?>
+        <div class="admin-field">
+          <label for="pay-link">Payment link</label>
+          <div class="invoice-pay-link">
+            <input type="text" id="pay-link" value="<?= e($onlinePayUrl) ?>" readonly>
+            <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" data-copy-target="pay-link">Copy</button>
+          </div>
+          <small class="admin-field-hint">Included as a “Pay online” button when you email the invoice.
+            <?php if (elavon_config()['environment'] !== 'live'): ?><strong>Test mode</strong> — no real charges.<?php endif; ?></small>
+        </div>
+      <?php elseif ($onlineEnabled): ?>
+        <p class="invoice-side-empty">
+          <?= $amountDue <= 0 ? 'Nothing left to pay.' : 'Change the status from Draft to offer a payment link.' ?>
+        </p>
+      <?php endif; ?>
+      <?php if ($onlineAttempts !== []): ?>
+        <ul class="invoice-online-list">
+          <?php foreach (array_slice($onlineAttempts, 0, 6) as $attempt): ?>
+            <li class="invoice-online-item is-<?= e((string) $attempt['status']) ?>">
+              <div>
+                <strong><?= e(invoice_format_money((float) $attempt['amount'])) ?></strong>
+                <span class="invoice-online-status"><?= e(online_payment_status_label((string) $attempt['status'])) ?></span>
+                <span class="invoice-online-meta">
+                  <?= e(app_format_datetime((string) $attempt['created_at'], false)) ?>
+                  <?php if (($attempt['card_summary'] ?? '') !== ''): ?> · <?= e((string) $attempt['card_summary']) ?><?php endif; ?>
+                  <?php if (($attempt['result_message'] ?? '') !== '' && $attempt['status'] !== 'approved'): ?> · <?= e((string) $attempt['result_message']) ?><?php endif; ?>
+                </span>
+              </div>
+              <?php if ($attempt['status'] === 'pending' && $canRecordPayment): ?>
+                <form method="post" action="/admin/invoice-action">
+                  <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+                  <input type="hidden" name="id" value="<?= $id ?>">
+                  <input type="hidden" name="action" value="check_online_payment">
+                  <input type="hidden" name="reference" value="<?= e((string) $attempt['reference']) ?>">
+                  <button type="submit" class="invoice-side-link">Check status</button>
+                </form>
+              <?php endif; ?>
+            </li>
+          <?php endforeach; ?>
+        </ul>
+      <?php endif; ?>
+    </section>
+    <?php endif; ?>
+
     <?php if (Auth::can('invoices.send')): ?>
     <section class="admin-card invoice-side-card" id="send-invoice">
       <h2 class="invoice-side-title">Email to client</h2>
@@ -377,6 +427,20 @@ require __DIR__ . '/includes/layout-start.php';
 <?php endif; ?>
 
 <script>
+  document.querySelectorAll('[data-copy-target]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById(btn.getAttribute('data-copy-target'));
+      if (!input) return;
+      input.select();
+      (navigator.clipboard ? navigator.clipboard.writeText(input.value) : Promise.reject())
+        .catch(function () { document.execCommand('copy'); })
+        .finally(function () {
+          btn.textContent = 'Copied';
+          setTimeout(function () { btn.textContent = 'Copy'; }, 1500);
+        });
+    });
+  });
+
   (function () {
     var picker = document.getElementById('email-template');
     if (!picker) return;

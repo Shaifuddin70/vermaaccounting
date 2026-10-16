@@ -223,6 +223,7 @@ final class Database
         $this->ensureInvoiceStatusColumns();
         $this->ensureInvoicePaymentsTable();
         $this->ensureSubmissionPaymentsTable();
+        $this->ensureOnlinePaymentsTable();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -322,6 +323,7 @@ final class Database
         $this->ensureInvoiceStatusColumns();
         $this->ensureInvoicePaymentsTable();
         $this->ensureSubmissionPaymentsTable();
+        $this->ensureOnlinePaymentsTable();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -766,6 +768,68 @@ final class Database
         ");
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_submission_payments_status ON submission_payments(status)');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_submission_payments_invoice ON submission_payments(invoice_id)');
+    }
+
+    /** Card payments started from an invoice's public pay link (Elavon Converge hosted page). */
+    private function ensureOnlinePaymentsTable(): void
+    {
+        if (!$this->columnExists('invoices', 'pay_token')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN pay_token VARCHAR(64) DEFAULT NULL');
+                $this->pdo->exec('CREATE UNIQUE INDEX uq_invoices_pay_token ON invoices(pay_token)');
+            } else {
+                $this->pdo->exec('ALTER TABLE invoices ADD COLUMN pay_token TEXT DEFAULT NULL');
+                $this->pdo->exec('CREATE UNIQUE INDEX IF NOT EXISTS uq_invoices_pay_token ON invoices(pay_token)');
+            }
+        }
+
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec("
+                CREATE TABLE IF NOT EXISTS online_payments (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    invoice_id INT UNSIGNED NOT NULL,
+                    gateway VARCHAR(32) NOT NULL DEFAULT 'elavon',
+                    environment VARCHAR(16) NOT NULL DEFAULT 'demo',
+                    reference VARCHAR(32) NOT NULL,
+                    amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    status VARCHAR(16) NOT NULL DEFAULT 'pending',
+                    txn_id VARCHAR(64) DEFAULT NULL,
+                    approval_code VARCHAR(32) DEFAULT NULL,
+                    card_summary VARCHAR(64) DEFAULT NULL,
+                    result_message VARCHAR(255) DEFAULT NULL,
+                    invoice_payment_id INT UNSIGNED DEFAULT NULL,
+                    created_at VARCHAR(32) NOT NULL,
+                    updated_at VARCHAR(32) NOT NULL,
+                    UNIQUE KEY uq_online_payments_reference (reference),
+                    UNIQUE KEY uq_online_payments_txn (txn_id),
+                    KEY idx_online_payments_invoice (invoice_id),
+                    CONSTRAINT fk_online_payments_invoice
+                        FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+            return;
+        }
+
+        $this->pdo->exec("
+            CREATE TABLE IF NOT EXISTS online_payments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                invoice_id INTEGER NOT NULL,
+                gateway TEXT NOT NULL DEFAULT 'elavon',
+                environment TEXT NOT NULL DEFAULT 'demo',
+                reference TEXT NOT NULL UNIQUE,
+                amount REAL NOT NULL DEFAULT 0,
+                status TEXT NOT NULL DEFAULT 'pending',
+                txn_id TEXT UNIQUE,
+                approval_code TEXT,
+                card_summary TEXT,
+                result_message TEXT,
+                invoice_payment_id INTEGER,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
+            )
+        ");
+        $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_online_payments_invoice ON online_payments(invoice_id)');
     }
 
     private function ensureInvoiceStatusColumns(): void

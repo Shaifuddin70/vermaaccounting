@@ -95,6 +95,7 @@ require_once __DIR__ . '/SubmissionPaymentRepository.php';
 require_once __DIR__ . '/submission_payments.php';
 require_once __DIR__ . '/InvoicePdf.php';
 require_once __DIR__ . '/invoice_emails.php';
+require_once __DIR__ . '/elavon_payments.php';
 require_once __DIR__ . '/report_helpers.php';
 require_once __DIR__ . '/contact_form.php';
 require_once __DIR__ . '/document_submission_form.php';
