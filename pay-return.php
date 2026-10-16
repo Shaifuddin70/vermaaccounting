@@ -6,7 +6,11 @@ require_once __DIR__ . '/lib/bootstrap.php';
 header('X-Robots-Tag: noindex, nofollow');
 header('Referrer-Policy: no-referrer');
 
-$reference = preg_replace('/[^A-Za-z0-9-]/', '', (string) ($_GET['ref'] ?? '')) ?? '';
+// Converge may return via GET redirect (REDG) or HTTP POST depending on terminal settings.
+$incoming = array_merge($_GET, $_POST);
+
+$reference = preg_replace('/[^A-Za-z0-9-]/', '', (string) ($incoming['ref'] ?? $incoming['ssl_invoice_number'] ?? '')) ?? '';
+$txnId = preg_replace('/[^A-Za-z0-9-]/', '', (string) ($incoming['ssl_txn_id'] ?? '')) ?? '';
 $attempt = $reference !== '' ? online_payment_find_by_reference($reference) : null;
 
 $invoice = null;
@@ -35,8 +39,8 @@ if ($attempt) {
 
 $outcome = ['status' => 'unknown', 'message' => ''];
 if ($attempt && ($invoice || $submission)) {
-    // The redirect's own result fields are only a hint; Converge is queried before anything is recorded.
-    $outcome = elavon_confirm_payment($attempt, (string) ($_GET['ssl_txn_id'] ?? ''));
+    // Redirect params are only a hint; Converge is queried before anything is recorded.
+    $outcome = elavon_confirm_payment($attempt, $txnId);
     if ($invoice) {
         $invoice = (new InvoiceRepository())->find((int) $invoice['id']) ?? $invoice;
     }
@@ -96,7 +100,7 @@ include __DIR__ . '/components/header.php';
             We haven’t received confirmation from Elavon yet. If you completed the payment, there’s nothing more to do —
             we’ll update your records once it’s confirmed.
             <?php if ($payUrl !== ''): ?>
-              If you cancelled, you can <a href="<?= e($payUrl) ?>">try again</a>.
+              You can also <a href="<?= e($payUrl) ?>">return to the payment page</a> and use “Check payment status”.
             <?php endif; ?>
           </p>
         <?php else: ?>

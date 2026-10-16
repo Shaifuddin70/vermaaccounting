@@ -298,13 +298,14 @@ function elavon_start_submission_payment(array $submission, array $schema, array
  */
 function elavon_hosted_redirect(int $attemptId, string $reference, float $amount, string $description, string $email = ''): array
 {
+    // Prefer HTTPS return URLs when available — NextGen HPP often hangs redirecting to http:// local hosts.
     $returnUrl = app_base_url() . '/pay-return?ref=' . rawurlencode($reference);
     $fields = elavon_credentials() + [
         'ssl_transaction_type' => 'ccsale',
         'ssl_amount' => number_format($amount, 2, '.', ''),
         'ssl_invoice_number' => $reference,
         'ssl_description' => mb_substr($description, 0, 255),
-        'ssl_result_format' => 'HTML',
+        // REDG = redirect browser to our return URL (GET). Also accept POST on pay-return.php.
         'ssl_receipt_link_method' => 'REDG',
         'ssl_receipt_link_url' => $returnUrl,
     ];

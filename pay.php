@@ -11,6 +11,7 @@ $token = trim((string) ($_GET['t'] ?? $_POST['t'] ?? ''));
 $invoice = invoice_find_by_pay_token($token);
 $submission = $invoice ? null : submission_find_by_pay_token($token);
 $error = null;
+$success = null;
 
 $form = null;
 $schema = [];
@@ -24,29 +25,63 @@ if ($submission) {
     $payTarget = submission_elavon_pay_target((int) $submission['id'], $schema, $data);
 }
 
-if ($invoice && $_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (!Auth::verifyCsrf($_POST['csrf_token'] ?? '')) {
-        $error = 'Your session expired. Please try again.';
-    } else {
-        $result = elavon_start_invoice_payment($invoice);
-        if ($result['ok']) {
-            header('Location: ' . $result['redirect'], true, 303);
-            exit;
-        }
-        $error = $result['error'] ?? 'Could not start the payment.';
-    }
+$pendingAttempts = [];
+if ($invoice) {
+    $pendingAttempts = array_values(array_filter(
+        online_payments_for_invoice((int) $invoice['id']),
+        static fn (array $row): bool => ($row['status'] ?? '') === 'pending'
+    ));
+} elseif ($submission) {
+    $pendingAttempts = array_values(array_filter(
+        online_payments_for_submission((int) $submission['id']),
+        static fn (array $row): bool => ($row['status'] ?? '') === 'pending'
+    ));
 }
 
-if ($submission && $_SERVER['REQUEST_METHOD'] === 'POST') {
+if (($invoice || $submission) && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!Auth::verifyCsrf($_POST['csrf_token'] ?? '')) {
         $error = 'Your session expired. Please try again.';
     } else {
-        $result = elavon_start_submission_payment($submission, $schema, $data);
-        if ($result['ok']) {
-            header('Location: ' . $result['redirect'], true, 303);
-            exit;
+        $action = (string) ($_POST['action'] ?? 'pay');
+        if ($action === 'check_status') {
+            $confirmed = false;
+            foreach ($pendingAttempts as $attempt) {
+                $result = elavon_confirm_payment($attempt);
+                if ($result['status'] === 'approved') {
+                    $confirmed = true;
+                    $success = 'Payment confirmed and recorded.';
+                    break;
+                }
+                if ($result['status'] === 'declined') {
+                    $error = $result['message'] ?: 'The card was declined.';
+                } elseif ($error === null) {
+                    $error = $result['message'] ?: 'No matching card transaction was found yet.';
+                }
+            }
+            if ($confirmed) {
+                $error = null;
+                if ($invoice) {
+                    $invoice = (new InvoiceRepository())->find((int) $invoice['id']) ?? $invoice;
+                } elseif ($submission) {
+                    $payTarget = submission_elavon_pay_target((int) $submission['id'], $schema, $data);
+                }
+                $pendingAttempts = [];
+            }
+        } elseif ($invoice) {
+            $result = elavon_start_invoice_payment($invoice);
+            if ($result['ok']) {
+                header('Location: ' . $result['redirect'], true, 303);
+                exit;
+            }
+            $error = $result['error'] ?? 'Could not start the payment.';
+        } elseif ($submission) {
+            $result = elavon_start_submission_payment($submission, $schema, $data);
+            if ($result['ok']) {
+                header('Location: ' . $result['redirect'], true, 303);
+                exit;
+            }
+            $error = $result['error'] ?? 'Could not start the payment.';
         }
-        $error = $result['error'] ?? 'Could not start the payment.';
     }
 }
 
@@ -65,6 +100,7 @@ if ($invoice) {
     $seoDescription = 'Secure online invoice payment.';
     $heading = 'Invoice #' . (string) $invoice['invoice_number'];
     $subheading = $company['name'];
+    $alreadyPaid = $amountDue <= 0;
 } elseif ($submission) {
     $amountDue = $payTarget['amount'] ?? 0.0;
     $canPay = $payTarget !== null;
@@ -73,9 +109,18 @@ if ($invoice) {
     $seoDescription = 'Secure online advance payment.';
     $heading = $form ? (string) $form['title'] : 'Advance payment';
     $subheading = 'Advance payment';
+    $alreadyPaid = false;
+    foreach ((new SubmissionPaymentRepository())->forSubmission((int) $submission['id']) as $row) {
+        if (($row['method'] ?? '') === 'credit_card' && in_array((string) ($row['status'] ?? ''), ['verified', 'applied'], true)) {
+            $alreadyPaid = true;
+            $amountDue = (float) ($row['amount'] ?? 0);
+            break;
+        }
+    }
 } else {
     $amountDue = 0.0;
     $canPay = false;
+    $alreadyPaid = false;
     $pageTitle = 'Pay';
     $seoTitle = 'Payment | Verma Accounting';
     $seoDescription = 'Secure online payment.';
@@ -105,6 +150,9 @@ include __DIR__ . '/components/header.php';
           <p class="pay-note">This payment link is not valid. Please use the link from your email or form confirmation, or contact us at
             <a href="mailto:<?= e($company['payment_email']) ?>"><?= e($company['payment_email']) ?></a>.</p>
         <?php else: ?>
+          <?php if ($success !== null): ?>
+            <div class="pay-alert pay-alert-success" role="status"><?= e($success) ?></div>
+          <?php endif; ?>
           <?php if ($error !== null): ?>
             <div class="pay-alert pay-alert-error" role="alert"><?= e($error) ?></div>
           <?php endif; ?>
@@ -125,7 +173,7 @@ include __DIR__ . '/components/header.php';
             </dl>
           <?php endif; ?>
 
-          <?php if ($amountDue <= 0): ?>
+          <?php if ($alreadyPaid || ($invoice && $amountDue <= 0)): ?>
             <div class="pay-alert pay-alert-success"><?= $invoice ? 'This invoice is fully paid. Thank you!' : 'This advance is already paid. Thank you!' ?></div>
           <?php elseif (!$canPay): ?>
             <p class="pay-note">Online card payment is not available right now. Please pay by Interac e-Transfer to
@@ -133,6 +181,7 @@ include __DIR__ . '/components/header.php';
           <?php else: ?>
             <form method="post" action="/pay" class="pay-form">
               <input type="hidden" name="t" value="<?= e($token) ?>">
+              <input type="hidden" name="action" value="pay">
               <input type="hidden" name="csrf_token" value="<?= e(Auth::csrfToken()) ?>">
               <button type="submit" class="pay-button">Pay <?= e(invoice_format_money((float) $amountDue)) ?> by card</button>
             </form>
@@ -143,6 +192,16 @@ include __DIR__ . '/components/header.php';
             <?php if (elavon_config()['environment'] !== 'live'): ?>
               <p class="pay-test-mode">Test mode — no real charge will be made.</p>
             <?php endif; ?>
+          <?php endif; ?>
+
+          <?php if ($pendingAttempts !== []): ?>
+            <form method="post" action="/pay" class="pay-form" style="margin-top:1rem;">
+              <input type="hidden" name="t" value="<?= e($token) ?>">
+              <input type="hidden" name="action" value="check_status">
+              <input type="hidden" name="csrf_token" value="<?= e(Auth::csrfToken()) ?>">
+              <button type="submit" class="pay-button" style="background:#0f766e;">I already paid — check status</button>
+            </form>
+            <p class="pay-note">If Elavon approved your card but this page didn’t update, use the button above to pull the confirmation.</p>
           <?php endif; ?>
         <?php endif; ?>
       </div>
