@@ -27,8 +27,14 @@ RewriteRule ^index\.php$ / [R=301,L]
 RewriteCond %{THE_REQUEST} \s/admin/index\.php[\s?] [NC]
 RewriteRule ^admin/index\.php$ /admin/ [R=301,L]
 
-# 301 redirect .php URLs to clean URLs (public site, admin, and api)
+# Converge may POST back to /pay-return.php. A 301 to /pay-return would drop the
+# POST body and leave their "Continue" button spinning — rewrite internally instead.
+RewriteCond %{THE_REQUEST} \s/pay-return\.php[\s?] [NC]
+RewriteRule ^pay-return\.php$ pay-return.php [L]
+
+# 301 redirect other .php URLs to clean URLs (public site, admin, and api)
 RewriteCond %{THE_REQUEST} \s/[^.]+\.php [NC]
+RewriteCond %{THE_REQUEST} !\s/pay-return\.php[\s?] [NC]
 RewriteRule ^(.+)\.php$ /$1 [R=301,L]
 
 # Redirect /index to root
@@ -91,6 +97,13 @@ AddType video/mp4 .mp4
   Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()"
   Header always set Content-Security-Policy "upgrade-insecure-requests; frame-ancestors 'self'; base-uri 'self'; object-src 'self'"
   Header unset X-Powered-By
+
+  # Allow Converge Hosted Payment Page to complete its return/Continue handoff
+  # (applies to /pay-return and /pay-return.php after the internal rewrite).
+  <Files "pay-return.php">
+    Header always unset X-Frame-Options
+    Header always set Content-Security-Policy "upgrade-insecure-requests; frame-ancestors https://*.convergepay.com https://api.demo.convergepay.com https://api.convergepay.com https://*.elavon.com 'self'; base-uri 'self'; object-src 'self'"
+  </Files>
 </IfModule>
 
 # Text compression (Brotli where the server supports it, gzip otherwise)
