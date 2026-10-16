@@ -298,14 +298,15 @@ function elavon_start_submission_payment(array $submission, array $schema, array
  */
 function elavon_hosted_redirect(int $attemptId, string $reference, float $amount, string $description, string $email = ''): array
 {
-    // Prefer HTTPS return URLs when available — NextGen HPP often hangs redirecting to http:// local hosts.
-    $returnUrl = app_base_url() . '/pay-return?ref=' . rawurlencode($reference);
+    // Clean HTTPS URL (no query string). NextGen HPP often hangs on http:// or query-string return URLs.
+    // pay-return.php matches ssl_invoice_number from the redirect/POST body.
+    $returnUrl = rtrim(app_base_url(), '/') . '/pay-return';
     $fields = elavon_credentials() + [
         'ssl_transaction_type' => 'ccsale',
         'ssl_amount' => number_format($amount, 2, '.', ''),
         'ssl_invoice_number' => $reference,
         'ssl_description' => mb_substr($description, 0, 255),
-        // REDG = redirect browser to our return URL (GET). Also accept POST on pay-return.php.
+        // REDG = redirect to our site after the charge (also configure the same URL in Converge → HPP → Redirect URL).
         'ssl_receipt_link_method' => 'REDG',
         'ssl_receipt_link_url' => $returnUrl,
     ];
@@ -326,6 +327,43 @@ function elavon_hosted_redirect(int $attemptId, string $reference, float $amount
         'ok' => true,
         'redirect' => elavon_base_url() . '/hosted-payments?ssl_txn_auth_token=' . rawurlencode($token),
     ];
+}
+
+/**
+ * Re-query Converge for pending attempts and record any that were approved.
+ * Used when the hosted page charges the card but never redirects back to /pay-return.
+ *
+ * @return array{checked: int, approved: int, declined: int, pending: int, errors: list<string>}
+ */
+function elavon_confirm_pending_payments(int $limit = 25): array
+{
+    $out = ['checked' => 0, 'approved' => 0, 'declined' => 0, 'pending' => 0, 'errors' => []];
+    if (!elavon_enabled()) {
+        return $out;
+    }
+
+    $limit = max(1, min(100, $limit));
+    $stmt = Database::instance()->pdo()->query(
+        "SELECT * FROM online_payments WHERE status = 'pending' ORDER BY id ASC LIMIT " . $limit
+    );
+    $rows = $stmt ? $stmt->fetchAll() : [];
+    foreach ($rows as $attempt) {
+        $out['checked']++;
+        try {
+            $result = elavon_confirm_payment($attempt);
+            if ($result['status'] === 'approved') {
+                $out['approved']++;
+            } elseif ($result['status'] === 'declined') {
+                $out['declined']++;
+            } else {
+                $out['pending']++;
+            }
+        } catch (Throwable $e) {
+            $out['errors'][] = 'ref ' . ($attempt['reference'] ?? '?') . ': ' . $e->getMessage();
+            error_log('elavon_confirm_pending_payments: ' . $e->getMessage());
+        }
+    }
+    return $out;
 }
 
 /**

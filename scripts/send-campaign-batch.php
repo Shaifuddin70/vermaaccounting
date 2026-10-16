@@ -12,6 +12,7 @@ if (
 }
 
 require_once $projectRoot . '/lib/bootstrap.php';
+require_once $projectRoot . '/scripts/generate-blog.php';
 
 $holidayResult = process_due_holiday_sends();
 $birthdayResult = process_due_birthday_sends();
@@ -21,6 +22,8 @@ try {
 } catch (Throwable $e) {
     $cmsResult = ['published' => 0, 'expired' => 0, 'error' => $e->getMessage()];
 }
+$blogAiResult = cms_run_blog_ai_cron();
+$elavonPending = elavon_confirm_pending_payments(50);
 
 $env = app_environment();
 
@@ -51,6 +54,26 @@ if (PHP_SAPI === 'cli') {
     }
     if ($cmsResult['error'] !== null) {
         $line .= ' | website schedule error: ' . $cmsResult['error'];
+    }
+    if ($blogAiResult['generated'] > 0) {
+        $line .= sprintf(' | blog AI: generated=%d', $blogAiResult['generated']);
+    } elseif (($blogAiResult['skipped'] ?? null) !== null && $blogAiResult['skipped'] !== 'empty_queue' && $blogAiResult['skipped'] !== 'disabled' && $blogAiResult['skipped'] !== 'cooldown' && $blogAiResult['skipped'] !== 'no_api_key') {
+        $line .= ' | blog AI skipped: ' . $blogAiResult['skipped'];
+    }
+    if ($blogAiResult['errors'] !== []) {
+        $line .= ' | blog AI errors: ' . implode('; ', $blogAiResult['errors']);
+    }
+    if ($elavonPending['checked'] > 0 || $elavonPending['approved'] > 0) {
+        $line .= sprintf(
+            ' | elavon pending: checked=%d approved=%d declined=%d still=%d',
+            $elavonPending['checked'],
+            $elavonPending['approved'],
+            $elavonPending['declined'],
+            $elavonPending['pending']
+        );
+    }
+    if ($elavonPending['errors'] !== []) {
+        $line .= ' | elavon errors: ' . implode('; ', $elavonPending['errors']);
     }
     if ($result['campaigns'] === 0) {
         $diag = campaign_queue_diagnostics();
@@ -83,4 +106,6 @@ echo json_encode([
     'holidays' => $holidayResult,
     'birthdays' => $birthdayResult,
     'website' => $cmsResult,
+    'blog_ai' => $blogAiResult,
+    'elavon_pending' => $elavonPending,
 ] + $result, JSON_UNESCAPED_UNICODE);
