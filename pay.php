@@ -70,14 +70,21 @@ if (($invoice || $submission) && $_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($invoice) {
             $result = elavon_start_invoice_payment($invoice);
             if ($result['ok']) {
-                header('Location: ' . $result['redirect'], true, 303);
+                // Stay on our site and poll Converge — NextGen HPP "Continue" often never returns.
+                $wait = '/pay-wait?t=' . rawurlencode($token)
+                    . '&ref=' . rawurlencode((string) ($result['reference'] ?? ''))
+                    . '&hpp=' . rawurlencode((string) ($result['redirect'] ?? ''));
+                header('Location: ' . $wait, true, 303);
                 exit;
             }
             $error = $result['error'] ?? 'Could not start the payment.';
         } elseif ($submission) {
             $result = elavon_start_submission_payment($submission, $schema, $data);
             if ($result['ok']) {
-                header('Location: ' . $result['redirect'], true, 303);
+                $wait = '/pay-wait?t=' . rawurlencode($token)
+                    . '&ref=' . rawurlencode((string) ($result['reference'] ?? ''))
+                    . '&hpp=' . rawurlencode((string) ($result['redirect'] ?? ''));
+                header('Location: ' . $wait, true, 303);
                 exit;
             }
             $error = $result['error'] ?? 'Could not start the payment.';

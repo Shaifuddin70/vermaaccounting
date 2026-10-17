@@ -213,7 +213,7 @@ function online_payment_update(int $id, array $changes): void
 /**
  * Start a hosted-page payment for the invoice's full balance.
  *
- * @return array{ok: bool, redirect?: string, error?: string}
+ * @return array{ok: bool, redirect?: string, reference?: string, error?: string}
  */
 function elavon_start_invoice_payment(array $invoice): array
 {
@@ -244,7 +244,7 @@ function elavon_start_invoice_payment(array $invoice): array
  *
  * @param array<string, mixed> $schema
  * @param array<string, mixed> $data
- * @return array{ok: bool, redirect?: string, error?: string}
+ * @return array{ok: bool, redirect?: string, reference?: string, error?: string}
  */
 function elavon_start_submission_payment(array $submission, array $schema, array $data): array
 {
@@ -294,7 +294,7 @@ function elavon_start_submission_payment(array $submission, array $schema, array
 }
 
 /**
- * @return array{ok: bool, redirect?: string, error?: string}
+ * @return array{ok: bool, redirect?: string, reference?: string, error?: string}
  */
 function elavon_hosted_redirect(int $attemptId, string $reference, float $amount, string $description, string $email = ''): array
 {
@@ -325,6 +325,7 @@ function elavon_hosted_redirect(int $attemptId, string $reference, float $amount
 
     return [
         'ok' => true,
+        'reference' => $reference,
         'redirect' => elavon_base_url() . '/hosted-payments?ssl_txn_auth_token=' . rawurlencode($token),
     ];
 }
