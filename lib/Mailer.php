@@ -93,7 +93,10 @@ final class Mailer
 
         $textBody = $textBody ?? $this->htmlToText($htmlBody);
         $encodedSubject = $this->encodeHeader($subject);
-        $extraHeaders = $this->listUnsubscribeHeaders($trackingMeta);
+        $extraHeaders = array_merge(
+            $this->listUnsubscribeHeaders($trackingMeta),
+            $this->providerTrackingHeaders($trackingMeta)
+        );
 
         if ($attachments !== []) {
             $mixedBoundary = 'va_mixed_' . bin2hex(random_bytes(10));
@@ -222,6 +225,30 @@ final class Mailer
     private function smtpEhloHost(): string
     {
         return $this->mailDomain();
+    }
+
+    /**
+     * Provider-specific headers (Mailgun click tracking rewrites links through a
+     * custom domain; a bad cert there breaks Pay buttons with ERR_CERT / HSTS).
+     *
+     * @param array<string, mixed> $meta
+     * @return list<string>
+     */
+    private function providerTrackingHeaders(array $meta): array
+    {
+        $headers = [];
+        // Default off for transactional mail so payment links stay on vermaaccounting.ca.
+        // Campaigns can opt in with mailgun_track_clicks => true.
+        $trackClicks = array_key_exists('mailgun_track_clicks', $meta)
+            ? !empty($meta['mailgun_track_clicks'])
+            : (($meta['kind'] ?? '') === 'campaign');
+        if (!$trackClicks) {
+            $headers[] = 'X-Mailgun-Track-Clicks: no';
+        }
+        if (array_key_exists('mailgun_track_opens', $meta) && empty($meta['mailgun_track_opens'])) {
+            $headers[] = 'X-Mailgun-Track-Opens: no';
+        }
+        return $headers;
     }
 
     /**

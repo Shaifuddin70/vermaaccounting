@@ -134,6 +134,8 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
         [
             'kind' => 'invoice',
             'enabled' => false,
+            // Keep Pay links on vermaaccounting.ca (Mailgun click tracking uses email.mg.* SSL).
+            'mailgun_track_clicks' => false,
             'ref_type' => 'invoice',
             'ref_id' => (int) ($invoice['id'] ?? 0),
             'client_id' => !empty($invoice['client_id']) ? (int) $invoice['client_id'] : null,
