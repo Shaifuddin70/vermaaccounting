@@ -208,7 +208,6 @@ if ($action === 'send_email') {
 
 if ($action === 'save_recurring') {
     Auth::requireCapability('invoices.edit');
-    $user = Auth::user();
     $months = array_map('intval', (array) ($_POST['months'] ?? []));
     $day = (int) ($_POST['day_of_month'] ?? 1);
     $dueDays = (int) ($_POST['due_days'] ?? 14);
@@ -232,8 +231,8 @@ if ($action === 'save_recurring') {
         'due_days' => $dueDays,
         'auto_email' => $autoEmail,
         'enabled' => $enabled,
-        'created_by_user_id' => $user['id'] ?? null,
-        'created_by_name' => (string) ($user['name'] ?? ''),
+        'created_by_user_id' => Auth::userId(),
+        'created_by_name' => Auth::userName(),
     ]);
     ActivityLog::record('invoice.recurring_saved', 'invoice', $id, [
         'schedule_id' => $scheduleId,
