@@ -15,34 +15,11 @@ $siteCrumbs = $siteCrumbs ?? CmsNavigation::breadcrumbs($canonicalPath);
 ?>
   <a class="skip-link" href="#main-content">Skip to main content</a>
   <header class="sh<?= count($siteCrumbs) > 1 ? ' sh--crumbs' : '' ?>" id="siteHeader">
-    <div class="sh-top">
     <div class="sh-bar">
       <a href="/" class="sh-logo" aria-label="Verma Accounting home">
         <img src="<?= asset('images/verma-accounting-logo-340.webp') ?>" alt="Verma Accounting &amp; Financial Services" width="170" height="41" />
       </a>
 
-      <div class="sh-actions">
-        <?php if ($sitePhoneHref !== ''): ?>
-          <a href="<?= e($sitePhoneHref) ?>" class="sh-phone" aria-label="Call <?= e($sitePhoneLabel) ?>">
-            <span class="sh-phone-icon" aria-hidden="true"><i class="fas fa-phone"></i></span>
-            <span class="sh-phone-text"><small>Call us</small><?= e($sitePhoneLabel) ?></span>
-          </a>
-        <?php endif; ?>
-        <?php if ($siteMenu['button_label'] !== ''): ?>
-          <a href="<?= e($siteMenu['button_url']) ?>" class="sh-btn sh-btn-primary sh-book" aria-label="<?= e($siteMenu['button_label']) ?>">
-            <i class="fas fa-calendar-check" aria-hidden="true"></i>
-            <span class="sh-book-text"><?= e($siteMenu['button_label']) ?></span>
-          </a>
-        <?php endif; ?>
-        <button type="button" class="sh-burger" aria-controls="shDrawer" aria-expanded="false" aria-label="Open menu">
-          <span></span><span></span><span></span>
-        </button>
-      </div>
-    </div>
-    </div>
-
-    <div class="sh-navrow">
-    <div class="sh-bar">
       <nav class="sh-nav" aria-label="Main">
         <ul class="sh-list">
           <?php foreach ($siteNav as $item): ?>
@@ -73,7 +50,24 @@ $siteCrumbs = $siteCrumbs ?? CmsNavigation::breadcrumbs($canonicalPath);
           <?php endforeach; ?>
         </ul>
       </nav>
-    </div>
+
+      <div class="sh-actions">
+        <?php if ($sitePhoneHref !== ''): ?>
+          <a href="<?= e($sitePhoneHref) ?>" class="sh-phone" aria-label="Call <?= e($sitePhoneLabel) ?>">
+            <span class="sh-phone-icon" aria-hidden="true"><i class="fas fa-phone"></i></span>
+            <span class="sh-phone-text"><small>Call us</small><?= e($sitePhoneLabel) ?></span>
+          </a>
+        <?php endif; ?>
+        <?php if ($siteMenu['button_label'] !== ''): ?>
+          <a href="<?= e($siteMenu['button_url']) ?>" class="sh-btn sh-btn-primary sh-book" aria-label="<?= e($siteMenu['button_label']) ?>">
+            <i class="fas fa-calendar-check" aria-hidden="true"></i>
+            <span class="sh-book-text"><?= e($siteMenu['button_label']) ?></span>
+          </a>
+        <?php endif; ?>
+        <button type="button" class="sh-burger" aria-controls="shDrawer" aria-expanded="false" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
     </div>
 
     <?php if (count($siteCrumbs) > 1): ?>

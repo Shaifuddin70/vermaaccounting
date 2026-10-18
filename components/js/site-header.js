@@ -16,8 +16,8 @@
   var fullHeight = header.offsetHeight;
 
   /*
-   * The menu row can wrap, so page offsets follow the real header height. While the breadcrumb row is
-   * tucked away only the sticky offset changes, so the page content does not jump.
+   * Page offsets follow the real header height (main bar + optional crumbs). While the breadcrumb
+   * row is tucked away only the sticky offset changes, so the page content does not jump.
    */
   function measure() {
     var height = header.offsetHeight;

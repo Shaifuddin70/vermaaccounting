@@ -1,11 +1,10 @@
-/* Public site header: logo + actions row, menu row, breadcrumb row; mega menus; mobile drawer. */
+/* Public site header: logo + nav + CTA in one row; optional breadcrumb; mega menus; mobile drawer. */
 
 :root {
   --sh-gap: 14px;
-  --sh-h: 68px;
-  --sh-nav-h: 50px;
+  --sh-h: 72px;
   --sh-crumb-h: 38px;
-  --sh-offset: calc(var(--sh-h) + var(--sh-nav-h));
+  --sh-offset: var(--sh-h);
   --sh-navy: #1e3a8a;
   --sh-ink: #0f172a;
   --sh-text: #1e293b;
@@ -17,7 +16,7 @@
 }
 
 :root:has(.sh--crumbs) {
-  --sh-offset: calc(var(--sh-h) + var(--sh-nav-h) + var(--sh-crumb-h));
+  --sh-offset: calc(var(--sh-h) + var(--sh-crumb-h));
 }
 
 html {
@@ -60,17 +59,13 @@ html {
   margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem 1rem;
+  height: var(--sh-h);
   padding: 0 1.25rem;
 }
 
-.sh-top .sh-bar {
-  height: var(--sh-h);
-  justify-content: space-between;
-}
-
-.sh-navrow .sh-bar {
-  min-height: var(--sh-nav-h);
+.sh > .sh-bar {
+  justify-content: flex-start;
 }
 
 /* ---------- Breadcrumbs ---------- */
@@ -86,7 +81,7 @@ html {
     border-color 0.25s ease;
 }
 
-/* Scrolling down tucks the breadcrumb row away; the logo and menu rows stay. */
+/* Scrolling down tucks the breadcrumb row away; the main bar stays. */
 .sh.is-condensed .sh-crumbs {
   max-height: 0;
   opacity: 0;
@@ -180,18 +175,18 @@ html {
 .sh-nav {
   flex: 1 1 auto;
   display: flex;
+  justify-content: center;
   min-width: 0;
-  margin-left: -0.7rem;
 }
 
 .sh-list {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 0.1rem 0.15rem;
   list-style: none;
   margin: 0;
-  padding: 0.3rem 0;
+  padding: 0;
 }
 
 .sh-item {
@@ -377,6 +372,7 @@ html {
   align-items: center;
   gap: 0.4rem;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .sh-phone {
@@ -510,6 +506,32 @@ body.sh-menu-open {
 
 /* ---------- Responsive ---------- */
 
+@media (min-width: 1200px) {
+  :root {
+    --sh-h: 78px;
+  }
+
+  .sh-logo img {
+    width: 188px;
+  }
+
+  .sh-link {
+    height: 42px;
+    padding: 0 0.95rem;
+    font-size: 1.05rem;
+  }
+}
+
+@media (min-width: 1400px) {
+  .sh-logo img {
+    width: 200px;
+  }
+
+  .sh-link {
+    font-size: 1.08rem;
+  }
+}
+
 @media (max-width: 1179px) {
   .sh-bar {
     padding: 0 1rem;
@@ -525,12 +547,12 @@ body.sh-menu-open {
   :root {
     --sh-gap: 10px;
     --sh-h: 62px;
-    --sh-nav-h: 0px;
     --sh-crumb-h: 36px;
   }
 
-  .sh-top .sh-bar {
+  .sh > .sh-bar {
     padding: 0 0.6rem 0 1rem;
+    justify-content: space-between;
   }
 
   .sh-logo img {
@@ -538,7 +560,7 @@ body.sh-menu-open {
     height: 38px;
   }
 
-  .sh-navrow,
+  .sh-nav,
   .sh-book {
     display: none;
   }
