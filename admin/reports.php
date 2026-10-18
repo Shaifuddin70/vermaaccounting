@@ -49,6 +49,24 @@ $avgInvoice = $summary['billed_count'] > 0
     ? invoice_money($summary['billed'] / $summary['billed_count'])
     : 0.0;
 
+$tz = new DateTimeZone(date_default_timezone_get());
+$today = new DateTimeImmutable('today', $tz);
+$monthAnchor = DateTimeImmutable::createFromFormat('Y-m-d', $period['from'], $tz)
+    ?: $today;
+$monthStart = $monthAnchor->modify('first day of this month');
+$monthEnd = $monthStart->modify('last day of this month');
+$prevMonthStart = $monthStart->modify('first day of last month');
+$prevMonthEnd = $monthStart->modify('last day of last month');
+$nextMonthStart = $monthStart->modify('first day of next month');
+$nextMonthEnd = $monthStart->modify('last day of next month');
+$nextMonthDisabled = $nextMonthStart > $today;
+$monthLabel = $monthStart->format('F Y');
+$monthStartYmd = $monthStart->format('Y-m-d');
+$monthEndYmd = $monthEnd->format('Y-m-d');
+$monthToTodayYmd = ($monthEnd < $today ? $monthEnd : $today)->format('Y-m-d');
+$isFullMonth = $period['from'] === $monthStartYmd
+    && ($period['to'] === $monthEndYmd || $period['to'] === $monthToTodayYmd);
+
 $pageTitle = 'Business reports';
 $activeNav = 'reports';
 
@@ -60,6 +78,31 @@ require __DIR__ . '/includes/layout-start.php';
 
 <div class="admin-card reports-filter-card">
   <form method="get" action="/admin/reports" class="reports-filter-form" id="reports-filter-form">
+    <div class="reports-month-nav" role="group" aria-label="Month filter">
+      <a class="reports-month-arrow"
+        href="/admin/reports?from=<?= e($prevMonthStart->format('Y-m-d')) ?>&amp;to=<?= e($prevMonthEnd->format('Y-m-d')) ?>"
+        aria-label="Previous month, <?= e($prevMonthStart->format('F Y')) ?>">
+        <span aria-hidden="true">‹</span>
+      </a>
+      <span class="reports-month-label"><?= e($monthLabel) ?></span>
+      <?php if ($nextMonthDisabled): ?>
+        <span class="reports-month-arrow is-disabled" aria-disabled="true" title="Next month is not available yet">
+          <span aria-hidden="true">›</span>
+        </span>
+      <?php else: ?>
+        <a class="reports-month-arrow"
+          href="/admin/reports?from=<?= e($nextMonthStart->format('Y-m-d')) ?>&amp;to=<?= e(($nextMonthEnd < $today ? $nextMonthEnd : $today)->format('Y-m-d')) ?>"
+          aria-label="Next month, <?= e($nextMonthStart->format('F Y')) ?>">
+          <span aria-hidden="true">›</span>
+        </a>
+      <?php endif; ?>
+      <?php if (!$isFullMonth): ?>
+        <a class="reports-month-jump"
+          href="/admin/reports?from=<?= e($monthStartYmd) ?>&amp;to=<?= e($monthToTodayYmd) ?>">
+          Whole month
+        </a>
+      <?php endif; ?>
+    </div>
     <div class="reports-date-pickers">
       <div class="admin-field">
         <label for="report-from">From</label>
@@ -69,7 +112,7 @@ require __DIR__ . '/includes/layout-start.php';
         <label for="report-to">To</label>
         <input type="date" id="report-to" name="to" value="<?= e($period['to']) ?>" required>
       </div>
-      <button type="submit" class="admin-btn admin-btn-primary">Apply</button>
+      <button type="submit" class="admin-btn admin-btn-primary admin-btn-sm">Apply</button>
     </div>
   </form>
 </div>
