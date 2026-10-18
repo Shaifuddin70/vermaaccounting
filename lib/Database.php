@@ -224,6 +224,7 @@ final class Database
         $this->ensureInvoicePaymentsTable();
         $this->ensureSubmissionPaymentsTable();
         $this->ensureOnlinePaymentsTable();
+        $this->ensureInvoiceRecurringSchedulesTable();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -324,6 +325,7 @@ final class Database
         $this->ensureInvoicePaymentsTable();
         $this->ensureSubmissionPaymentsTable();
         $this->ensureOnlinePaymentsTable();
+        $this->ensureInvoiceRecurringSchedulesTable();
         $this->ensureEmailTrackingTable();
         $this->ensureContactForm();
         $this->ensureDocumentSubmissionForm();
@@ -804,6 +806,7 @@ final class Database
                     environment VARCHAR(16) NOT NULL DEFAULT 'demo',
                     reference VARCHAR(32) NOT NULL,
                     amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    base_amount DECIMAL(12, 2) DEFAULT NULL,
                     status VARCHAR(16) NOT NULL DEFAULT 'pending',
                     txn_id VARCHAR(64) DEFAULT NULL,
                     approval_code VARCHAR(32) DEFAULT NULL,
@@ -829,6 +832,7 @@ final class Database
                     environment TEXT NOT NULL DEFAULT 'demo',
                     reference TEXT NOT NULL UNIQUE,
                     amount REAL NOT NULL DEFAULT 0,
+                    base_amount REAL,
                     status TEXT NOT NULL DEFAULT 'pending',
                     txn_id TEXT UNIQUE,
                     approval_code TEXT,
@@ -877,6 +881,17 @@ final class Database
                 $this->pdo->exec('ALTER TABLE online_payments ADD COLUMN submission_payment_id INT UNSIGNED DEFAULT NULL AFTER submission_id');
             } else {
                 $this->pdo->exec('ALTER TABLE online_payments ADD COLUMN submission_payment_id INTEGER');
+            }
+        }
+
+        // Base balance amount (excludes optional card fee stored in amount as the card total).
+        if (!$this->columnExists('online_payments', 'base_amount')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec('ALTER TABLE online_payments ADD COLUMN base_amount DECIMAL(12, 2) DEFAULT NULL AFTER amount');
+                $this->pdo->exec('UPDATE online_payments SET base_amount = amount WHERE base_amount IS NULL');
+            } else {
+                $this->pdo->exec('ALTER TABLE online_payments ADD COLUMN base_amount REAL');
+                $this->pdo->exec('UPDATE online_payments SET base_amount = amount WHERE base_amount IS NULL');
             }
         }
     }
@@ -1394,6 +1409,53 @@ final class Database
         ');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_campaigns_status ON email_campaigns(status)');
         $this->pdo->exec('CREATE INDEX IF NOT EXISTS idx_recipients_campaign ON email_campaign_recipients(campaign_id)');
+    }
+
+    private function ensureInvoiceRecurringSchedulesTable(): void
+    {
+        if ($this->driver === 'mysql') {
+            $this->pdo->exec("
+                CREATE TABLE IF NOT EXISTS invoice_recurring_schedules (
+                    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                    template_invoice_id INT UNSIGNED NOT NULL,
+                    day_of_month TINYINT UNSIGNED NOT NULL DEFAULT 1,
+                    months_json VARCHAR(64) NOT NULL DEFAULT '[1,2,3,4,5,6,7,8,9,10,11,12]',
+                    due_days SMALLINT UNSIGNED NOT NULL DEFAULT 14,
+                    auto_email TINYINT(1) NOT NULL DEFAULT 1,
+                    enabled TINYINT(1) NOT NULL DEFAULT 1,
+                    last_run_ym VARCHAR(7) DEFAULT NULL,
+                    last_invoice_id INT UNSIGNED DEFAULT NULL,
+                    created_by_user_id INT UNSIGNED DEFAULT NULL,
+                    created_by_name VARCHAR(191) NOT NULL DEFAULT '',
+                    created_at VARCHAR(32) NOT NULL,
+                    updated_at VARCHAR(32) NOT NULL,
+                    UNIQUE KEY uq_invoice_recurring_template (template_invoice_id),
+                    KEY idx_invoice_recurring_enabled (enabled)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+            ");
+            return;
+        }
+
+        $this->pdo->exec("
+            CREATE TABLE IF NOT EXISTS invoice_recurring_schedules (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                template_invoice_id INTEGER NOT NULL UNIQUE,
+                day_of_month INTEGER NOT NULL DEFAULT 1,
+                months_json TEXT NOT NULL DEFAULT '[1,2,3,4,5,6,7,8,9,10,11,12]',
+                due_days INTEGER NOT NULL DEFAULT 14,
+                auto_email INTEGER NOT NULL DEFAULT 1,
+                enabled INTEGER NOT NULL DEFAULT 1,
+                last_run_ym TEXT,
+                last_invoice_id INTEGER,
+                created_by_user_id INTEGER,
+                created_by_name TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        ");
+        $this->pdo->exec(
+            'CREATE INDEX IF NOT EXISTS idx_invoice_recurring_enabled ON invoice_recurring_schedules(enabled)'
+        );
     }
 
     private function ensureHolidaySchedulesTable(): void

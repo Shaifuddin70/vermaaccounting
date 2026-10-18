@@ -24,6 +24,7 @@ try {
 }
 $blogAiResult = cms_run_blog_ai_cron();
 $elavonPending = elavon_confirm_pending_payments(50);
+$recurringInvoices = process_due_invoice_recurrences();
 
 $env = app_environment();
 
@@ -74,6 +75,17 @@ if (PHP_SAPI === 'cli') {
     }
     if ($elavonPending['errors'] !== []) {
         $line .= ' | elavon errors: ' . implode('; ', $elavonPending['errors']);
+    }
+    if ($recurringInvoices['created'] > 0 || $recurringInvoices['checked'] > 0) {
+        $line .= sprintf(
+            ' | recurring invoices: checked=%d created=%d emailed=%d',
+            $recurringInvoices['checked'],
+            $recurringInvoices['created'],
+            $recurringInvoices['emailed']
+        );
+    }
+    if ($recurringInvoices['errors'] !== []) {
+        $line .= ' | recurring errors: ' . implode('; ', $recurringInvoices['errors']);
     }
     if ($result['campaigns'] === 0) {
         $diag = campaign_queue_diagnostics();

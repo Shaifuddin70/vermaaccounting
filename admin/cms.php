@@ -70,6 +70,7 @@ require __DIR__ . '/includes/layout-start.php';
     <div class="admin-header-actions">
       <a class="admin-btn" href="/admin/cms-edit?type=page">New page</a>
       <a class="admin-btn admin-btn-secondary" href="/admin/cms-edit?type=article">New article</a>
+      <a class="admin-btn admin-btn-secondary" href="/admin/cms-blog-generate">AI blog</a>
       <a class="admin-btn admin-btn-secondary" href="/admin/cms-edit?type=city">New city page</a>
     </div>
   <?php endif; ?>
@@ -159,6 +160,7 @@ require __DIR__ . '/includes/layout-start.php';
       <?php if ($caps['redirects']): ?><li><a href="/admin/cms-redirects">Redirects</a></li><li><a href="/admin/cms-migration">Migration</a></li><?php endif; ?>
       <?php if ($caps['code']): ?><li><a href="/admin/cms-site-config">Site configuration</a></li><?php endif; ?>
       <?php if ($caps['edit']): ?><li><a href="/admin/cms-city-generate">Generate city page drafts</a></li><?php endif; ?>
+      <?php if ($caps['edit']): ?><li><a href="/admin/cms-blog-generate">AI blog generator</a></li><?php endif; ?>
     </ul>
   </div>
 </div>

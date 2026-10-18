@@ -83,16 +83,13 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
     $subject = trim((string) ($subject ?? ''));
     $subject = invoice_template_fill($subject !== '' ? $subject : $draft['subject'], $invoice);
 
+    $payUrl = invoice_can_pay_online($invoice) ? invoice_pay_url($invoice) : '';
+
     $bodyHtml = '';
-    foreach (preg_split('/\n{2,}/', $body) ?: [] as $paragraph) {        if (trim($paragraph) !== '') {
+    foreach (preg_split('/\n{2,}/', $body) ?: [] as $paragraph) {
+        if (trim($paragraph) !== '') {
             $bodyHtml .= '<p style="margin:0 0 16px;color:#334155;">' . nl2br(e(trim($paragraph))) . '</p>';
         }
-    }
-    $payUrl = invoice_can_pay_online($invoice) ? invoice_pay_url($invoice) : '';
-    if ($payUrl !== '') {
-        $bodyHtml .= '<p style="margin:0 0 20px;"><a href="' . e($payUrl) . '" style="display:inline-block;padding:12px 22px;'
-            . 'background:#f97316;color:#ffffff;font-weight:700;text-decoration:none;border-radius:8px;">Pay '
-            . e($amountDue) . ' online</a></p>';
     }
     $bodyHtml .= '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 20px;">'
         . '<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;width:40%;">Amount due</td>'
@@ -102,6 +99,15 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
         . '<td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#334155;text-align:right;">'
         . e($due) . '</td></tr>'
         . '</table>';
+    if ($payUrl !== '') {
+        $bodyHtml .= '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px;">'
+            . '<tr><td style="border-radius:8px;background:#f97316;">'
+            . '<a href="' . e($payUrl) . '" style="display:inline-block;padding:14px 28px;font-size:16px;'
+            . 'font-weight:700;color:#ffffff;text-decoration:none;">Pay ' . e($amountDue) . ' by card</a>'
+            . '</td></tr></table>'
+            . '<p style="margin:0 0 8px;font-size:13px;color:#64748b;">Or open this link: '
+            . '<a href="' . e($payUrl) . '" style="color:#1e3a8a;word-break:break-all;">' . e($payUrl) . '</a></p>';
+    }
 
     $html = submission_email_layout(
         'Invoice #' . $number,

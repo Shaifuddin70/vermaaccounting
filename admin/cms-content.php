@@ -69,6 +69,9 @@ require __DIR__ . '/includes/layout-start.php';
         <?php if (Auth::can('cms.publish')): ?><a href="/admin/cms-city-defaults" class="admin-btn admin-btn-secondary">Default content</a><?php endif; ?>
         <a href="/admin/cms-city-generate" class="admin-btn admin-btn-secondary">Add city pages</a>
       <?php endif; ?>
+      <?php if ($type === 'article' && Auth::can('cms.edit')): ?>
+        <a href="/admin/cms-blog-generate" class="admin-btn admin-btn-secondary">AI blog</a>
+      <?php endif; ?>
       <a href="/admin/cms-edit?type=<?= e($type !== '' ? $type : 'page') ?>" class="admin-btn">+ New <?= e(strtolower(CmsContentRepository::TYPES[$type !== '' ? $type : 'page'])) ?></a>
     </div>
   <?php endif; ?>

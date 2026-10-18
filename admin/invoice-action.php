@@ -206,5 +206,96 @@ if ($action === 'send_email') {
     exit;
 }
 
+if ($action === 'save_recurring') {
+    Auth::requireCapability('invoices.edit');
+    $user = Auth::user();
+    $months = array_map('intval', (array) ($_POST['months'] ?? []));
+    $day = (int) ($_POST['day_of_month'] ?? 1);
+    $dueDays = (int) ($_POST['due_days'] ?? 14);
+    $autoEmail = isset($_POST['auto_email']);
+    $enabled = isset($_POST['enabled']);
+
+    if ($day < 1 || $day > 31) {
+        $_SESSION['flash_error'] = 'Choose a day of the month between 1 and 31.';
+        header('Location: ' . $redirect . '#recurring-invoice');
+        exit;
+    }
+    if ($repo->itemsForInvoice($id) === []) {
+        $_SESSION['flash_error'] = 'Add at least one service line before enabling recurring invoices.';
+        header('Location: ' . $redirect . '#recurring-invoice');
+        exit;
+    }
+
+    $scheduleId = (new InvoiceRecurringRepository())->upsertForInvoice($id, [
+        'day_of_month' => $day,
+        'months' => $months,
+        'due_days' => $dueDays,
+        'auto_email' => $autoEmail,
+        'enabled' => $enabled,
+        'created_by_user_id' => $user['id'] ?? null,
+        'created_by_name' => (string) ($user['name'] ?? ''),
+    ]);
+    ActivityLog::record('invoice.recurring_saved', 'invoice', $id, [
+        'schedule_id' => $scheduleId,
+        'day_of_month' => $day,
+        'months' => invoice_recurring_normalize_months($months),
+        'auto_email' => $autoEmail,
+        'enabled' => $enabled,
+    ]);
+    $_SESSION['flash_success'] = $enabled
+        ? 'Recurring invoice schedule saved and enabled.'
+        : 'Recurring invoice schedule saved (currently off).';
+    header('Location: ' . $redirect . '#recurring-invoice');
+    exit;
+}
+
+if ($action === 'delete_recurring') {
+    Auth::requireCapability('invoices.edit');
+    $schedule = (new InvoiceRecurringRepository())->findByTemplateInvoice($id);
+    if ($schedule) {
+        (new InvoiceRecurringRepository())->delete((int) $schedule['id']);
+        ActivityLog::record('invoice.recurring_deleted', 'invoice', $id, [
+            'schedule_id' => (int) $schedule['id'],
+        ]);
+        $_SESSION['flash_success'] = 'Recurring schedule removed.';
+    }
+    header('Location: ' . $redirect . '#recurring-invoice');
+    exit;
+}
+
+if ($action === 'run_recurring_now') {
+    Auth::requireCapability('invoices.edit');
+    $schedule = (new InvoiceRecurringRepository())->findByTemplateInvoice($id);
+    if ($schedule === null || empty($schedule['enabled'])) {
+        $_SESSION['flash_error'] = 'Enable a recurring schedule first.';
+        header('Location: ' . $redirect . '#recurring-invoice');
+        exit;
+    }
+    // Allow a manual test run even if already generated this month.
+    $schedule['last_run_ym'] = null;
+    $result = invoice_recurring_generate($schedule);
+    if (!$result['ok']) {
+        $_SESSION['flash_error'] = $result['error'] ?? 'Could not create the recurring invoice.';
+        header('Location: ' . $redirect . '#recurring-invoice');
+        exit;
+    }
+    $newId = (int) ($result['invoice_id'] ?? 0);
+    (new InvoiceRecurringRepository())->markRun(
+        (int) $schedule['id'],
+        (new DateTimeImmutable('now', app_timezone()))->format('Y-m'),
+        $newId
+    );
+    ActivityLog::record('invoice.recurring_generated', 'invoice', $newId, [
+        'schedule_id' => (int) $schedule['id'],
+        'template_invoice_id' => $id,
+        'manual' => true,
+        'emailed' => !empty($result['emailed']),
+    ]);
+    $_SESSION['flash_success'] = 'Created invoice #' . ((new InvoiceRepository())->find($newId)['invoice_number'] ?? $newId)
+        . (!empty($result['emailed']) ? ' and emailed the client.' : '.');
+    header('Location: /admin/invoice-view?id=' . $newId);
+    exit;
+}
+
 header('Location: ' . $redirect);
 exit;

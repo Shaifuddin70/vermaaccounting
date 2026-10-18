@@ -239,17 +239,51 @@ final class InvoicePdf extends FPDF
                 '',
                 $notesText
             ) ?? $notesText);
+            // Drop empty "Pay online..." lines when no payment URL is available yet.
+            $notesText = trim(preg_replace(
+                '/(?:\r?\n)?Pay online by card:\s*(?:\r?\n|$)/iu',
+                "\n",
+                $notesText
+            ) ?? $notesText);
+        }
+        $payUrl = (function_exists('invoice_can_pay_online') && invoice_can_pay_online($this->invoice))
+            ? invoice_pay_url($this->invoice)
+            : '';
+        if ($payUrl !== '' && $notesText !== '') {
+            // Dedicated clickable link is drawn below; remove the plain URL from notes.
+            $notesText = trim(preg_replace(
+                '/(?:\r?\n)?Pay online by card:\s*' . preg_quote($payUrl, '/') . '\s*/iu',
+                '',
+                $notesText
+            ) ?? $notesText);
+            $notesText = trim(str_replace($payUrl, '', $notesText));
+            $notesText = trim(preg_replace('/(?:\r?\n){3,}/', "\n\n", $notesText) ?? $notesText);
         }
 
         // Notes (left)
-        if ($notesText !== '') {
+        $notesBottom = $y;
+        if ($notesText !== '' || $payUrl !== '') {
             $this->SetXY(16, $y);
             $this->SetFont('Helvetica', 'B', 8);
             $this->SetTextColor(100, 116, 139);
             $this->Cell(90, 5, 'NOTES / TERMS', 0, 2);
-            $this->SetFont('Helvetica', '', 9);
-            $this->SetTextColor(100, 116, 139);
-            $this->MultiCell(90, 4.5, $this->t($notesText), 0, 'L');
+            if ($notesText !== '') {
+                $this->SetFont('Helvetica', '', 9);
+                $this->SetTextColor(100, 116, 139);
+                $this->MultiCell(90, 4.5, $this->t($notesText), 0, 'L');
+            }
+            if ($payUrl !== '') {
+                $this->Ln(2);
+                $this->SetX(16);
+                $this->SetFont('Helvetica', 'B', 9);
+                $this->SetTextColor(249, 115, 22);
+                $this->Cell(90, 5, $this->t('Pay online by card:'), 0, 2);
+                $this->SetFont('Helvetica', 'U', 8);
+                $this->SetTextColor(30, 58, 138);
+                $this->Write(4.5, $this->t($payUrl), $payUrl);
+                $this->Ln(6);
+            }
+            $notesBottom = $this->GetY();
         }
 
         // Totals (right)
@@ -313,6 +347,9 @@ final class InvoicePdf extends FPDF
         $this->SetX($totalsX);
         $this->Cell(48, 6, $this->t('Amount Due (' . $currency . '):'), 0, 0, 'R');
         $this->Cell(34, 6, $this->t($amountDue), 0, 1, 'R');
+
+        // Keep content below whichever column ended lower (notes+pay link vs totals).
+        $this->SetY(max($this->GetY(), $notesBottom) + 2);
     }
 
     private function drawTotalRow(float $x, string $label, string $value, bool $bold): void

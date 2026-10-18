@@ -51,6 +51,18 @@ return [
         'api_token' => 'uai_YOUR_TOKEN_HERE',
     ],
 
+    // OpenAI (ChatGPT) for AI blog generation — Website → AI blog
+    'openai' => [
+        'api_key' => 'sk-YOUR_OPENAI_API_KEY',
+        'model' => 'gpt-4o-mini',
+    ],
+    'blog_ai' => [
+        'enabled' => true,              // cron master switch (admin button still works when key is set)
+        'max_per_run' => 1,             // posts created per cron tick
+        'min_hours_between' => 24,      // cooldown between cron generations
+        'author_name' => 'Verma Accounting',
+    ],
+
     'mail' => [
         'enabled' => true,
         'transport' => 'smtp',
@@ -98,6 +110,9 @@ return [
         'merchant_id' => '',
         'user_id' => '',
         'pin' => '',
+        // Extra % WE add on top of the balance before sending to Elavon. Keep 0 if Converge
+        // already adds a card fee at checkout (we then send the exact balance only).
+        'card_fee_percent' => 0,
     ],
 ];
 

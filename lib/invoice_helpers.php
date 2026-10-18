@@ -568,7 +568,51 @@ function invoice_templates(): array
         $list = invoice_normalize_templates($kind, is_array($stored[$kind] ?? null) ? $stored[$kind] : []);
         $out[$kind] = $list !== [] ? $list : invoice_builtin_templates()[$kind];
     }
+    $out = invoice_templates_upgrade_payment_defaults($out, is_array($stored) && $stored !== []);
     return $out;
+}
+
+/**
+ * Refresh known old default note/email wording to the card-payment templates.
+ *
+ * @param array{notes: list<array<string, mixed>>, emails: list<array<string, mixed>>} $templates
+ * @return array{notes: list<array<string, mixed>>, emails: list<array<string, mixed>>}
+ */
+function invoice_templates_upgrade_payment_defaults(array $templates, bool $persistIfChanged): array
+{
+    $builtins = invoice_builtin_templates();
+    $oldNotes = [
+        'Please make all payments to {payment_email}',
+        "Please make all payments to {payment_email}.\n\nPay online by card: {payment_url}",
+    ];
+    $oldEmailBodies = [
+        "Hi {client_name},\n\nPlease find invoice #{invoice_number} attached as a PDF.\n\nPlease make payment to {payment_email}.",
+        "Hi {client_name},\n\nPlease find invoice #{invoice_number} attached as a PDF.\n\nAmount due: {amount_due}. You can pay securely by card using the button below.",
+    ];
+    $changed = false;
+
+    foreach ($templates['notes'] as $i => $tpl) {
+        $body = str_replace("\r\n", "\n", trim((string) ($tpl['body'] ?? '')));
+        if (in_array($body, $oldNotes, true)) {
+            $templates['notes'][$i]['body'] = (string) $builtins['notes'][0]['body'];
+            $changed = true;
+        }
+    }
+    foreach ($templates['emails'] as $i => $tpl) {
+        $body = str_replace("\r\n", "\n", trim((string) ($tpl['body'] ?? '')));
+        if (in_array($body, $oldEmailBodies, true)) {
+            $templates['emails'][$i]['body'] = (string) $builtins['emails'][0]['body'];
+            $templates['emails'][$i]['subject'] = (string) ($tpl['subject'] ?? '') !== ''
+                ? (string) $tpl['subject']
+                : (string) $builtins['emails'][0]['subject'];
+            $changed = true;
+        }
+    }
+
+    if ($changed && $persistIfChanged) {
+        invoice_save_templates($templates);
+    }
+    return $templates;
 }
 
 /** @return array{notes: list<array<string, mixed>>, emails: list<array<string, mixed>>} */
@@ -578,14 +622,14 @@ function invoice_builtin_templates(): array
         'notes' => [[
             'id' => 'default',
             'name' => 'Standard',
-            'body' => 'Please make all payments to {payment_email}',
+            'body' => "Pay online by card: {payment_url}\n\nOr Interac e-Transfer to {payment_email} (include invoice #{invoice_number}).",
             'is_default' => true,
         ]],
         'emails' => [[
             'id' => 'default',
             'name' => 'Standard',
             'subject' => 'Invoice #{invoice_number} from Verma Accounting',
-            'body' => "Hi {client_name},\n\nPlease find invoice #{invoice_number} attached as a PDF.\n\nPlease make payment to {payment_email}.",
+            'body' => "Hi {client_name},\n\nPlease find invoice #{invoice_number} attached as a PDF.\n\nAmount due: {amount_due}. You can pay securely by card using the button below, or Interac e-Transfer to {payment_email}.",
             'is_default' => true,
         ]],
     ];
@@ -668,6 +712,7 @@ function invoice_template_placeholders(): array
         '{due_date}' => 'Payment due date',
         '{invoice_date}' => 'Invoice date',
         '{payment_email}' => 'Payment email from company details',
+        '{payment_url}' => 'Online card payment link (empty if unavailable)',
         '{company_name}' => 'Your company name',
     ];
 }
@@ -682,6 +727,7 @@ function invoice_template_fill(string $text, ?array $invoice = null): string
     $company = invoice_company_settings();
     $values = [
         '{payment_email}' => (string) ($company['payment_email'] ?? ''),
+        '{payment_url}' => '',
         '{company_name}' => (string) ($company['name'] ?? ''),
     ];
     if ($invoice !== null) {
@@ -689,12 +735,16 @@ function invoice_template_fill(string $text, ?array $invoice = null): string
         if ($client === '') {
             $client = trim((string) ($invoice['bill_to_company'] ?? ''));
         }
+        $payUrl = (function_exists('invoice_can_pay_online') && invoice_can_pay_online($invoice))
+            ? invoice_pay_url($invoice)
+            : '';
         $values += [
             '{client_name}' => $client !== '' ? $client : 'there',
             '{invoice_number}' => (string) ($invoice['invoice_number'] ?? ''),
             '{amount_due}' => invoice_format_money(invoice_amount_due($invoice)),
             '{due_date}' => invoice_format_date((string) ($invoice['due_date'] ?? '')),
             '{invoice_date}' => invoice_format_date((string) ($invoice['invoice_date'] ?? '')),
+            '{payment_url}' => $payUrl,
         ];
     }
     return strtr($text, $values);

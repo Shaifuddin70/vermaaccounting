@@ -42,6 +42,14 @@ $canManageTemplates = Auth::can('invoices.settings') && partner_user_id() === nu
 $onlineEnabled = elavon_enabled();
 $onlinePayUrl = invoice_can_pay_online($invoice) ? invoice_pay_url($invoice) : '';
 $onlineAttempts = online_payments_for_invoice($id);
+$recurring = (new InvoiceRecurringRepository())->findByTemplateInvoice($id);
+$recurringMonths = invoice_recurring_normalize_months($recurring['months_json'] ?? range(1, 12));
+$recurringDay = (int) ($recurring['day_of_month'] ?? (int) date('j'));
+$recurringDueDays = (int) ($recurring['due_days'] ?? 14);
+$recurringAutoEmail = $recurring ? !empty($recurring['auto_email']) : true;
+$recurringEnabled = $recurring ? !empty($recurring['enabled']) : false;
+$recurringNext = $recurring ? invoice_recurring_next_date($recurring) : null;
+$canEditRecurring = Auth::can('invoices.edit');
 
 $payments = $repo->payments($id);
 $invoiceDue = (float) $dueState['invoice_due'];
@@ -266,7 +274,7 @@ require __DIR__ . '/includes/layout-start.php';
         </div>
       <?php elseif ($onlineEnabled): ?>
         <p class="invoice-side-empty">
-          <?= $amountDue <= 0 ? 'Nothing left to pay.' : 'Change the status from Draft to offer a payment link.' ?>
+          <?= $amountDue <= 0 ? 'Nothing left to pay.' : 'Online card payments are not configured.' ?>
         </p>
       <?php endif; ?>
       <?php if ($onlineAttempts !== []): ?>
@@ -294,6 +302,84 @@ require __DIR__ . '/includes/layout-start.php';
             </li>
           <?php endforeach; ?>
         </ul>
+      <?php endif; ?>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($canEditRecurring): ?>
+    <section class="admin-card invoice-side-card" id="recurring-invoice">
+      <h2 class="invoice-side-title">Recurring invoice</h2>
+      <p class="admin-field-hint">
+        Create a new invoice for the same client and services on a chosen day each selected month,
+        and optionally email it automatically.
+      </p>
+      <form method="post" action="/admin/invoice-action" class="invoice-recurring-form">
+        <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+        <input type="hidden" name="id" value="<?= $id ?>">
+        <input type="hidden" name="action" value="save_recurring">
+        <div class="admin-field">
+          <label for="recurring-day">Day of month</label>
+          <input type="number" id="recurring-day" name="day_of_month" min="1" max="31" required
+            value="<?= e((string) $recurringDay) ?>">
+          <small class="admin-field-hint">For shorter months, day 29–31 runs on the last day.</small>
+        </div>
+        <div class="admin-field">
+          <label for="recurring-due-days">Due in (days after invoice date)</label>
+          <input type="number" id="recurring-due-days" name="due_days" min="0" max="120" required
+            value="<?= e((string) $recurringDueDays) ?>">
+        </div>
+        <fieldset class="admin-field invoice-recurring-months">
+          <legend>Months</legend>
+          <div class="invoice-recurring-month-grid">
+            <?php for ($m = 1; $m <= 12; $m++): ?>
+              <label class="admin-checkbox-label">
+                <input type="checkbox" name="months[]" value="<?= $m ?>"
+                  <?= in_array($m, $recurringMonths, true) ? 'checked' : '' ?>>
+                <?= e(invoice_recurring_month_label($m)) ?>
+              </label>
+            <?php endfor; ?>
+          </div>
+          <small class="admin-field-hint">Leave all checked for every month. Uncheck months to skip them.</small>
+        </fieldset>
+        <label class="admin-checkbox-label">
+          <input type="checkbox" name="auto_email" value="1" <?= $recurringAutoEmail ? 'checked' : '' ?>>
+          Email the new invoice to the client automatically
+        </label>
+        <label class="admin-checkbox-label">
+          <input type="checkbox" name="enabled" value="1" <?= $recurringEnabled ? 'checked' : '' ?>>
+          Recurring is on
+        </label>
+        <?php if ($recurringNext !== null && $recurringEnabled): ?>
+          <p class="invoice-side-notice">Next run: <strong><?= e(invoice_format_date($recurringNext)) ?></strong>
+            <?php if (!empty($recurring['last_invoice_id'])): ?>
+              · Last created:
+              <a href="/admin/invoice-view?id=<?= (int) $recurring['last_invoice_id'] ?>">view</a>
+            <?php endif; ?>
+          </p>
+        <?php elseif ($recurring && !$recurringEnabled): ?>
+          <p class="invoice-side-notice">Schedule saved but currently off.</p>
+        <?php endif; ?>
+        <button type="submit" class="admin-btn admin-btn-secondary invoice-side-btn">Save recurring</button>
+      </form>
+      <?php if ($recurring): ?>
+        <div class="invoice-recurring-actions">
+          <form method="post" action="/admin/invoice-action"
+            onsubmit="return confirm('Create a new invoice from this template right now?');">
+            <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+            <input type="hidden" name="id" value="<?= $id ?>">
+            <input type="hidden" name="action" value="run_recurring_now">
+            <button type="submit" class="invoice-side-link" <?= $recurringEnabled ? '' : 'disabled' ?>>
+              Generate now
+            </button>
+          </form>
+          <form method="post" action="/admin/invoice-action"
+            onsubmit="return confirm('Remove this recurring schedule?');">
+            <input type="hidden" name="csrf_token" value="<?= e($csrf) ?>">
+            <input type="hidden" name="id" value="<?= $id ?>">
+            <input type="hidden" name="action" value="delete_recurring">
+            <button type="submit" class="invoice-side-link">Remove schedule</button>
+          </form>
+        </div>
       <?php endif; ?>
     </section>
     <?php endif; ?>
@@ -339,7 +425,7 @@ require __DIR__ . '/includes/layout-start.php';
           <textarea id="email-message" name="email_message" rows="7"
             <?= $mailEnabled ? '' : 'disabled' ?>><?= e($defaultMessage) ?></textarea>
           <small class="admin-field-hint">
-            The amount due and due date are added below the message, and the PDF is attached.
+            Amount due, due date<?= $onlinePayUrl !== '' ? ', and a <strong>Pay by card</strong> button' : '' ?> are added below the message; the PDF is attached<?= $onlinePayUrl !== '' ? ' with the payment link' : '' ?>.
             <?php if ($canManageTemplates): ?><a href="/admin/invoice-templates#email-templates">Edit templates</a><?php endif; ?>
           </small>
         </div>

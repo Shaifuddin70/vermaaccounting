@@ -878,25 +878,26 @@
     clearFormData();
     if (taxYearInput) taxYearInput.value = '';
     if (taxYearSelect) taxYearSelect.value = '';
+
+    const payUrl = payOptions && payOptions.payUrl ? String(payOptions.payUrl) : '';
+    // Advance payment: skip the thank-you screen and go straight to the pay page.
+    if (payUrl) {
+      if (statusEl) {
+        statusEl.textContent = 'Submission received — opening payment…';
+        statusEl.className = 'custom-form-status';
+      }
+      const sep = payUrl.indexOf('?') >= 0 ? '&' : '?';
+      window.location.assign(payUrl + sep + 'submitted=1');
+      return;
+    }
+
     form.hidden = true;
     if (successMessageEl) {
       successMessageEl.textContent = message || 'Thank you! Your response has been received.';
     }
-    const payUrl = payOptions && payOptions.payUrl ? String(payOptions.payUrl) : '';
-    const payLabel = payOptions && payOptions.payAmountLabel ? String(payOptions.payAmountLabel) : '';
     const payUnavailable = payOptions && payOptions.payUnavailable ? String(payOptions.payUnavailable) : '';
     if (successPayWrap && successPayBtn) {
-      if (payUrl) {
-        successPayBtn.href = payUrl;
-        successPayBtn.textContent = payLabel ? 'Pay ' + payLabel + ' by card' : 'Pay by card';
-        successPayBtn.hidden = false;
-        if (successPayNote) {
-          successPayNote.textContent = payLabel
-            ? 'Next step: complete your ' + payLabel + ' advance payment securely by card.'
-            : 'Next step: complete your advance payment securely by card.';
-        }
-        successPayWrap.hidden = false;
-      } else if (payUnavailable) {
+      if (payUnavailable) {
         successPayBtn.hidden = true;
         successPayBtn.removeAttribute('href');
         if (successPayNote) {

@@ -11,19 +11,42 @@ declare(strict_types=1);
  */
 
 /**
- * @return array{enabled: bool, environment: 'demo'|'live', merchant_id: string, user_id: string, pin: string}
+ * @return array{enabled: bool, environment: 'demo'|'live', merchant_id: string, user_id: string, pin: string, card_fee_percent: float}
  */
 function elavon_config(): array
 {
     $raw = app_config()['elavon'] ?? [];
     $raw = is_array($raw) ? $raw : [];
     $environment = ($raw['environment'] ?? 'demo') === 'live' ? 'live' : 'demo';
+    // Amount WE add before calling Elavon. Keep 0 when Converge already surcharges at checkout.
+    $feePercent = (float) ($raw['card_fee_percent'] ?? 0);
     return [
         'enabled' => !empty($raw['enabled']),
         'environment' => $environment,
         'merchant_id' => trim((string) ($raw['merchant_id'] ?? '')),
         'user_id' => trim((string) ($raw['user_id'] ?? '')),
         'pin' => trim((string) ($raw['pin'] ?? '')),
+        'card_fee_percent' => max(0.0, min(10.0, round($feePercent, 4))),
+    ];
+}
+
+/**
+ * Amounts for Elavon. `send` is the exact balance unless card_fee_percent > 0.
+ *
+ * @return array{base: float, fee: float, total: float, percent: float, send: float}
+ */
+function elavon_charge_breakdown(float $baseAmount): array
+{
+    $base = invoice_money($baseAmount);
+    $percent = elavon_config()['card_fee_percent'];
+    $fee = $percent > 0 ? invoice_money($base * ($percent / 100)) : 0.0;
+    $send = invoice_money($base + $fee);
+    return [
+        'base' => $base,
+        'fee' => $fee,
+        'total' => $send,
+        'percent' => $percent,
+        'send' => $send,
     ];
 }
 
@@ -107,9 +130,8 @@ function invoice_find_by_pay_token(string $token): ?array
 /** Whether a client can pay this invoice online right now. */
 function invoice_can_pay_online(array $invoice): bool
 {
-    return elavon_enabled()
-        && ($invoice['status'] ?? 'draft') !== 'draft'
-        && invoice_amount_due($invoice) > 0;
+    // Include drafts: emailing marks them Sent, and the pay button must be in that first email.
+    return elavon_enabled() && invoice_amount_due($invoice) > 0;
 }
 
 /** Public pay link for a form submission advance; the token is created on first use. */
@@ -190,7 +212,7 @@ function online_payments_for_submission(int $submissionId): array
 /** @param array<string, mixed> $changes */
 function online_payment_update(int $id, array $changes): void
 {
-    $allowed = ['status', 'txn_id', 'approval_code', 'card_summary', 'result_message', 'invoice_payment_id', 'amount'];
+    $allowed = ['status', 'txn_id', 'approval_code', 'card_summary', 'result_message', 'invoice_payment_id', 'amount', 'base_amount'];
     $sets = [];
     $values = [];
     foreach ($changes as $key => $value) {
@@ -221,7 +243,7 @@ function elavon_start_invoice_payment(array $invoice): array
         return ['ok' => false, 'error' => 'This invoice cannot be paid online.'];
     }
 
-    $amount = invoice_money(invoice_amount_due($invoice));
+    $charge = elavon_charge_breakdown(invoice_amount_due($invoice));
     $number = preg_replace('/[^A-Za-z0-9-]/', '', (string) ($invoice['invoice_number'] ?? '')) ?: (string) $invoice['id'];
     $reference = mb_substr($number, 0, 12) . '-' . strtoupper(bin2hex(random_bytes(4)));
     $config = elavon_config();
@@ -231,12 +253,26 @@ function elavon_start_invoice_payment(array $invoice): array
     $pdo->prepare('
         INSERT INTO online_payments (
             invoice_id, submission_id, submission_payment_id, gateway, environment,
-            reference, amount, status, created_at, updated_at
-        ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?)
-    ')->execute([(int) $invoice['id'], 'elavon', $config['environment'], $reference, $amount, 'pending', $now, $now]);
+            reference, amount, base_amount, status, created_at, updated_at
+        ) VALUES (?, NULL, NULL, ?, ?, ?, ?, ?, ?, ?, ?)
+    ')->execute([
+        (int) $invoice['id'],
+        'elavon',
+        $config['environment'],
+        $reference,
+        $charge['send'],
+        $charge['base'],
+        'pending',
+        $now,
+        $now,
+    ]);
     $attemptId = (int) $pdo->lastInsertId();
 
-    return elavon_hosted_redirect($attemptId, $reference, $amount, 'Invoice #' . (string) ($invoice['invoice_number'] ?? ''), trim((string) ($invoice['bill_to_email'] ?? '')));
+    $desc = 'Invoice #' . (string) ($invoice['invoice_number'] ?? '');
+    if ($charge['fee'] > 0) {
+        $desc .= ' + ' . rtrim(rtrim(number_format($charge['percent'], 4, '.', ''), '0'), '.') . '% card fee';
+    }
+    return elavon_hosted_redirect($attemptId, $reference, $charge['send'], $desc, trim((string) ($invoice['bill_to_email'] ?? '')));
 }
 
 /**
@@ -253,7 +289,7 @@ function elavon_start_submission_payment(array $submission, array $schema, array
         return ['ok' => false, 'error' => 'This form payment cannot be paid online.'];
     }
 
-    $amount = invoice_money($target['amount']);
+    $charge = elavon_charge_breakdown((float) $target['amount']);
     $paymentId = isset($target['payment']['id']) ? (int) $target['payment']['id'] : 0;
     $reference = 'S' . (int) $submission['id'] . '-' . strtoupper(bin2hex(random_bytes(4)));
     $reference = mb_substr($reference, 0, 25);
@@ -266,15 +302,16 @@ function elavon_start_submission_payment(array $submission, array $schema, array
     $pdo->prepare('
         INSERT INTO online_payments (
             invoice_id, submission_id, submission_payment_id, gateway, environment,
-            reference, amount, status, created_at, updated_at
-        ) VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            reference, amount, base_amount, status, created_at, updated_at
+        ) VALUES (NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ')->execute([
         (int) $submission['id'],
         $paymentId > 0 ? $paymentId : null,
         'elavon',
         $config['environment'],
         $reference,
-        $amount,
+        $charge['send'],
+        $charge['base'],
         'pending',
         $now,
         $now,
@@ -290,7 +327,11 @@ function elavon_start_submission_payment(array $submission, array $schema, array
         }
     }
 
-    return elavon_hosted_redirect($attemptId, $reference, $amount, 'Advance: ' . $label, $email);
+    $desc = 'Advance: ' . $label;
+    if ($charge['fee'] > 0) {
+        $desc .= ' + ' . rtrim(rtrim(number_format($charge['percent'], 4, '.', ''), '0'), '.') . '% card fee';
+    }
+    return elavon_hosted_redirect($attemptId, $reference, $charge['send'], $desc, $email);
 }
 
 /**
@@ -495,9 +536,20 @@ function elavon_apply_txn(array $attempt, array $match, string $txnId = ''): arr
         return ['status' => 'approved', 'message' => 'Payment already recorded.'];
     }
 
-    $amount = invoice_money((float) ($match['ssl_amount'] ?? $attempt['amount']));
+    $charged = invoice_money((float) ($match['ssl_amount'] ?? $attempt['amount']));
+    // Balance credit is the base only; card fee is extra and must not inflate the payment record.
+    $baseAmount = isset($attempt['base_amount']) && $attempt['base_amount'] !== null && $attempt['base_amount'] !== ''
+        ? invoice_money((float) $attempt['base_amount'])
+        : $charged;
+    if ($baseAmount <= 0 || $baseAmount > $charged + 0.0001) {
+        $baseAmount = $charged;
+    }
+    $feeAmount = invoice_money(max(0, $charged - $baseAmount));
     $approval = mb_substr((string) ($match['ssl_approval_code'] ?? ''), 0, 32);
     $referenceNote = mb_substr('Elavon ' . $foundTxnId . ($approval !== '' ? ' / auth ' . $approval : ''), 0, 191);
+    $feeNote = $feeAmount > 0
+        ? ' Card fee ' . invoice_format_money($feeAmount) . ' charged separately (not applied to balance).'
+        : '';
 
     $submissionId = (int) ($attempt['submission_id'] ?? 0);
     if ($submissionId > 0) {
@@ -505,7 +557,7 @@ function elavon_apply_txn(array $attempt, array $match, string $txnId = ''): arr
             (new SubmissionPaymentRepository())->markVerifiedFromOnline(
                 $submissionId,
                 (int) ($attempt['submission_payment_id'] ?? 0),
-                $amount,
+                $baseAmount,
                 $referenceNote
             );
         } catch (Throwable $e) {
@@ -514,13 +566,16 @@ function elavon_apply_txn(array $attempt, array $match, string $txnId = ''): arr
             return ['status' => 'pending', 'message' => 'Your payment was approved and is being recorded.'];
         }
         online_payment_update((int) $attempt['id'], [
-            'amount' => $amount,
+            'amount' => $charged,
+            'base_amount' => $baseAmount,
             'approval_code' => $approval,
             'card_summary' => mb_substr($card, 0, 64),
             'result_message' => $resultMessage !== '' ? $resultMessage : 'APPROVAL',
         ]);
         ActivityLog::record('submission.paid_online', 'submission', $submissionId, [
-            'amount' => $amount,
+            'amount' => $baseAmount,
+            'charged' => $charged,
+            'card_fee' => $feeAmount,
             'txn_id' => $foundTxnId,
             'reference' => (string) $attempt['reference'],
         ]);
@@ -531,11 +586,11 @@ function elavon_apply_txn(array $attempt, array $match, string $txnId = ''): arr
     $paymentId = null;
     try {
         $repo->addPayment((int) $attempt['invoice_id'], [
-            'amount' => $amount,
+            'amount' => $baseAmount,
             'payment_date' => date('Y-m-d'),
             'method' => 'credit_card',
             'reference' => $referenceNote,
-            'note' => 'Paid online by card' . ($card !== '' ? ' (' . $card . ')' : '') . '.',
+            'note' => 'Paid online by card' . ($card !== '' ? ' (' . $card . ')' : '') . '.' . $feeNote,
             'recorded_by_user_id' => null,
             'recorded_by_name' => 'Online payment',
         ], $paymentId);
@@ -545,7 +600,8 @@ function elavon_apply_txn(array $attempt, array $match, string $txnId = ''): arr
         return ['status' => 'pending', 'message' => 'Your payment was approved and is being recorded.'];
     }
     online_payment_update((int) $attempt['id'], [
-        'amount' => $amount,
+        'amount' => $charged,
+        'base_amount' => $baseAmount,
         'approval_code' => $approval,
         'card_summary' => mb_substr($card, 0, 64),
         'result_message' => $resultMessage !== '' ? $resultMessage : 'APPROVAL',
@@ -553,7 +609,9 @@ function elavon_apply_txn(array $attempt, array $match, string $txnId = ''): arr
     ]);
     invoice_sync_paid_status((int) $attempt['invoice_id']);
     ActivityLog::record('invoice.paid_online', 'invoice', (int) $attempt['invoice_id'], [
-        'amount' => $amount,
+        'amount' => $baseAmount,
+        'charged' => $charged,
+        'card_fee' => $feeAmount,
         'txn_id' => $foundTxnId,
         'reference' => (string) $attempt['reference'],
     ]);
