@@ -22,7 +22,7 @@ if (function_exists('app_begin_output_filter')) {
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/admin/css/admin.css?v=126">
+  <link rel="stylesheet" href="/admin/css/admin.css?v=127">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0.36/dist/fancybox/fancybox.css">
   <?php if (!empty($loadCmsAdmin)): ?>
   <link rel="stylesheet" href="<?= e(asset_versioned('admin/css/cms-admin.css')) ?>">
@@ -191,6 +191,23 @@ if (function_exists('app_begin_output_filter')) {
         <div class="admin-header admin-header--topbar" data-topbar-fallback>
           <h1><?= e($pageTitle) ?></h1>
         </div>
+      </div>
+      <?php
+        $__clockTz = app_timezone_id();
+        $__clockNow = new DateTimeImmutable('now', app_timezone($__clockTz));
+        $__clockLabel = app_timezone_label($__clockTz);
+      ?>
+      <div
+        class="admin-topbar-clock"
+        id="admin-topbar-clock"
+        data-timezone="<?= e($__clockTz) ?>"
+        title="<?= e($__clockLabel) ?>"
+      >
+        <time
+          class="admin-topbar-clock-value"
+          datetime="<?= e($__clockNow->format(DateTimeInterface::ATOM)) ?>"
+        ><?= e($__clockNow->format('D, M j, Y · g:i:s A')) ?></time>
+        <span class="admin-topbar-clock-tz"><?= e($__clockLabel) ?></span>
       </div>
       <div class="admin-topbar-user<?= $activeNav === 'profile' ? ' is-active' : '' ?>">
         <a href="/admin/profile" class="admin-topbar-user-main" title="Edit profile">
