@@ -82,6 +82,22 @@ final class CmsRenderer
             return $crumbs;
         }
         $repo = new CmsContentRepository();
+
+        // City pages live under /service-area/{slug}; always include the Service Areas index crumb.
+        if (($content['type'] ?? '') === 'city') {
+            $crumbs[] = ['name' => CmsServiceAreas::INDEX_LABEL, 'path' => CmsServiceAreas::INDEX_PATH];
+            $city = $repo->city((int) $content['id']);
+            $cityName = trim((string) ($city['city'] ?? ''));
+            if ($cityName === '') {
+                $cityName = trim((string) (($content['h1'] ?? '') ?: $content['title']));
+            }
+            if ($cityName === '') {
+                $cityName = 'Service area';
+            }
+            $crumbs[] = ['name' => $cityName, 'path' => $path];
+            return $crumbs;
+        }
+
         $segments = CmsPath::segments($path);
         $prefix = '';
         foreach (array_slice($segments, 0, -1) as $seg) {
@@ -116,10 +132,33 @@ final class CmsRenderer
         if ($content['type'] === 'article' && function_exists('blog_prepare_content_html')) {
             $body = blog_prepare_content_html($body);
         }
+        // Heal leftover city placeholders in custom bodies (e.g. href="{phone_link}" → /service-area/{phone_link}).
+        if ($content['type'] === 'city' && str_contains($body, '{')) {
+            $cityRow = $repo->city((int) $content['id']);
+            $vars = CmsCityDefaults::vars($cityRow);
+            $vars['{h1}'] = trim((string) ($content['h1'] ?? '')) ?: (string) ($content['title'] ?? '');
+            $vars['{summary}'] = trim((string) ($content['excerpt'] ?? ''));
+            $body = strtr($body, $vars);
+            $body = (string) preg_replace('/href=(["\'])\{[^\}]+\}\1/i', 'href=$1/contact$1', $body);
+        }
         $body = CmsHtml::enhanceImages($body, new CmsMediaRepository());
         $body = CmsBlocks::expand($body, $path, !empty($opts['preview']));
         if (str_contains($body, '{{contact_form}}')) {
             $body = str_replace('{{contact_form}}', self::contactForm(), $body);
+        }
+        if ($content['type'] === 'city') {
+            $serviceAreasVariant = 'nearby';
+            $serviceAreasCurrentPath = $path;
+            $serviceAreasLimit = 12;
+            ob_start();
+            include PROJECT_ROOT . '/components/service-areas-links.php';
+            $nearbyHtml = (string) ob_get_clean();
+            if (str_contains($body, '{{service_areas_nearby}}')) {
+                $body = str_replace('{{service_areas_nearby}}', $nearbyHtml, $body);
+            } elseif ($nearbyHtml !== '' && !str_contains($body, 'service-areas-inline')) {
+                // Stored/custom city bodies may omit the placeholder — still add nearby links once.
+                $body .= $nearbyHtml;
+            }
         }
         if (str_contains($body, '{{company_') || str_contains($body, '{{social_links}}')) {
             $body = strtr($body, self::companyReplacements());
@@ -147,7 +186,9 @@ final class CmsRenderer
                 'out_of_range' => $page > $totalPages,
             ];
         } elseif ($template === 'service-areas') {
-            $serviceAreas = $repo->serviceAreas();
+            $serviceAreas = class_exists('CmsServiceAreas')
+                ? CmsServiceAreas::all()
+                : $repo->serviceAreas();
         }
 
         $effective = CmsSeo::effective($content, $seo, $folder, ['page' => $page, 'preview' => !empty($opts['preview']), 'path' => $path]);
@@ -359,6 +400,7 @@ final class CmsRenderer
             '{{submit_menu}}' => 'List of links to the forms shown in the Submit Document menu',
             '{{site_cta}}' => 'The site call-to-action link',
             '{{contact_form}}' => 'The site inquiry form (name, phone, email, message); also works in page bodies',
+            '{{service_areas_nearby}}' => 'Links to other published city pages (city pages only)',
             '{{site_name}}' => 'Site name',
             '{{base_url}}' => 'Public base URL',
             '{{year}}' => 'Current year',

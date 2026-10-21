@@ -839,9 +839,93 @@ final class CmsContentService
             $redirects->save(null, '/service-areas', '/service-area', 301, 'auto', 'Renamed listing URL to /service-area');
         }
 
+        $folderId = $folder !== null ? (int) $folder['id'] : null;
+        self::normalizeCityPathsUnderServiceArea($folderId);
+
         return [
             'content_id' => (int) $existing['id'],
-            'folder_id' => $folder !== null ? (int) $folder['id'] : null,
+            'folder_id' => $folderId,
         ];
+    }
+
+    /**
+     * Move city pages from legacy /locations/{slug} to /service-area/{slug} so homepage,
+     * footer, and the Service Areas directory all share one URL pattern. Adds 301s.
+     *
+     * @return array{moved: int, skipped: int, errors: list<string>}
+     */
+    public static function normalizeCityPathsUnderServiceArea(?int $folderId = null): array
+    {
+        $out = ['moved' => 0, 'skipped' => 0, 'errors' => []];
+        $repo = new CmsContentRepository();
+        $redirects = new CmsRedirectRepository();
+        $prefix = CmsServiceAreas::INDEX_PATH;
+        $legacyPrefix = '/locations';
+
+        if ($folderId === null) {
+            $landing = $repo->findByPath($prefix);
+            if ($landing) {
+                $folder = (new CmsFolderRepository())->forLanding((int) $landing['id']);
+                $folderId = $folder !== null ? (int) $folder['id'] : null;
+            }
+        }
+
+        $stmt = Database::instance()->pdo()->prepare(
+            "SELECT id, path, folder_id, status FROM cms_contents WHERE type = 'city' AND (path = ? OR path LIKE ?)"
+        );
+        $stmt->execute([$legacyPrefix, $legacyPrefix . '/%']);
+        $rows = $stmt->fetchAll();
+        if ($rows === []) {
+            return $out;
+        }
+
+        foreach ($rows as $row) {
+            $old = CmsPath::normalize((string) $row['path']);
+            $slug = $old === $legacyPrefix ? '' : ltrim(substr($old, strlen($legacyPrefix)), '/');
+            if ($slug === '') {
+                $out['skipped']++;
+                $out['errors'][] = $old . ': missing city slug';
+                continue;
+            }
+            $new = CmsPath::join($prefix, $slug);
+            if ($new === $old) {
+                $out['skipped']++;
+                continue;
+            }
+            if ($repo->pathTaken($new, (int) $row['id'])) {
+                $out['skipped']++;
+                $out['errors'][] = $old . ' → ' . $new . ': target URL already in use';
+                continue;
+            }
+
+            $changes = ['path' => $new, 'slug' => CmsPath::slugify(basename($new)), 'url_mode' => 'custom'];
+            if ($folderId !== null && (int) ($row['folder_id'] ?? 0) !== $folderId) {
+                $changes['folder_id'] = $folderId;
+            }
+            $repo->update((int) $row['id'], $changes);
+
+            // Retarget any redirect that pointed at the old path, then add the new 301.
+            foreach ($redirects->all() as $r) {
+                if (CmsPath::normalize((string) $r['target']) === $old) {
+                    $redirects->save((int) $r['id'], (string) $r['source_path'], $new, (int) $r['status_code'], (string) $r['origin'], (string) $r['note']);
+                }
+            }
+            $shadow = $redirects->findBySource($new);
+            if ($shadow) {
+                $redirects->delete((int) $shadow['id']);
+            }
+            $redirects->save(null, $old, $new, 301, 'auto', 'Unified city URLs under /service-area');
+            $out['moved']++;
+        }
+
+        if ($out['moved'] > 0) {
+            CmsCache::flush();
+            if (class_exists('CmsServiceAreas')) {
+                CmsServiceAreas::reset();
+            }
+            ActivityLog::record('cms.city_paths_normalized', 'cms_content', null, $out);
+        }
+
+        return $out;
     }
 }

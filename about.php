@@ -57,6 +57,10 @@
               we provide reliable, timely information that supports growth. We understand that
               every client has unique needs, and we tailor our services accordingly.
             </p>
+            <p>
+              Our team is based in the Ottawa area and works with clients across
+              <a href="/service-area">Ottawa and nearby service areas</a>, as well as elsewhere in Canada online.
+            </p>
           </div>
 
         </div>

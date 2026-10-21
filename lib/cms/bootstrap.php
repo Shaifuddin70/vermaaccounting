@@ -26,6 +26,7 @@ require_once __DIR__ . '/CmsDiff.php';
 require_once __DIR__ . '/CmsStylesheets.php';
 require_once __DIR__ . '/CmsBlocks.php';
 require_once __DIR__ . '/CmsCityDefaults.php';
+require_once __DIR__ . '/CmsServiceAreas.php';
 require_once __DIR__ . '/CmsBlogAiService.php';
 require_once __DIR__ . '/CmsNavigation.php';
 

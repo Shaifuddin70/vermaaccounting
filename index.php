@@ -301,11 +301,11 @@ $homeReview = seo_home_review();
         <div class="col-lg-6 ">
           <div class="scroll-animate-left">
             <h2 class="section-title">We Serve Clients Across Canada</h2>
-            <p>We proudly work with clients in Canada's major cities. From coast to coast, we help businesses and individuals keep their finances in order.</p>
+            <p>Based in the Ottawa area, we help businesses and individuals keep their finances in order — online across Canada, with local focus on the National Capital Region.</p>
             <div class="location-features">
               <div class="location-feature">
                 <i class="fas fa-map-marker-alt" aria-hidden="true"></i>
-                <span>Nationwide Coverage</span>
+                <span>Ottawa &amp; nearby communities</span>
               </div>
               <div class="location-feature">
                 <i class="fas fa-users" aria-hidden="true"></i>
@@ -316,7 +316,12 @@ $homeReview = seo_home_review();
                 <span>Flexible Scheduling</span>
               </div>
             </div>
-            <p>Whether you're in Toronto, Vancouver, Montreal, or anywhere else, our team is ready to support your local needs.</p>
+            <?php
+              $serviceAreasVariant = 'home';
+              $serviceAreasLimit = 8;
+              include __DIR__ . '/components/service-areas-links.php';
+            ?>
+            <p>We also work with clients elsewhere in Canada online. Don’t see your city? <a href="/contact">Contact us</a> to ask about your area.</p>
             <div class="cta-action">
               <a href="/contact" class="appointment-button">
                 <i class="fas fa-calendar-alt" aria-hidden="true"></i>

@@ -68,6 +68,11 @@ $footerAddress = CmsCompany::addressLine();
          </ul>
        </nav>
 
+       <?php
+         $serviceAreasVariant = 'footer';
+         include __DIR__ . '/service-areas-links.php';
+       ?>
+
        <!-- Contact Info -->
        <div class="footer-col">
          <h3 class="footer-heading">Get In Touch</h3>

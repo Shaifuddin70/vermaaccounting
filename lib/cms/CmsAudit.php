@@ -294,8 +294,14 @@ final class CmsAudit
     private static function legacyLinkedPaths(): array
     {
         $out = [];
-        foreach (['site-nav.php', 'site-footer.php'] as $file) {
-            $src = (string) @file_get_contents(PROJECT_ROOT . '/components/' . $file);
+        foreach ([
+            PROJECT_ROOT . '/components/site-nav.php',
+            PROJECT_ROOT . '/components/site-footer.php',
+            PROJECT_ROOT . '/components/service-areas-links.php',
+            PROJECT_ROOT . '/components/other-services.php',
+            PROJECT_ROOT . '/index.php',
+        ] as $file) {
+            $src = (string) @file_get_contents($file);
             if (preg_match_all('/(?:href="|\'url\' => \')(\/[^"\'#?]*)/', $src, $m)) {
                 foreach ($m[1] as $href) {
                     $out[CmsPath::normalize($href)] = true;
@@ -309,6 +315,13 @@ final class CmsAudit
         if (preg_match_all('/href="(\/[^"#?]*)"/', $nav, $m)) {
             foreach ($m[1] as $href) {
                 $out[CmsPath::normalize($href)] = true;
+            }
+        }
+        // Dynamic city links (footer / homepage / service pages) are not hardcoded in PHP source.
+        if (class_exists('CmsServiceAreas')) {
+            $out[CmsPath::normalize(CmsServiceAreas::INDEX_PATH)] = true;
+            foreach (CmsServiceAreas::all() as $area) {
+                $out[CmsPath::normalize($area['path'])] = true;
             }
         }
         return $out;

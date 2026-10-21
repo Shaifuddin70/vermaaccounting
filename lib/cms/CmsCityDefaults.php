@@ -55,7 +55,7 @@ final class CmsCityDefaults
 <div class="container">
 <div class="row align-items-center">
 <div class="col-lg-6 order-lg-last">
-<div class="img-box scroll-animate-right"><img src="/images/rishab-verma-1.jpg" alt="Rishab Verma of Verma Accounting, accountant serving {city}, {region}" /></div>
+<div class="img-box scroll-animate-right"><img src="/images/rishab-verma-1.jpg" alt="Rishab Verma, accountant serving {city}" width="800" height="600" loading="lazy" decoding="async" /></div>
 </div>
 <div class="col-lg-6">
 <h1 class="section-title">{h1}</h1>
@@ -87,7 +87,7 @@ final class CmsCityDefaults
 <div class="container">
 <div class="row align-items-center">
 <div class="col-lg-6">
-<div class="img-box scroll-animate-left"><img src="/images/tax-discussion.jpg" alt="Accountant reviewing tax returns with a client in {city}" /></div>
+<div class="img-box scroll-animate-left"><img src="/images/tax-discussion.jpg" alt="Tax review meeting in {city}" width="800" height="600" loading="lazy" decoding="async" /></div>
 </div>
 <div class="col-lg-6">
 <h2 class="section-title">Your local accounting and tax partner in {city}, {region}</h2>
@@ -154,37 +154,37 @@ final class CmsCityDefaults
 <div class="row">
 <div class="col-lg-4 col-md-6 mb-4">
 <div class="feature-item scroll-animate">
-<h4><i class="fas fa-store"></i> Small businesses &amp; startups</h4>
+<h3><i class="fas fa-store"></i> Small businesses &amp; startups</h3>
 <p>Retail shops, restaurants, e-commerce stores, trades and service businesses in {city} that need reliable bookkeeping, payroll, GST/HST filing and year-end accounting.</p>
 </div>
 </div>
 <div class="col-lg-4 col-md-6 mb-4">
 <div class="feature-item scroll-animate">
-<h4><i class="fas fa-user-tie"></i> Self-employed &amp; contractors</h4>
+<h3><i class="fas fa-user-tie"></i> Self-employed &amp; contractors</h3>
 <p>Sole proprietors, freelancers, consultants, contractors and gig workers who want their self-employment income, expenses and HST handled correctly.</p>
 </div>
 </div>
 <div class="col-lg-4 col-md-6 mb-4">
 <div class="feature-item scroll-animate">
-<h4><i class="fas fa-building"></i> Incorporated businesses</h4>
+<h3><i class="fas fa-building"></i> Incorporated businesses</h3>
 <p>Owner-managed corporations in {city} that need T2 corporate tax returns, financial statements, payroll and advice on salary versus dividends.</p>
 </div>
 </div>
 <div class="col-lg-4 col-md-6 mb-4">
 <div class="feature-item scroll-animate">
-<h4><i class="fas fa-briefcase-medical"></i> Professionals</h4>
+<h3><i class="fas fa-briefcase-medical"></i> Professionals</h3>
 <p>Medical and health professionals, real estate agents, lawyers, engineers and IT consultants who want tax-efficient planning around a busy practice.</p>
 </div>
 </div>
 <div class="col-lg-4 col-md-6 mb-4">
 <div class="feature-item scroll-animate">
-<h4><i class="fas fa-users"></i> Individuals, families &amp; retirees</h4>
+<h3><i class="fas fa-users"></i> Individuals, families &amp; retirees</h3>
 <p>Employees, families, students, seniors and landlords with rental income who want an accurate personal tax return and every benefit and credit they are owed.</p>
 </div>
 </div>
 <div class="col-lg-4 col-md-6 mb-4">
 <div class="feature-item scroll-animate">
-<h4><i class="fas fa-globe-americas"></i> Newcomers to Canada</h4>
+<h3><i class="fas fa-globe-americas"></i> Newcomers to Canada</h3>
 <p>New immigrants, international students and work-permit holders in {city} filing their first Canadian tax return or registering a new business.</p>
 </div>
 </div>
@@ -196,7 +196,7 @@ final class CmsCityDefaults
 <div class="container">
 <div class="row align-items-center">
 <div class="col-lg-6 order-lg-last">
-<div class="img-box scroll-animate-right"><img src="/images/happy-client.jpg" alt="Happy client of Verma Accounting in {city}" /></div>
+<div class="img-box scroll-animate-right"><img src="/images/happy-client.jpg" alt="Client in {city}" width="800" height="600" loading="lazy" decoding="async" /></div>
 </div>
 <div class="col-lg-6">
 <h2 class="section-title">Why {city} clients choose Verma Accounting</h2>
@@ -218,20 +218,22 @@ final class CmsCityDefaults
 <h2 class="section-title mb-5">How to get started</h2>
 <div class="service-features">
 <div class="feature-item">
-<h4>1. Book a free consultation</h4>
+<h3>1. Book a free consultation</h3>
 <p>Call <a href="{phone_link}">{phone}</a> or <a href="/contact">send us a message</a> and tell us about your business or tax situation in {city}.</p>
 </div>
 <div class="feature-item">
-<h4>2. Share your documents securely</h4>
+<h3>2. Share your documents securely</h3>
 <p>Upload receipts, slips and statements online through our <a href="/submit-documents">secure document portal</a>. No office visit needed.</p>
 </div>
 <div class="feature-item">
-<h4>3. We file and keep you on track</h4>
+<h3>3. We file and keep you on track</h3>
 <p>We prepare and file your returns, keep your books current and remind you before every CRA deadline.</p>
 </div>
 </div>
 </div>
 </section>
+
+{{service_areas_nearby}}
 
 <section class="contact-form-section">
 <div class="container">
@@ -239,19 +241,19 @@ final class CmsCityDefaults
 <div class="col-lg-6">
 <div class="contact-form-content scroll-animate-left">
 <h2>Talk to an accountant serving {city}</h2>
-<p>Get expert help with bookkeeping, payroll, personal tax and corporate tax in {city}, {region}. Reach out today for a free, no-obligation consultation.</p>
+<p>Get expert help with bookkeeping, payroll, personal tax and corporate tax in {city}, {region}. Reach out today for a free, no-obligation consultation. See all <a href="/service-area">service areas</a> we cover.</p>
 <div class="contact-info">
 <div class="contact-item">
 <i class="fas fa-phone"></i>
 <div>
-<h4>Call Us</h4>
+<h3>Call Us</h3>
 <a href="{phone_link}">{phone}</a>
 </div>
 </div>
 <div class="contact-item">
 <i class="fas fa-envelope"></i>
 <div>
-<h4>Email Us</h4>
+<h3>Email Us</h3>
 <a href="{email_link}">{email}</a>
 </div>
 </div>
@@ -389,17 +391,34 @@ TEXT,
     {
         $config = self::get();
         $phone = trim((string) ($city['phone'] ?? ''));
-        $phoneLink = $phone !== '' ? 'tel:' . preg_replace('/[^\d+]/', '', $phone) : CmsCompany::phoneHref();
+        if ($phone === '') {
+            $phone = CmsCompany::phone();
+        }
+        $phoneLink = CmsCompany::phoneHref();
+        if ($phone !== '') {
+            $digits = preg_replace('/[^\d+]/', '', $phone) ?? '';
+            if ($digits !== '') {
+                $phoneLink = 'tel:' . $digits;
+            }
+        }
+        // Never leave href="{phone_link}" unresolved (browsers treat it as /service-area/{phone_link}).
+        if ($phoneLink === '') {
+            $phoneLink = '/contact';
+        }
         $email = trim((string) ($city['email'] ?? ''));
+        if ($email === '') {
+            $email = CmsCompany::email();
+        }
+        $emailLink = $email !== '' ? 'mailto:' . $email : '/contact';
         return [
             '{city}' => (string) ($city['city'] ?? ''),
             '{region}' => (string) ($city['region'] ?? ''),
             '{country}' => (string) ($city['country'] ?? ''),
             '{service}' => trim((string) ($city['primary_service'] ?? '')) ?: (string) $config['service'],
-            '{phone}' => $phone !== '' ? $phone : CmsCompany::phone(),
+            '{phone}' => $phone,
             '{phone_link}' => $phoneLink,
-            '{email}' => $email !== '' ? $email : CmsCompany::email(),
-            '{email_link}' => 'mailto:' . ($email !== '' ? $email : CmsCompany::email()),
+            '{email}' => $email,
+            '{email_link}' => $emailLink,
             '{site_name}' => (string) CmsSiteConfig::value('site_name'),
         ];
     }
@@ -443,6 +462,8 @@ TEXT,
         foreach ($vars as $placeholder => $value) {
             if ($value === '') {
                 $template = (string) preg_replace('/\s*,\s*' . preg_quote($placeholder, '/') . '|' . preg_quote($placeholder, '/') . '\s*,\s*/u', '', $template);
+                // Also strip bare empty tokens so href="{phone_link}" cannot survive into HTML.
+                $template = str_replace($placeholder, '', $template);
             }
         }
         return $template;

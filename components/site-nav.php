@@ -91,7 +91,7 @@ $siteCrumbs = $siteCrumbs ?? CmsNavigation::breadcrumbs($canonicalPath);
   <aside class="sh-drawer" id="shDrawer" aria-label="Menu" aria-hidden="true" inert>
     <div class="sh-drawer-head">
       <a href="/" class="sh-logo" aria-label="Verma Accounting home">
-        <img src="<?= asset('images/verma-accounting-logo-340.webp') ?>" alt="" width="150" height="36" loading="lazy" />
+        <img src="<?= asset('images/verma-accounting-logo-340.webp') ?>" alt="Verma Accounting" width="150" height="36" loading="lazy" />
       </a>
       <button type="button" class="sh-close" data-sh-close aria-label="Close menu"><i class="fas fa-xmark" aria-hidden="true"></i></button>
     </div>

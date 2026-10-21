@@ -119,13 +119,19 @@ function blog_prepare_content_html(string $html): string
         1
     ) ?? $html;
 
-    // Unwrap a single outer <article> so body styles apply cleanly
+    // Unwrap a single outer <article> so body styles apply cleanly (whole body, or article + trailing sections).
     if (preg_match('/^\s*<article\b[^>]*>(.*)<\/article>\s*$/is', $html, $m)) {
         $html = trim($m[1]);
+    } elseif (preg_match('/^\s*<article\b[^>]*>(.*?)<\/article>(.*)$/is', $html, $m)) {
+        $html = trim($m[1] . "\n" . $m[2]);
     }
 
-    // Remove the first H1 (title is shown in the page hero)
-    $html = preg_replace('/^\s*<h1\b[^>]*>.*?<\/h1>\s*/is', '', $html, 1) ?? $html;
+    // Title is rendered in the article hero — drop the first body H1, demote any others to H2.
+    $html = preg_replace('/<h1\b[^>]*>.*?<\/h1>\s*/is', '', $html, 1) ?? $html;
+    if (preg_match('/<h1\b/i', $html)) {
+        $html = preg_replace('/<h1(\b[^>]*)>/i', '<h2$1>', $html) ?? $html;
+        $html = preg_replace('/<\/h1>/i', '</h2>', $html) ?? $html;
+    }
 
     return blog_transform_faqs_html(trim($html));
 }

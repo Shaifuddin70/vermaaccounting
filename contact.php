@@ -96,6 +96,12 @@
               Book on Calendly
             </a>
           </div>
+
+          <?php
+            $serviceAreasVariant = 'contact';
+            $serviceAreasLimit = 8;
+            include __DIR__ . '/components/service-areas-links.php';
+          ?>
         </aside>
       </div>
 

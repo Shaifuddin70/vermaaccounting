@@ -222,6 +222,12 @@ final class CmsNavigation
             if (empty($item['visible'])) {
                 continue;
             }
+            // Keep Service Areas out of the header; cities stay in the footer and on-page links.
+            $key = (string) ($item['key'] ?? '');
+            $path = self::pathOf((string) ($item['url'] ?? ''));
+            if ($key === 'service_areas' || $path === '/service-area') {
+                continue;
+            }
             $children = [];
             foreach ($item['children'] ?? [] as $child) {
                 if ($show($child)) {

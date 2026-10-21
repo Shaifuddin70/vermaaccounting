@@ -3,6 +3,20 @@
 // Usage: include 'components/other-services.php'; 
 // Pass $current_service to exclude from the list
 
+$serviceAreaLabels = [
+  'bookkeeping' => 'Bookkeeping services',
+  'accounting' => 'Accounting services',
+  'payroll' => 'Payroll services',
+  'personal-tax' => 'Personal tax services',
+  'corporate-tax' => 'Corporate tax services',
+  'business-registration' => 'Business registration services',
+  'loan' => 'Business loan support',
+];
+$serviceAreasVariant = 'service';
+$serviceAreasServiceLabel = $serviceAreaLabels[$current_service ?? ''] ?? 'Accounting services';
+$serviceAreasLimit = 8;
+include __DIR__ . '/service-areas-links.php';
+
 $all_services = [
   'bookkeeping' => [
     'title' => 'Bookkeeping',

@@ -133,12 +133,15 @@ AddType video/mp4 .mp4
 <IfModule mod_headers.c>
   <FilesMatch "\.(css|js)$">
     Header set Cache-Control "public, max-age=2592000"
+    Header set X-Robots-Tag "noindex"
   </FilesMatch>
   <FilesMatch "\.woff2$">
     Header set Cache-Control "public, max-age=31536000, immutable"
+    Header set X-Robots-Tag "noindex"
   </FilesMatch>
-  <FilesMatch "\.(webp|jpe?g|png|gif|svg|ico|mp4|webm)$">
+  <FilesMatch "\.(webp|jpe?g|png|gif|svg|ico|mp4|webm|pdf)$">
     Header set Cache-Control "public, max-age=15552000"
+    Header set X-Robots-Tag "noindex"
   </FilesMatch>
 </IfModule>
 
