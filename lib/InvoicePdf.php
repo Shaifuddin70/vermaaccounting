@@ -250,10 +250,15 @@ final class InvoicePdf extends FPDF
             ? invoice_pay_url($this->invoice)
             : '';
         if ($payUrl !== '' && $notesText !== '') {
-            // Dedicated clickable link is drawn below; remove the plain URL from notes.
+            // Card logos are drawn below; remove plain pay URL / card lines from notes.
             $notesText = trim(preg_replace(
                 '/(?:\r?\n)?Pay online by card:\s*' . preg_quote($payUrl, '/') . '\s*/iu',
                 '',
+                $notesText
+            ) ?? $notesText);
+            $notesText = trim(preg_replace(
+                '/(?:\r?\n)?Pay online by (?:card|Visa or Mastercard)\.?\s*(?:\r?\n|$)/iu',
+                "\n",
                 $notesText
             ) ?? $notesText);
             $notesText = trim(str_replace($payUrl, '', $notesText));
@@ -278,10 +283,8 @@ final class InvoicePdf extends FPDF
                 $this->SetFont('Helvetica', 'B', 9);
                 $this->SetTextColor(249, 115, 22);
                 $this->Cell(90, 5, $this->t('Pay online by card:'), 0, 2);
-                $this->SetFont('Helvetica', 'U', 8);
-                $this->SetTextColor(30, 58, 138);
-                $this->Write(4.5, $this->t($payUrl), $payUrl);
-                $this->Ln(6);
+                $this->drawPaymentCardLogos(16, $this->GetY(), $payUrl);
+                $this->Ln(2);
             }
             $notesBottom = $this->GetY();
         }
@@ -361,6 +364,35 @@ final class InvoicePdf extends FPDF
         $this->SetFont('Helvetica', $bold ? 'B' : '', 9);
         $this->SetTextColor(31, 41, 55);
         $this->Cell(34, 5.5, $this->t($value), 0, 1, 'R');
+    }
+
+    /** Visa + Mastercard marks (clickable to the pay URL when provided). */
+    private function drawPaymentCardLogos(float $x, float $y, string $payUrl = ''): void
+    {
+        $logos = [
+            PROJECT_ROOT . '/images/payment/visa.png',
+            PROJECT_ROOT . '/images/payment/mastercard.png',
+        ];
+        $logoH = 8.5;
+        $gap = 3.0;
+        $cursorX = $x;
+        $drawn = false;
+        foreach ($logos as $path) {
+            if (!is_file($path)) {
+                continue;
+            }
+            $info = @getimagesize($path);
+            $logoW = $logoH * 1.55;
+            if (is_array($info) && !empty($info[0]) && !empty($info[1]) && (int) $info[1] > 0) {
+                $logoW = $logoH * ((int) $info[0] / (int) $info[1]);
+            }
+            $this->Image($path, $cursorX, $y, $logoW, $logoH, '', $payUrl);
+            $cursorX += $logoW + $gap;
+            $drawn = true;
+        }
+        if ($drawn) {
+            $this->SetY($y + $logoH + 1);
+        }
     }
 
     private function drawThanks(): void

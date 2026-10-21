@@ -425,7 +425,7 @@ require __DIR__ . '/includes/layout-start.php';
           <textarea id="email-message" name="email_message" rows="7"
             <?= $mailEnabled ? '' : 'disabled' ?>><?= e($defaultMessage) ?></textarea>
           <small class="admin-field-hint">
-            Amount due, due date<?= $onlinePayUrl !== '' ? ', and a <strong>Pay by card</strong> button' : '' ?> are added below the message; the PDF is attached<?= $onlinePayUrl !== '' ? ' with the payment link' : '' ?>.
+            Amount due, due date<?= $onlinePayUrl !== '' ? ', and a <strong>Pay by card</strong> button' : '' ?> are added below the message; the PDF is attached<?= $onlinePayUrl !== '' ? ' with Visa/Mastercard pay marks' : '' ?>.
             <?php if ($canManageTemplates): ?><a href="/admin/invoice-templates#email-templates">Edit templates</a><?php endif; ?>
           </small>
         </div>

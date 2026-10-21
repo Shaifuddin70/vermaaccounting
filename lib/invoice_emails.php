@@ -104,9 +104,7 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
             . '<tr><td style="border-radius:8px;background:#f97316;">'
             . '<a href="' . e($payUrl) . '" style="display:inline-block;padding:14px 28px;font-size:16px;'
             . 'font-weight:700;color:#ffffff;text-decoration:none;">Pay ' . e($amountDue) . ' by card</a>'
-            . '</td></tr></table>'
-            . '<p style="margin:0 0 8px;font-size:13px;color:#64748b;">Or open this link: '
-            . '<a href="' . e($payUrl) . '" style="color:#1e3a8a;word-break:break-all;">' . e($payUrl) . '</a></p>';
+            . '</td></tr></table>';
     }
 
     $html = submission_email_layout(
@@ -118,7 +116,7 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
     $text = $body . "\n\n"
         . "Amount due: {$amountDue} {$currency}\n"
         . "Payment due: {$due}\n"
-        . ($payUrl !== '' ? "\nPay online by card: {$payUrl}\n" : '');
+        . ($payUrl !== '' ? "\nPay online by card using the button in this email.\n" : '');
 
     $ok = $mailer->sendWithAttachments(
         $toEmail,

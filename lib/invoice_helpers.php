@@ -584,6 +584,8 @@ function invoice_templates_upgrade_payment_defaults(array $templates, bool $pers
     $oldNotes = [
         'Please make all payments to {payment_email}',
         "Please make all payments to {payment_email}.\n\nPay online by card: {payment_url}",
+        "Pay online by card: {payment_url}\n\nOr Interac e-Transfer to {payment_email} (include invoice #{invoice_number}).",
+        "Pay online by Visa or Mastercard.\n\nOr Interac e-Transfer to {payment_email} (include invoice #{invoice_number}).",
     ];
     $oldEmailBodies = [
         "Hi {client_name},\n\nPlease find invoice #{invoice_number} attached as a PDF.\n\nPlease make payment to {payment_email}.",
@@ -622,7 +624,7 @@ function invoice_builtin_templates(): array
         'notes' => [[
             'id' => 'default',
             'name' => 'Standard',
-            'body' => "Pay online by card: {payment_url}\n\nOr Interac e-Transfer to {payment_email} (include invoice #{invoice_number}).",
+            'body' => "Interac e-Transfer to {payment_email} (include invoice #{invoice_number}).",
             'is_default' => true,
         ]],
         'emails' => [[
