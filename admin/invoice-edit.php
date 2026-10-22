@@ -103,6 +103,12 @@ if ($dueAdjustment === '') {
 }
 $advanceLabel = (string) ($old['advance_label'] ?? ($invoice ? (string) ($invoice['advance_label'] ?? '') : ''));
 $dueAdjustmentLabel = (string) ($old['due_adjustment_label'] ?? ($invoice ? (string) ($invoice['due_adjustment_label'] ?? '') : ''));
+$collectAmount = (string) ($old['collect_amount'] ?? ($invoice
+    ? invoice_format_discount_flat_input((float) ($invoice['collect_amount'] ?? 0))
+    : '0'));
+if ($collectAmount === '') {
+    $collectAmount = '0';
+}
 $status = (string) ($old['status'] ?? $invoice['status'] ?? 'draft');
 $notes = (string) ($old['notes'] ?? $invoice['notes'] ?? invoice_default_notes());
 $noteTemplates = array_map(
@@ -513,6 +519,11 @@ require __DIR__ . '/includes/layout-start.php';
           <input type="text" id="due-adjustment-label" name="due_adjustment_label" maxlength="120"
             value="<?= e($dueAdjustmentLabel) ?>" placeholder="e.g. Late fee / write-off">
         </div>
+        <div class="admin-field">
+          <label for="collect-amount">Collect now ($)</label>
+          <input type="number" id="collect-amount" name="collect_amount" min="0" step="0.01" inputmode="decimal" autocomplete="off" value="<?= e($collectAmount) ?>">
+          <small class="admin-field-hint">Optional. Ask the client to pay this amount online (e.g. a deposit). Leave 0 to collect the full balance.</small>
+        </div>
         <div class="invoice-totals-preview" id="invoice-totals-preview" aria-live="polite">
           <div class="invoice-totals-row"><span>Subtotal</span><strong id="preview-subtotal">$0.00</strong></div>
           <div class="invoice-totals-row" id="preview-discount-percent-row" hidden><span id="preview-discount-percent-label">Discount</span><strong id="preview-discount-percent">$0.00</strong></div>
@@ -521,6 +532,7 @@ require __DIR__ . '/includes/layout-start.php';
           <div class="invoice-totals-row" id="preview-advance-row" hidden><span id="preview-advance-label">Advance</span><strong id="preview-advance">$0.00</strong></div>
           <div class="invoice-totals-row" id="preview-due-adjustment-row" hidden><span id="preview-due-adjustment-label">Due adjustment</span><strong id="preview-due-adjustment">$0.00</strong></div>
           <div class="invoice-totals-row invoice-totals-row--due"><span>Amount due</span><strong id="preview-amount-due">$0.00</strong></div>
+          <div class="invoice-totals-row" id="preview-collect-row" hidden><span>Collect now</span><strong id="preview-collect-amount">$0.00</strong></div>
         </div>
         <div class="invoice-summary-actions">
           <button type="submit" class="admin-btn admin-btn-primary"><?= $invoice ? 'Save invoice' : 'Create invoice' ?></button>
@@ -557,5 +569,5 @@ require __DIR__ . '/includes/layout-start.php';
 window.INVOICE_CLIENTS = <?= json_encode($clientsList, JSON_UNESCAPED_UNICODE) ?>;
 window.INVOICE_SERVICES = <?= json_encode($servicesList, JSON_UNESCAPED_UNICODE) ?>;
 </script>
-<script src="/admin/js/invoice-edit.js?v=11" defer></script>
+<script src="/admin/js/invoice-edit.js?v=12" defer></script>
 <?php require __DIR__ . '/includes/layout-end.php'; ?>

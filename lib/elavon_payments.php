@@ -233,7 +233,7 @@ function online_payment_update(int $id, array $changes): void
 }
 
 /**
- * Start a hosted-page payment for the invoice's full balance.
+ * Start a hosted-page payment for the invoice collect-now amount (full balance if unset).
  *
  * @return array{ok: bool, redirect?: string, reference?: string, error?: string}
  */
@@ -243,7 +243,7 @@ function elavon_start_invoice_payment(array $invoice): array
         return ['ok' => false, 'error' => 'This invoice cannot be paid online.'];
     }
 
-    $charge = elavon_charge_breakdown(invoice_amount_due($invoice));
+    $charge = elavon_charge_breakdown(invoice_collect_amount($invoice));
     $number = preg_replace('/[^A-Za-z0-9-]/', '', (string) ($invoice['invoice_number'] ?? '')) ?: (string) $invoice['id'];
     $reference = mb_substr($number, 0, 12) . '-' . strtoupper(bin2hex(random_bytes(4)));
     $config = elavon_config();

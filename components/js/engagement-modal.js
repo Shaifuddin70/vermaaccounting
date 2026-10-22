@@ -8,6 +8,9 @@
     '/contact-us': true,
     '/submit-documents': true,
     '/tax-intake': true,
+    '/pay': true,
+    '/pay-wait': true,
+    '/pay-return': true,
   };
 
   function shouldSkip() {
@@ -15,6 +18,8 @@
     if (skipPaths[path]) return true;
     if (path.indexOf('/admin') === 0) return true;
     if (path.indexOf('/form/') === 0) return true;
+    // Any payment flow page (pay, pay-wait, pay-return, future pay-*).
+    if (path === '/pay' || path.indexOf('/pay-') === 0 || path.indexOf('/pay/') === 0) return true;
     try {
       if (sessionStorage.getItem(STORAGE_KEY) === '1') return true;
     } catch (err) {

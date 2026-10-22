@@ -74,7 +74,9 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
 
     $number = (string) ($invoice['invoice_number'] ?? '');
     $currency = (string) ($invoice['currency'] ?? 'CAD');
-    $amountDue = invoice_format_money(invoice_amount_due($invoice));
+    $balanceDue = invoice_format_money(invoice_amount_due($invoice));
+    $collectNow = invoice_format_money(invoice_collect_amount($invoice));
+    $isPartialCollect = invoice_has_partial_collect($invoice);
     $due = invoice_format_date((string) ($invoice['due_date'] ?? ''));
 
     $draft = invoice_email_draft($invoice);
@@ -94,8 +96,13 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
     $bodyHtml .= '<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0 0 20px;">'
         . '<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;width:40%;">Amount due</td>'
         . '<td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#1e3a8a;font-weight:700;text-align:right;">'
-        . e($amountDue) . ' ' . e($currency) . '</td></tr>'
-        . '<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">Payment due</td>'
+        . e($balanceDue) . ' ' . e($currency) . '</td></tr>';
+    if ($isPartialCollect) {
+        $bodyHtml .= '<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">Pay now</td>'
+            . '<td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#c2410c;font-weight:700;text-align:right;">'
+            . e($collectNow) . ' ' . e($currency) . '</td></tr>';
+    }
+    $bodyHtml .= '<tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">Payment due</td>'
         . '<td style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#334155;text-align:right;">'
         . e($due) . '</td></tr>'
         . '</table>';
@@ -103,7 +110,7 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
         $bodyHtml .= '<table role="presentation" cellpadding="0" cellspacing="0" style="margin:8px 0 24px;">'
             . '<tr><td style="border-radius:8px;background:#f97316;">'
             . '<a href="' . e($payUrl) . '" style="display:inline-block;padding:14px 28px;font-size:16px;'
-            . 'font-weight:700;color:#ffffff;text-decoration:none;">Pay ' . e($amountDue) . ' by card</a>'
+            . 'font-weight:700;color:#ffffff;text-decoration:none;">Pay ' . e($collectNow) . ' by card</a>'
             . '</td></tr></table>';
     }
 
@@ -114,7 +121,8 @@ function invoice_send_to_client(array $invoice, array $items, string $toEmail, ?
     );
 
     $text = $body . "\n\n"
-        . "Amount due: {$amountDue} {$currency}\n"
+        . "Amount due: {$balanceDue} {$currency}\n"
+        . ($isPartialCollect ? "Pay now: {$collectNow} {$currency}\n" : '')
         . "Payment due: {$due}\n"
         . ($payUrl !== '' ? "\nPay online by card using the button in this email.\n" : '');
 

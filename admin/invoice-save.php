@@ -37,6 +37,7 @@ $discountPercentLabel = invoice_sanitize_discount_label((string) ($_POST['discou
 $discountFlatLabel = invoice_sanitize_discount_label((string) ($_POST['discount_flat_label'] ?? ''));
 $advanceAmount = invoice_parse_discount_flat_input($_POST['advance_amount'] ?? 0);
 $dueAdjustment = invoice_parse_signed_money_input($_POST['due_adjustment'] ?? 0);
+$collectAmount = invoice_parse_discount_flat_input($_POST['collect_amount'] ?? 0);
 $advanceLabel = invoice_sanitize_discount_label((string) ($_POST['advance_label'] ?? ''));
 $dueAdjustmentLabel = invoice_sanitize_discount_label((string) ($_POST['due_adjustment_label'] ?? ''));
 $status = trim((string) ($_POST['status'] ?? 'draft'));
@@ -67,6 +68,9 @@ if ($discountFlat < 0) {
 }
 if ($advanceAmount < 0) {
     $errors[] = 'Advance cannot be negative.';
+}
+if ($collectAmount < 0) {
+    $errors[] = 'Collect now amount cannot be negative.';
 }
 if ($items === []) {
     $errors[] = 'Select at least one service or add a custom line item.';
@@ -170,6 +174,7 @@ $data = [
     'discount_flat_label' => $discountFlatLabel,
     'advance_amount' => $advanceAmount,
     'due_adjustment' => $dueAdjustment,
+    'collect_amount' => $collectAmount,
     'advance_label' => $advanceLabel,
     'due_adjustment_label' => $dueAdjustmentLabel,
     'notes' => $notes,

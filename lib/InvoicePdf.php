@@ -129,6 +129,8 @@ final class InvoicePdf extends FPDF
 
         $currency = (string) ($this->invoice['currency'] ?? 'CAD');
         $amountDue = invoice_format_money($this->dueState['amount_due']);
+        $collectNow = invoice_format_money(invoice_collect_amount($this->invoice));
+        $isPartialCollect = invoice_has_partial_collect($this->invoice);
         $rows = [
             ['Invoice Number:', (string) ($this->invoice['invoice_number'] ?? '')],
             ['Invoice Date:', invoice_format_date((string) ($this->invoice['invoice_date'] ?? ''))],
@@ -147,15 +149,23 @@ final class InvoicePdf extends FPDF
             $metaY = $this->GetY();
         }
 
-        // Amount due highlight box
+        // Amount due highlight box (+ optional pay-now when collecting a partial amount)
+        $boxH = $isPartialCollect ? 14.5 : 8;
         $this->SetFillColor(241, 245, 249);
-        $this->Rect($rightX, $metaY + 1, 84, 8, 'F');
+        $this->Rect($rightX, $metaY + 1, 84, $boxH, 'F');
         $this->SetXY($rightX + 1.5, $metaY + 2.2);
         $this->SetFont('Helvetica', 'B', 9);
         $this->SetTextColor(30, 58, 138);
         $this->Cell(46, 5.5, $this->t('Amount Due (' . $currency . '):'), 0, 0, 'L');
         $this->Cell(34.5, 5.5, $this->t($amountDue), 0, 1, 'R');
-        $rightBottom = $metaY + 11;
+        if ($isPartialCollect) {
+            $this->SetXY($rightX + 1.5, $metaY + 8.2);
+            $this->SetFont('Helvetica', 'B', 9);
+            $this->SetTextColor(194, 65, 12);
+            $this->Cell(46, 5.5, $this->t('Pay Now (' . $currency . '):'), 0, 0, 'L');
+            $this->Cell(34.5, 5.5, $this->t($collectNow), 0, 1, 'R');
+        }
+        $rightBottom = $metaY + 3 + $boxH;
 
         $this->SetY(max($leftBottom, $rightBottom) + 8);
     }
@@ -282,7 +292,10 @@ final class InvoicePdf extends FPDF
                 $this->SetX(16);
                 $this->SetFont('Helvetica', 'B', 9);
                 $this->SetTextColor(249, 115, 22);
-                $this->Cell(90, 5, $this->t('Pay online by card:'), 0, 2);
+                $payLabel = invoice_has_partial_collect($this->invoice)
+                    ? 'Pay ' . invoice_format_money(invoice_collect_amount($this->invoice)) . ' online by card:'
+                    : 'Pay online by card:';
+                $this->Cell(90, 5, $this->t($payLabel), 0, 2);
                 $this->drawPaymentCardLogos(16, $this->GetY(), $payUrl);
                 $this->Ln(2);
             }
@@ -350,6 +363,13 @@ final class InvoicePdf extends FPDF
         $this->SetX($totalsX);
         $this->Cell(48, 6, $this->t('Amount Due (' . $currency . '):'), 0, 0, 'R');
         $this->Cell(34, 6, $this->t($amountDue), 0, 1, 'R');
+        if (invoice_has_partial_collect($this->invoice)) {
+            $this->SetFont('Helvetica', 'B', 10);
+            $this->SetTextColor(194, 65, 12);
+            $this->SetX($totalsX);
+            $this->Cell(48, 6, $this->t('Pay Now (' . $currency . '):'), 0, 0, 'R');
+            $this->Cell(34, 6, $this->t(invoice_format_money(invoice_collect_amount($this->invoice))), 0, 1, 'R');
+        }
 
         // Keep content below whichever column ended lower (notes+pay link vs totals).
         $this->SetY(max($this->GetY(), $notesBottom) + 2);

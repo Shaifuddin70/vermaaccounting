@@ -26,6 +26,8 @@ $dueState = invoice_due_state($invoice);
 $subtotal = (float) ($invoice['subtotal'] ?? 0);
 $total = (float) ($invoice['total'] ?? 0);
 $amountDue = (float) $dueState['amount_due'];
+$collectAmount = invoice_collect_amount($invoice);
+$isPartialCollect = invoice_has_partial_collect($invoice);
 $status = (string) ($invoice['status'] ?? 'draft');
 $csrf = Auth::csrfToken();
 $print = isset($_GET['print']);
@@ -153,6 +155,9 @@ require __DIR__ . '/includes/layout-start.php';
         <span>Balance due</span>
         <strong><?= e(invoice_format_money($amountDue)) ?> <small><?= e($currency) ?></small></strong>
       </div>
+      <?php if ($isPartialCollect): ?>
+        <p class="invoice-summary-collect">Collect now: <strong><?= e(invoice_format_money($collectAmount)) ?></strong></p>
+      <?php endif; ?>
       <div class="invoice-payments-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= $paidPercent ?>">
         <span style="width: <?= $paidPercent ?>%"></span>
       </div>
@@ -269,7 +274,7 @@ require __DIR__ . '/includes/layout-start.php';
             <input type="text" id="pay-link" value="<?= e($onlinePayUrl) ?>" readonly>
             <button type="button" class="admin-btn admin-btn-secondary admin-btn-sm" data-copy-target="pay-link">Copy</button>
           </div>
-          <small class="admin-field-hint">Included as a “Pay online” button when you email the invoice.
+          <small class="admin-field-hint">Included as a “Pay <?= e(invoice_format_money($collectAmount)) ?> by card” button when you email the invoice<?= $isPartialCollect ? ' (partial of the balance)' : '' ?>.
             <?php if (elavon_config()['environment'] !== 'live'): ?><strong>Test mode</strong> — no real charges.<?php endif; ?></small>
         </div>
       <?php elseif ($onlineEnabled): ?>

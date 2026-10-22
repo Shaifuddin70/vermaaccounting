@@ -9173,6 +9173,16 @@ a.clients-contact-line:hover {
   color: #0f766e;
 }
 
+.invoice-summary-collect {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  color: var(--admin-muted);
+}
+
+.invoice-summary-collect strong {
+  color: #c2410c;
+}
+
 .invoice-payments-progress {
   height: 8px;
   margin-top: 0.85rem;

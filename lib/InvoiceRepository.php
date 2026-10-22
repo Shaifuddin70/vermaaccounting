@@ -118,10 +118,10 @@ final class InvoiceRepository
                     invoice_date, due_date, currency, discount_percent, discount_flat,
                     discount_percent_label, discount_flat_label,
                     advance_amount, due_adjustment, advance_label, due_adjustment_label,
-                    subtotal, discount_amount, total, amount_due, notes, status,
+                    subtotal, discount_amount, total, amount_due, collect_amount, notes, status,
                     created_by_user_id, created_by_name, created_at, updated_at
                 ) VALUES (
-                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+                    ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
                 )
             ');
             $stmt->execute([
@@ -151,6 +151,7 @@ final class InvoiceRepository
                 $totals['discount_amount'],
                 $totals['total'],
                 $totals['amount_due'],
+                invoice_money(max(0, (float) ($data['collect_amount'] ?? 0))),
                 (string) ($data['notes'] ?? ''),
                 (string) ($data['status'] ?? 'draft'),
                 $data['created_by_user_id'] ?? null,
@@ -212,6 +213,7 @@ final class InvoiceRepository
                     discount_amount = ?,
                     total = ?,
                     amount_due = ?,
+                    collect_amount = ?,
                     notes = ?,
                     status = ?,
                     updated_at = ?
@@ -244,6 +246,7 @@ final class InvoiceRepository
                 $totals['discount_amount'],
                 $totals['total'],
                 $totals['amount_due'],
+                invoice_money(max(0, (float) ($data['collect_amount'] ?? 0))),
                 (string) ($data['notes'] ?? ''),
                 (string) ($data['status'] ?? 'draft'),
                 now_iso(),
@@ -403,7 +406,9 @@ final class InvoiceRepository
                 now_iso(),
             ]);
             $paymentId = (int) $this->db->lastInsertId();
+            $paymentAmount = invoice_money((float) ($data['amount'] ?? 0));
             $paid = $this->syncAmountPaid($invoiceId);
+            $this->clearCollectAfterPayment($invoiceId, $paymentAmount);
             $this->db->commit();
             return $paid;
         } catch (Throwable $e) {
@@ -438,6 +443,34 @@ final class InvoiceRepository
         $stmt = $this->db->prepare('UPDATE invoices SET amount_paid = ?, updated_at = ? WHERE id = ?');
         $stmt->execute([$paid, now_iso(), $invoiceId]);
         return $paid;
+    }
+
+    /**
+     * Once the “Collect now / Pay now” amount is covered (or the invoice is settled),
+     * clear it so the next pay link asks for the remaining balance only.
+     */
+    private function clearCollectAfterPayment(int $invoiceId, float $paymentAmount): void
+    {
+        $stmt = $this->db->prepare('SELECT collect_amount, amount_due, amount_paid, status FROM invoices WHERE id = ?');
+        $stmt->execute([$invoiceId]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            return;
+        }
+
+        $collect = invoice_money(max(0, (float) ($row['collect_amount'] ?? 0)));
+        if ($collect <= 0.004) {
+            return;
+        }
+
+        $balance = invoice_amount_due($row);
+        $covered = $paymentAmount + 0.004 >= $collect || $balance <= 0.004;
+        if (!$covered) {
+            return;
+        }
+
+        $upd = $this->db->prepare('UPDATE invoices SET collect_amount = 0, updated_at = ? WHERE id = ? AND collect_amount > 0');
+        $upd->execute([now_iso(), $invoiceId]);
     }
 
     public function invoiceNumberExists(string $number, ?int $excludeId = null): bool

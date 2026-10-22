@@ -312,6 +312,30 @@ function invoice_amount_due(array $invoice): float
     return invoice_due_state($invoice)['amount_due'];
 }
 
+/**
+ * Amount the client is asked to pay online/by card now.
+ * 0 / empty = full outstanding balance. Otherwise min(collect_amount, amount_due).
+ */
+function invoice_collect_amount(array $invoice): float
+{
+    $due = invoice_amount_due($invoice);
+    $request = invoice_money(max(0, (float) ($invoice['collect_amount'] ?? 0)));
+    if ($request <= 0.004) {
+        return $due;
+    }
+
+    return invoice_money(min($request, $due));
+}
+
+/** True when a partial “collect now” amount is set below the full balance. */
+function invoice_has_partial_collect(array $invoice): bool
+{
+    $request = invoice_money(max(0, (float) ($invoice['collect_amount'] ?? 0)));
+    $due = invoice_amount_due($invoice);
+
+    return $request > 0.004 && $due > 0.004 && ($request + 0.004) < $due;
+}
+
 /** Format adjustment for display: credits in parentheses, charges plain. */
 function invoice_format_adjustment_money(float $amount): string
 {
@@ -711,6 +735,7 @@ function invoice_template_placeholders(): array
         '{client_name}' => 'Client or company name',
         '{invoice_number}' => 'Invoice number',
         '{amount_due}' => 'Balance due, e.g. $250.00',
+        '{collect_amount}' => 'Pay-now amount (partial or full balance)',
         '{due_date}' => 'Payment due date',
         '{invoice_date}' => 'Invoice date',
         '{payment_email}' => 'Payment email from company details',
@@ -744,6 +769,7 @@ function invoice_template_fill(string $text, ?array $invoice = null): string
             '{client_name}' => $client !== '' ? $client : 'there',
             '{invoice_number}' => (string) ($invoice['invoice_number'] ?? ''),
             '{amount_due}' => invoice_format_money(invoice_amount_due($invoice)),
+            '{collect_amount}' => invoice_format_money(invoice_collect_amount($invoice)),
             '{due_date}' => invoice_format_date((string) ($invoice['due_date'] ?? '')),
             '{invoice_date}' => invoice_format_date((string) ($invoice['invoice_date'] ?? '')),
             '{payment_url}' => $payUrl,

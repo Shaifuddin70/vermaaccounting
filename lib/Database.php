@@ -458,6 +458,7 @@ final class Database
                     discount_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     total DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     amount_due DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+                    collect_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
                     notes TEXT,
                     status ENUM("draft", "approved", "sent", "paid") NOT NULL DEFAULT "draft",
                     created_by_user_id INT UNSIGNED DEFAULT NULL,
@@ -532,6 +533,7 @@ final class Database
                 discount_amount REAL NOT NULL DEFAULT 0,
                 total REAL NOT NULL DEFAULT 0,
                 amount_due REAL NOT NULL DEFAULT 0,
+                collect_amount REAL NOT NULL DEFAULT 0,
                 notes TEXT,
                 status TEXT NOT NULL DEFAULT "draft",
                 created_by_user_id INTEGER,
@@ -649,6 +651,13 @@ final class Database
             }
             // Backfill existing invoices: amount due starts equal to total.
             $this->pdo->exec('UPDATE invoices SET amount_due = total WHERE amount_due = 0 AND total <> 0');
+        }
+        if (!$this->columnExists('invoices', 'collect_amount')) {
+            if ($this->driver === 'mysql') {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN collect_amount {$moneyType} NOT NULL DEFAULT 0.00 AFTER amount_due");
+            } else {
+                $this->pdo->exec("ALTER TABLE invoices ADD COLUMN collect_amount {$moneyType} NOT NULL DEFAULT 0");
+            }
         }
     }
 

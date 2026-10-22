@@ -469,7 +469,8 @@ function extract_client_from_submission(array $submission, array $schema): array
             $phone = $phone !== '' ? $phone : $val;
         } elseif (preg_match('/\b(company|business|organization|organisation|firm)\b/', $haystack)) {
             $company = $company !== '' ? $company : $val;
-        } elseif (preg_match('/\b(spouse|partner|dependant|dependent|child|employer)\b/', $haystack)) {
+        } elseif (preg_match('/\b(spouse|partner|dependant|dependent|child|employer|landlord|tenant|lessor|provider)\b/', $haystack)) {
+            // Not the submitting client (e.g. tax-intake landlord / care provider names).
             continue;
         } elseif (preg_match('/\b(first|given)[\s_-]*name\b/', $haystack)) {
             $firstName = $firstName !== '' ? $firstName : $val;
@@ -483,7 +484,8 @@ function extract_client_from_submission(array $submission, array $schema): array
         }
     }
 
-    if ($name === '' && ($firstName !== '' || $lastName !== '')) {
+    // Prefer structured client name over a generic “name” field (landlord, workplace, etc.).
+    if ($firstName !== '' || $lastName !== '') {
         $name = trim(implode(' ', array_filter([$firstName, $middleName, $lastName], static fn (string $v): bool => $v !== '')));
     }
 
@@ -492,8 +494,13 @@ function extract_client_from_submission(array $submission, array $schema): array
             if (!in_array($field['type'] ?? '', ['text', 'email', 'tel'], true)) {
                 continue;
             }
-            $val = trim((string) ($data[$field['name'] ?? ''] ?? ''));
-            if ($val !== '' && !is_array($data[$field['name'] ?? ''] ?? '')) {
+            $fieldName = (string) ($field['name'] ?? '');
+            $haystack = strtolower($fieldName . ' ' . (string) ($field['label'] ?? ''));
+            if (preg_match('/\b(spouse|partner|dependant|dependent|child|employer|landlord|tenant|lessor|provider)\b/', $haystack)) {
+                continue;
+            }
+            $val = trim((string) ($data[$fieldName] ?? ''));
+            if ($val !== '' && !is_array($data[$fieldName] ?? '')) {
                 $name = $val;
                 break;
             }

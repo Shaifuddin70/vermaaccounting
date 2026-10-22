@@ -920,6 +920,12 @@ final class ClientRepository
                     $this->refreshFromSubmission((int) $existing['id'], $extracted, true, $refreshFromSubmissionId);
                 } else {
                     $this->fillEmptyFields((int) $existing['id'], $extracted);
+                    // Correct names that were previously mis-extracted (e.g. landlord as client).
+                    $newName = trim((string) ($extracted['name'] ?? ''));
+                    $oldName = trim((string) ($existing['name'] ?? ''));
+                    if ($newName !== '' && strcasecmp($newName, $oldName) !== 0) {
+                        $this->update((int) $existing['id'], array_merge($existing, ['name' => $newName]));
+                    }
                 }
                 return ['id' => (int) $existing['id'], 'is_new' => false];
             }

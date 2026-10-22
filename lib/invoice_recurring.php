@@ -155,9 +155,10 @@ function invoice_recurring_clone_payload(
         'discount_flat' => (float) ($template['discount_flat'] ?? 0),
         'discount_percent_label' => (string) ($template['discount_percent_label'] ?? ''),
         'discount_flat_label' => (string) ($template['discount_flat_label'] ?? ''),
-        // Do not carry forward advances/adjustments onto recurring copies.
+        // Do not carry forward advances/adjustments/partial collect onto recurring copies.
         'advance_amount' => 0.0,
         'due_adjustment' => 0.0,
+        'collect_amount' => 0.0,
         'advance_label' => '',
         'due_adjustment_label' => '',
         'notes' => (string) ($template['notes'] ?? ''),

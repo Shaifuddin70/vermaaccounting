@@ -56,7 +56,7 @@ final class CmsSiteConfig
             'shared_scripts' => implode("\n", [
                 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js',
                 '/components/js/site-header.js?v=1',
-                '/components/js/engagement-modal.js?v=2',
+                '/components/js/engagement-modal.js?v=3',
                 'https://elfsightcdn.com/platform.js',
             ]),
             'not_found_title' => 'Page not found',

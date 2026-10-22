@@ -113,10 +113,14 @@ $company = invoice_company_settings();
 $seoNoindex = true;
 
 $charge = elavon_charge_breakdown(0);
+$isPartialCollect = false;
+$collectAmount = 0.0;
 if ($invoice) {
     $amountDue = invoice_amount_due($invoice);
+    $collectAmount = invoice_collect_amount($invoice);
+    $isPartialCollect = invoice_has_partial_collect($invoice);
     $canPay = invoice_can_pay_online($invoice);
-    $charge = elavon_charge_breakdown($amountDue);
+    $charge = elavon_charge_breakdown($collectAmount);
     $pageTitle = 'Pay invoice';
     $seoTitle = 'Pay your invoice | Verma Accounting';
     $seoDescription = 'Secure online invoice payment.';
@@ -125,6 +129,7 @@ if ($invoice) {
     $alreadyPaid = $amountDue <= 0;
 } elseif ($submission) {
     $amountDue = $payTarget['amount'] ?? 0.0;
+    $collectAmount = (float) $amountDue;
     $canPay = $payTarget !== null;
     $charge = elavon_charge_breakdown((float) $amountDue);
     $pageTitle = 'Pay advance';
@@ -140,12 +145,14 @@ if ($invoice) {
         if (($row['method'] ?? '') === 'credit_card' && in_array((string) ($row['status'] ?? ''), ['verified', 'applied'], true)) {
             $alreadyPaid = true;
             $amountDue = (float) ($row['amount'] ?? 0);
+            $collectAmount = $amountDue;
             $charge = elavon_charge_breakdown($amountDue);
             break;
         }
     }
 } else {
     $amountDue = 0.0;
+    $collectAmount = 0.0;
     $canPay = false;
     $alreadyPaid = false;
     $pageTitle = 'Pay';
@@ -154,7 +161,7 @@ if ($invoice) {
     $heading = 'Payment link not found';
     $subheading = '';
 }
-$payButtonAmount = $canPay && !$alreadyPaid ? $charge['send'] : (float) $amountDue;
+$payButtonAmount = $canPay && !$alreadyPaid ? $charge['send'] : (float) $collectAmount;
 
 include __DIR__ . '/components/header.php';
 ?>
@@ -195,10 +202,21 @@ include __DIR__ . '/components/header.php';
               <div><dt>Invoice date</dt><dd><?= e(invoice_format_date((string) ($invoice['invoice_date'] ?? ''))) ?></dd></div>
               <div><dt>Payment due</dt><dd><?= e(invoice_format_date((string) ($invoice['due_date'] ?? ''))) ?></dd></div>
             <?php endif; ?>
-            <div class="pay-summary-total">
-              <dt><?= $invoice ? 'Amount due' : 'Advance amount' ?></dt>
-              <dd><?= e(invoice_format_money((float) $amountDue)) ?> <?= e($currencyLabel) ?></dd>
-            </div>
+            <?php if ($invoice && $isPartialCollect): ?>
+              <div>
+                <dt>Invoice balance</dt>
+                <dd><?= e(invoice_format_money((float) $amountDue)) ?> <?= e($currencyLabel) ?></dd>
+              </div>
+              <div class="pay-summary-total">
+                <dt>Pay now</dt>
+                <dd><?= e(invoice_format_money((float) $collectAmount)) ?> <?= e($currencyLabel) ?></dd>
+              </div>
+            <?php else: ?>
+              <div class="pay-summary-total">
+                <dt><?= $invoice ? 'Amount due' : 'Advance amount' ?></dt>
+                <dd><?= e(invoice_format_money((float) $amountDue)) ?> <?= e($currencyLabel) ?></dd>
+              </div>
+            <?php endif; ?>
           </dl>
 
           <?php if ($alreadyPaid || ($invoice && $amountDue <= 0)): ?>

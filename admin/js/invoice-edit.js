@@ -19,6 +19,7 @@
   var discountFlatLabelInput = document.getElementById('discount-flat-label');
   var advanceInput = document.getElementById('advance-amount');
   var dueAdjustmentInput = document.getElementById('due-adjustment');
+  var collectInput = document.getElementById('collect-amount');
   var advanceLabelInput = document.getElementById('advance-label');
   var dueAdjustmentLabelInput = document.getElementById('due-adjustment-label');
   var linesBody = document.getElementById('invoice-lines-body');
@@ -143,11 +144,18 @@
     var total = Math.round(Math.max(0, subtotal - totalDiscount) * 100) / 100;
     var advanceAmt = parseDiscountNumber(advanceInput);
     var dueAdj = parseSignedMoney(dueAdjustmentInput);
+    var collectAmt = parseDiscountNumber(collectInput);
     var amountDue = Math.round(Math.max(0, total - advanceAmt + dueAdj) * 100) / 100;
+    var collectNow = collectAmt > 0.004
+      ? Math.round(Math.min(collectAmt, amountDue) * 100) / 100
+      : amountDue;
+    var showPartialCollect = collectAmt > 0.004 && amountDue > 0.004 && collectNow + 0.004 < amountDue;
 
     var elSub = document.getElementById('preview-subtotal');
     var elTotal = document.getElementById('preview-total');
     var elDue = document.getElementById('preview-amount-due');
+    var collectRow = document.getElementById('preview-collect-row');
+    var elCollect = document.getElementById('preview-collect-amount');
     var percentRow = document.getElementById('preview-discount-percent-row');
     var percentLabelEl = document.getElementById('preview-discount-percent-label');
     var elPercent = document.getElementById('preview-discount-percent');
@@ -168,6 +176,8 @@
     if (elSub) elSub.textContent = money(subtotal);
     if (elTotal) elTotal.textContent = money(total);
     if (elDue) elDue.textContent = money(amountDue);
+    if (elCollect) elCollect.textContent = money(collectNow);
+    if (collectRow) collectRow.hidden = !showPartialCollect;
     if (percentRow) {
       var showPercent = discountPct > 0 && percentAmt > 0;
       if (percentLabelEl) {
@@ -426,6 +436,7 @@
       e.target === discountFlatLabelInput ||
       e.target === advanceInput ||
       e.target === dueAdjustmentInput ||
+      e.target === collectInput ||
       e.target === advanceLabelInput ||
       e.target === dueAdjustmentLabelInput
     ) {
@@ -445,6 +456,9 @@
       recalc();
     } else if (e.target === dueAdjustmentInput) {
       normalizeSignedMoneyField(dueAdjustmentInput);
+      recalc();
+    } else if (e.target === collectInput) {
+      normalizeDiscountField(collectInput);
       recalc();
     }
   }, true);
@@ -495,5 +509,6 @@
   normalizeDiscountField(discountFlatInput);
   normalizeDiscountField(advanceInput);
   normalizeSignedMoneyField(dueAdjustmentInput);
+  normalizeDiscountField(collectInput);
   recalc();
 })();

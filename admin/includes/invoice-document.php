@@ -23,6 +23,8 @@ if ($notesText !== '') {
 $logoUrl = brand_logo_url();
 $dueState = $dueState ?? invoice_due_state($invoice);
 $amountDue = isset($amountDue) ? (float) $amountDue : (float) $dueState['amount_due'];
+$collectAmount = isset($collectAmount) ? (float) $collectAmount : invoice_collect_amount($invoice);
+$isPartialCollect = $isPartialCollect ?? invoice_has_partial_collect($invoice);
 ?>
 <article class="invoice-doc" aria-label="Invoice <?= e((string) $invoice['invoice_number']) ?>">
   <header class="invoice-doc-header">
@@ -78,6 +80,12 @@ $amountDue = isset($amountDue) ? (float) $amountDue : (float) $dueState['amount_
           <th>Amount Due (<?= e($currency) ?>):</th>
           <td><?= e(invoice_format_money($amountDue)) ?></td>
         </tr>
+        <?php if ($isPartialCollect): ?>
+        <tr class="invoice-doc-amount-due-row invoice-doc-pay-now-row">
+          <th>Pay Now (<?= e($currency) ?>):</th>
+          <td><?= e(invoice_format_money($collectAmount)) ?></td>
+        </tr>
+        <?php endif; ?>
       </table>
     </div>
   </div>
@@ -159,6 +167,12 @@ $amountDue = isset($amountDue) ? (float) $amountDue : (float) $dueState['amount_
           <th>Amount Due (<?= e($currency) ?>):</th>
           <td><?= e(invoice_format_money($amountDue)) ?></td>
         </tr>
+        <?php if ($isPartialCollect): ?>
+        <tr class="invoice-doc-totals-due invoice-doc-pay-now-row">
+          <th>Pay Now (<?= e($currency) ?>):</th>
+          <td><?= e(invoice_format_money($collectAmount)) ?></td>
+        </tr>
+        <?php endif; ?>
       </table>
     </div>
   </div>
