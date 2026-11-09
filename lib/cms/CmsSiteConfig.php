@@ -81,7 +81,7 @@ final class CmsSiteConfig
         if (is_file($file)) {
             return (string) preg_replace('#^(\s*Sitemap:\s*)https?://[^/\s]+#mi', '$1{{base_url}}', (string) file_get_contents($file));
         }
-        return "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\nDisallow: /data/\n\nSitemap: {{base_url}}/sitemap.xml\n";
+        return "User-agent: *\nAllow: /\nDisallow: /admin/\nDisallow: /api/\nDisallow: /data/\nDisallow: /pay\nDisallow: /pay-wait\nDisallow: /pay-return\n\nSitemap: {{base_url}}/sitemap.xml\n";
     }
 
     public static function get(): array

@@ -9,8 +9,28 @@ $repo = new FormRepository();
 $form = $repo->findBySlug(tax_intake_form_slug(), true);
 
 if (!$form) {
-    http_response_code(404);
-    echo 'Tax intake is not available right now.';
+    // Last resort: any tax-intake row (e.g. race after create) or soft landing.
+    $form = $repo->findBySlug(tax_intake_form_slug(), false);
+    if ($form && strtolower((string) ($form['status'] ?? '')) !== 'published') {
+        $repo->update((int) $form['id'], ['status' => 'published']);
+        $form = $repo->findBySlug(tax_intake_form_slug(), true);
+    }
+}
+
+if (!$form) {
+    http_response_code(503);
+    $pageTitle = 'File Your Tax Return';
+    $seoTitle = 'File Your Tax Return | Verma Accounting';
+    $seoDescription = 'Start your personal tax filing with Verma Accounting.';
+    $seoNoindex = true;
+    include __DIR__ . '/components/header.php';
+    echo '<main class="main-content"><div class="container" style="padding:3rem 1rem;max-width:40rem;">'
+        . '<h1>Tax intake temporarily unavailable</h1>'
+        . '<p>Please try again in a moment, or <a href="/contact">contact us</a> and we&rsquo;ll help you get started.</p>'
+        . '<p><a class="cta-button primary" href="/contact">Contact us</a> '
+        . '<a class="cta-button secondary" href="/personal-tax">Personal tax services</a></p>'
+        . '</div></main>';
+    include __DIR__ . '/components/footer.php';
     exit;
 }
 

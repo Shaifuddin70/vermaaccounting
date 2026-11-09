@@ -6,6 +6,9 @@ Disallow: /*.php$
 Disallow: /admin/
 Disallow: /api/
 Disallow: /data/
+Disallow: /pay
+Disallow: /pay-wait
+Disallow: /pay-return
 
 # Explicit AI crawler access for answer-engine / AI search visibility
 User-agent: GPTBot

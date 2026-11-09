@@ -21,9 +21,7 @@ $invoice = $token !== '' ? invoice_find_by_pay_token($token) : null;
 $submission = ($invoice || $token === '') ? null : submission_find_by_pay_token($token);
 $attempt = $reference !== '' ? online_payment_find_by_reference($reference) : null;
 
-if ($attempt === null || (!$invoice && !$submission)) {
-    http_response_code(404);
-}
+// Missing token/attempt stays HTTP 200 + noindex (soft landing), not a crawl 404.
 
 // Only allow redirecting to Converge hosted-payments URLs.
 if ($elavonUrl !== '' && !preg_match('#^https://api\.(demo\.)?convergepay\.com/hosted-payments(\?|$)#i', $elavonUrl)) {

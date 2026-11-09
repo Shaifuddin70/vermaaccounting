@@ -1,4 +1,7 @@
 <?php
+require_once __DIR__ . '/lib/local_front_controller.php';
+verma_servbay_dispatch();
+
 $preloadImage = [
   'href' => '/images/hero-bg-2.webp',
   'srcset' => '/images/hero-bg-2-768.webp 768w, /images/hero-bg-2-1280.webp 1280w, /images/hero-bg-2.webp 1920w',

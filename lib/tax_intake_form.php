@@ -831,24 +831,36 @@ function ensure_tax_intake_form(): void
     $existing = $repo->findBySlug($slug, false);
     $description = 'Personal tax intake — about you, address, tax situation, income, deductions, documents, and e-signature.';
 
-    if ($existing === null) {
-        $repo->create([
-            'slug' => $slug,
-            'title' => 'File Your Tax Return',
-            'description' => $description,
-            'schema' => tax_intake_default_schema(),
-            'status' => 'published',
-        ]);
-        return;
-    }
+    try {
+        if ($existing === null) {
+            $repo->create([
+                'slug' => $slug,
+                'title' => 'File Your Tax Return',
+                'description' => $description,
+                'schema' => tax_intake_default_schema(),
+                'status' => 'published',
+            ]);
+            return;
+        }
 
-    $schema = $repo->decodeSchema($existing);
-    if ((int) ($schema['settings']['templateVersion'] ?? 1) >= tax_intake_template_version()) {
-        return;
-    }
+        $schema = $repo->decodeSchema($existing);
+        $needsUpgrade = (int) ($schema['settings']['templateVersion'] ?? 1) < tax_intake_template_version();
+        $needsPublish = strtolower((string) ($existing['status'] ?? '')) !== 'published';
 
-    $repo->update((int) $existing['id'], [
-        'description' => $description,
-        'schema' => tax_intake_default_schema(),
-    ]);
+        if (!$needsUpgrade && !$needsPublish) {
+            return;
+        }
+
+        $update = [];
+        if ($needsUpgrade) {
+            $update['description'] = $description;
+            $update['schema'] = tax_intake_default_schema();
+        }
+        if ($needsPublish) {
+            $update['status'] = 'published';
+        }
+        $repo->update((int) $existing['id'], $update);
+    } catch (Throwable $e) {
+        error_log('ensure_tax_intake_form failed: ' . $e->getMessage());
+    }
 }
