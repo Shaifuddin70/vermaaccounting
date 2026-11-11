@@ -9,6 +9,7 @@
       <p>
         Explore personal and corporate tax, bookkeeping, payroll, business
         registration, and loan support for individuals and businesses across Ontario.
+        See also the <a href="/industries">industries we serve</a>—from trucking and construction to restaurants and landlords.
       </p>
     </div>
   </section>

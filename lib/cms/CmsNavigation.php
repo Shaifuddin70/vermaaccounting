@@ -41,6 +41,7 @@ final class CmsNavigation
                         $link('Corporate Tax', '/corporate-tax'),
                         $link('Business Registration', '/business-registration'),
                         $link('Business Loans', '/loan'),
+                        $link('Industries We Serve', '/industries'),
                         $link('Real Estate', 'https://owningottawa.com/', true),
                     ],
                 ],

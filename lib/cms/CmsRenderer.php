@@ -15,6 +15,8 @@ final class CmsRenderer
         'full-width' => ['label' => 'Body only', 'types' => ['page', 'city']],
         'article-index' => ['label' => 'Article listing (blog home)', 'types' => ['page']],
         'service-areas' => ['label' => 'City directory (service areas)', 'types' => ['page']],
+        'industries' => ['label' => 'Industries directory', 'types' => ['page']],
+        'industry' => ['label' => 'Industry / location landing', 'types' => ['page']],
         'article' => ['label' => 'Article', 'types' => ['article']],
     ];
 
@@ -175,6 +177,7 @@ final class CmsRenderer
 
         $listing = null;
         $serviceAreas = null;
+        $industryCards = ['featured' => [], 'more' => [], 'locations' => []];
         if ($template === 'article-index') {
             $total = $repo->countPublished('article');
             $totalPages = max(1, (int) ceil($total / self::ARTICLES_PER_PAGE));
@@ -189,12 +192,34 @@ final class CmsRenderer
             $serviceAreas = class_exists('CmsServiceAreas')
                 ? CmsServiceAreas::all()
                 : $repo->serviceAreas();
+        } elseif ($template === 'industries') {
+            $landingFolder = (new CmsFolderRepository())->forLanding((int) $content['id']);
+            $children = $landingFolder
+                ? $repo->published('page', 200, 0, (int) $landingFolder['id'])
+                : [];
+            usort($children, static fn (array $a, array $b): int => ((int) ($a['sort_order'] ?? 0)) <=> ((int) ($b['sort_order'] ?? 0)) ?: strcasecmp((string) $a['title'], (string) $b['title']));
+            foreach ($children as $child) {
+                if ((int) ($child['sort_order'] ?? 0) >= 100) {
+                    $industryCards['more'][] = $child;
+                } else {
+                    $industryCards['featured'][] = $child;
+                }
+            }
+            foreach (['/ottawa', '/ontario'] as $prefix) {
+                $locFolder = (new CmsFolderRepository())->findByPrefix($prefix);
+                if ($locFolder === null) {
+                    continue;
+                }
+                foreach ($repo->published('page', 50, 0, (int) $locFolder['id']) as $locPage) {
+                    $industryCards['locations'][] = $locPage;
+                }
+            }
         }
 
         $effective = CmsSeo::effective($content, $seo, $folder, ['page' => $page, 'preview' => !empty($opts['preview']), 'path' => $path]);
         $breadcrumbs = self::breadcrumbs($content, $path);
         $webpageType = match ($template) {
-            'article-index', 'service-areas' => 'CollectionPage',
+            'article-index', 'service-areas', 'industries' => 'CollectionPage',
             default => 'WebPage',
         };
         $schema = CmsStructuredData::build($content, $effective, [
@@ -225,6 +250,7 @@ final class CmsRenderer
             'related' => $content['type'] === 'article' ? $repo->related((int) $content['id'], 3) : [],
             'listing' => $listing,
             'service_areas' => $serviceAreas,
+            'industry_cards' => $industryCards,
             'path' => $path,
             'page' => $page,
             'preview' => !empty($opts['preview']),

@@ -276,7 +276,7 @@ function formatNumber(num) {
 function initTypingAnimation() {
   var el = document.getElementById('typing-text');
   if (!el) return;
-  var texts = ['Audits?', 'Tax Planning?', 'Bookkeeping?', 'Payroll?', 'Business Registration?', 'Financial Consulting?'];
+  var texts = ['your Business?', 'Audits?', 'Tax Planning?', 'Bookkeeping?', 'Payroll?', 'Business Registration?', 'Financial Consulting?'];
   var textIndex = 0;
   var charIndex = 0;
   var deleting = false;

@@ -9,6 +9,11 @@ $preloadImage = [
 ];
 include 'components/header.php';
 $homeReview = seo_home_review();
+$homeIndustries = class_exists('IndustryCatalog') ? IndustryCatalog::homepageLinks(8) : [];
+$homeIndustryImageAttrs = [
+  'class' => 'thumb',
+  'sizes' => '(min-width: 1200px) 25vw, (min-width: 768px) 50vw, 100vw',
+];
 ?>
 <!-- Main Content -->
 <main class="main-content">
@@ -289,6 +294,39 @@ $homeReview = seo_home_review();
       </div>
     </div>
   </section>
+
+  <?php if ($homeIndustries !== []): ?>
+  <section class="common-section home-industries-section text-center" id="industries">
+    <div class="container">
+      <div class="scroll-animate">
+        <h2 class="section-title">Industries We Serve</h2>
+        <p>
+          From trucking and construction to restaurants and rentals, we set up the books
+          the way your business actually works.
+        </p>
+      </div>
+      <div class="row mt-4 justify-content-center home-industries-row">
+        <?php foreach ($homeIndustries as $item): ?>
+          <div class="col-lg-3 col-md-6 mb-4">
+            <article class="services home-industry-card scroll-animate-scale">
+              <a class="services-thumbnail" href="<?= e($item['path']) ?>">
+                <?= site_image($item['image'], $item['image_alt'], $homeIndustryImageAttrs) ?>
+                <strong class="services-title"><?= e($item['name']) ?></strong>
+              </a>
+              <?php if (($item['summary'] ?? '') !== ''): ?>
+                <p class="services-description"><?= e($item['summary']) ?></p>
+              <?php endif; ?>
+            </article>
+          </div>
+        <?php endforeach; ?>
+      </div>
+      <div class="cta-buttons">
+        <a href="/industries" class="cta-button primary">View all industries</a>
+      </div>
+    </div>
+  </section>
+  <?php endif; ?>
+
   <section class="py-70">
     <div class="container">
       <div class="row align-items-center">

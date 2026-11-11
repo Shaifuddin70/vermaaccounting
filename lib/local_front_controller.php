@@ -46,6 +46,15 @@ function verma_servbay_resolve(string $path, string $root): ?string
         $_GET['slug'] = $m[1];
         return $root . '/form.php';
     }
+    if (preg_match('#^/industries/([a-z0-9-]+)$#', $path, $m)) {
+        $_GET['slug'] = $m[1];
+        return $root . '/industry.php';
+    }
+    if (preg_match('#^/(ottawa|ontario)/([a-z0-9-]+)$#', $path, $m)) {
+        $_GET['city'] = $m[1];
+        $_GET['slug'] = $m[2];
+        return $root . '/location-seo.php';
+    }
     if ($path === '/sitemap.xml') {
         return $root . '/sitemap.php';
     }

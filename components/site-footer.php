@@ -45,6 +45,7 @@ $footerAddress = CmsCompany::addressLine();
          <ul class="footer-links">
            <li><a href="/">Home</a></li>
            <li><a href="/services">Services</a></li>
+           <li><a href="/industries">Industries</a></li>
            <li><a href="/resources">Resources</a></li>
            <li><a href="/blog">Blog</a></li>
            <li><a href="/about">About Us</a></li>

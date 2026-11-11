@@ -225,8 +225,12 @@ require __DIR__ . '/includes/layout-start.php';
                 <option value="full-width" <?= $form['template'] === 'full-width' || $form['template'] === '' ? 'selected' : '' ?>>Body only</option>
                 <option value="article-index" <?= $form['template'] === 'article-index' ? 'selected' : '' ?>>Show the latest blog articles</option>
                 <option value="service-areas" <?= $form['template'] === 'service-areas' ? 'selected' : '' ?>>Show the city directory</option>
+                <option value="industries" <?= $form['template'] === 'industries' ? 'selected' : '' ?>>Show the industries directory</option>
+                <option value="industry" <?= $form['template'] === 'industry' ? 'selected' : '' ?>>Industry / location landing</option>
               </select>
-              <p class="admin-field-hint">City directory is used by the Service Areas page at <code>/service-area</code>.</p>
+              <p class="admin-field-hint">
+                City directory is used by Service Areas. Industries directory builds the hero and cards from this page’s sub-pages (and Ottawa/Ontario location pages)—the body field is only the “Why industry matters” intro.
+              </p>
             </div>
           <?php endif; ?>
 
@@ -311,6 +315,51 @@ require __DIR__ . '/includes/layout-start.php';
                 <label class="admin-checkbox-label"><input type="checkbox" name="has_subpages" value="1" <?= $hasSubpages ? 'checked' : '' ?>> <span>This page has sub-pages (works like a folder)</span></label>
                 <p class="admin-field-hint">Sub-pages get URLs under this page, e.g. <code><?= e(($content && $content['path'] !== '/' ? $content['path'] : '/this-page') . '/sub-page') ?></code>.<?php if ($ownFolder && $caps['edit']): ?> <a href="/admin/cms-edit?type=page&amp;folder=<?= (int) $ownFolder['id'] ?>">+ Add a sub-page</a><?php endif; ?></p>
               </div>
+              <?php
+              $isIndustriesHub = $content && (($form['template'] ?? '') === 'industries' || (string) ($content['path'] ?? '') === '/industries');
+              if ($isIndustriesHub && $ownFolder):
+                  $industryChildren = $repo->search(['folder_id' => (int) $ownFolder['id'], 'sort' => 'order', 'dir' => 'asc'], 100);
+                  $locationChildren = [];
+                  foreach (['/ottawa', '/ontario'] as $locPrefix) {
+                      $locFolder = $folders->findByPrefix($locPrefix);
+                      if ($locFolder) {
+                          foreach ($repo->search(['folder_id' => (int) $locFolder['id'], 'sort' => 'title', 'dir' => 'asc'], 50) as $locRow) {
+                              $locationChildren[] = $locRow;
+                          }
+                      }
+                  }
+                  ?>
+                <div class="admin-field admin-field--full">
+                  <span class="cms-label">Industry &amp; location pages on this directory</span>
+                  <p class="admin-field-hint">These are separate pages. Open one to edit its title, image, body, SEO, and index/noindex settings.</p>
+                  <?php if ($industryChildren === [] && $locationChildren === []): ?>
+                    <p class="admin-field-hint">No industry pages yet. <a href="/admin/cms-edit?type=page&amp;folder=<?= (int) $ownFolder['id'] ?>">Add the first industry page</a>.</p>
+                  <?php else: ?>
+                    <ul class="cms-link-list">
+                      <?php foreach ($industryChildren as $child): ?>
+                        <li>
+                          <a href="/admin/cms-edit?id=<?= (int) $child['id'] ?>"><?= e((string) $child['title']) ?></a>
+                          <code><?= e((string) $child['path']) ?></code>
+                          <span class="admin-table-sub"><?= e((string) $child['status']) ?></span>
+                        </li>
+                      <?php endforeach; ?>
+                      <?php foreach ($locationChildren as $child): ?>
+                        <li>
+                          <a href="/admin/cms-edit?id=<?= (int) $child['id'] ?>"><?= e((string) $child['title']) ?></a>
+                          <code><?= e((string) $child['path']) ?></code>
+                          <span class="admin-table-sub"><?= e((string) $child['status']) ?></span>
+                        </li>
+                      <?php endforeach; ?>
+                    </ul>
+                    <p class="admin-field-hint">
+                      <a href="/admin/cms-edit?type=page&amp;folder=<?= (int) $ownFolder['id'] ?>">+ Add industry page</a>
+                      · <a href="/admin/cms-content?q=%2Findustries%2F">Browse industry pages</a>
+                      · <a href="/admin/cms-content?q=%2Fottawa%2F">Ottawa pages</a>
+                      · <a href="/admin/cms-content?q=%2Fontario%2F">Ontario pages</a>
+                    </p>
+                  <?php endif; ?>
+                </div>
+              <?php endif; ?>
             </div>
           <?php endif; ?>
 
@@ -362,6 +411,11 @@ require __DIR__ . '/includes/layout-start.php';
 
       <!-- Body -->
       <section class="admin-card cms-panel" id="tab-body" role="tabpanel" data-panel="body">
+        <?php if ($content && (($form['template'] ?? '') === 'industries' || (string) ($content['path'] ?? '') === '/industries')): ?>
+          <div class="admin-alert admin-alert-info">
+            This body is only the “Why industry matters” intro. The hero, industry cards, and Ottawa/Ontario cards are built automatically from the sub-pages listed under <strong>Sub-pages</strong> above (and from the Ottawa/Ontario folders). Edit those pages to change card text, images, or SEO.
+          </div>
+        <?php endif; ?>
         <div class="cms-body-toolbar">
           <h2 class="admin-card-title">Body</h2>
           <div class="cms-body-modes">

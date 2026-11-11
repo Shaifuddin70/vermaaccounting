@@ -64,6 +64,23 @@ final class CmsSitemap
                     'title' => $path,
                 ];
             }
+            if (class_exists('IndustryCatalog')) {
+                $industryMtime = is_file(PROJECT_ROOT . '/lib/industries.php')
+                    ? gmdate('Y-m-d\TH:i:s\Z', (int) filemtime(PROJECT_ROOT . '/lib/industries.php'))
+                    : '';
+                foreach (IndustryCatalog::sitemapPaths() as $path) {
+                    if (isset($taken[$path]) || $redirects->findBySource($path) || CmsSeo::pathExcludedFromSitemap($path, (string) $config['sitemap_exclude'])) {
+                        continue;
+                    }
+                    $taken[$path] = true;
+                    $out['legacy'][] = [
+                        'loc' => $base . $path,
+                        'lastmod' => $industryMtime,
+                        'path' => $path,
+                        'title' => $path,
+                    ];
+                }
+            }
         }
         return $out;
     }

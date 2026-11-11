@@ -43,6 +43,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 }
 
 CmsContentService::ensureServiceAreaPage();
+CmsContentService::ensureIndustriesPages();
 
 $types = ['page' => 'Pages', 'article' => 'Blog articles', 'city' => 'City pages'];
 $counts = [];
@@ -161,6 +162,8 @@ require __DIR__ . '/includes/layout-start.php';
       <?php if ($caps['code']): ?><li><a href="/admin/cms-site-config">Site configuration</a></li><?php endif; ?>
       <?php if ($caps['edit']): ?><li><a href="/admin/cms-city-generate">Generate city page drafts</a></li><?php endif; ?>
       <?php if ($caps['edit']): ?><li><a href="/admin/cms-blog-generate">AI blog generator</a></li><?php endif; ?>
+      <?php if ($caps['edit']): ?><li><a href="/admin/cms-content?q=industries">Industries pages</a></li><?php endif; ?>
+      <li><a href="/industries" target="_blank" rel="noopener">View /industries</a></li>
     </ul>
   </div>
 </div>

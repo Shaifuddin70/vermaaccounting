@@ -22,6 +22,7 @@ final class CmsPath
     public const PROTECTED_LEGACY = [
         'form', 'submit-documents', 'tax-intake', 'sitemap', 'robots', 'cms', 'blog-post',
         'email-asset', 'email-open', 'email-unsubscribe', 'pay', 'pay-return', 'index',
+        'industry', 'location-seo',
     ];
 
     /**

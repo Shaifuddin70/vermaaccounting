@@ -928,4 +928,209 @@ final class CmsContentService
 
         return $out;
     }
+
+    /**
+     * Seed industries hub, industry detail pages, and Ottawa/Ontario location pages into the CMS.
+     * Safe to call repeatedly — only creates missing rows; does not overwrite edited content.
+     *
+     * @return array{hub_id: int, folder_id: int|null, created: int, skipped: int}
+     */
+    public static function ensureIndustriesPages(): array
+    {
+        $repo = new CmsContentRepository();
+        $folders = new CmsFolderRepository();
+        $userId = class_exists('Auth') ? Auth::userId() : null;
+        $now = gmdate('Y-m-d H:i:s');
+        $created = 0;
+        $skipped = 0;
+
+        $defaultSeo = static function (string $title, string $description, string $robots = 'index'): array {
+            return [
+                'seo_title' => $title,
+                'meta_description' => mb_substr($description, 0, 160),
+                'robots_index' => $robots,
+                'robots_follow' => 'follow',
+                'sitemap_include' => $robots === 'noindex' ? 0 : 1,
+                'canonical_mode' => 'auto',
+                'schema_json' => '{"disabled":[]}',
+            ];
+        };
+
+        $createPage = static function (array $data, array $seo) use ($repo, $userId, $now, &$created, &$skipped): int {
+            $path = (string) $data['path'];
+            $existing = $repo->findByPath($path);
+            if ($existing !== null) {
+                $skipped++;
+                return (int) $existing['id'];
+            }
+            $id = $repo->create($data + [
+                'body_mode' => 'sanitized',
+                'status' => 'published',
+                'published_at' => $now,
+                'created_by' => $userId,
+                'updated_by' => $userId,
+                'language' => 'en-CA',
+            ]);
+            $repo->saveSeo($id, $seo);
+            $created++;
+            ActivityLog::record('cms.created', 'cms_content', $id, ['path' => $path, 'source' => 'ensure_industries']);
+            return $id;
+        };
+
+        $hub = $repo->findByPath(IndustryCatalog::HUB_PATH);
+        if ($hub === null) {
+            $hubId = $createPage([
+                'type' => 'page',
+                'folder_id' => null,
+                'internal_name' => 'Industries We Serve',
+                'title' => 'Industries We Serve',
+                'h1' => 'Industries We Serve',
+                'slug' => 'industries',
+                'path' => IndustryCatalog::HUB_PATH,
+                'body_html' => IndustryCatalog::hubBodyHtml(),
+                'excerpt' => 'Bookkeeping, payroll, and tax for many kinds of businesses in Ottawa and Ontario.',
+                'featured_image_url' => '/images/industries/hero.jpg',
+                'featured_alt' => 'Business team working together',
+                'template' => 'industries',
+                'faqs_json' => '[]',
+                'sort_order' => 0,
+            ], $defaultSeo(
+                'Industries We Serve | Ottawa & Ontario Accountants',
+                'See the businesses we help in Ottawa and Ontario: trucking, rentals, construction, restaurants, cleaning, drivers, retail, and more.'
+            ));
+            $hub = $repo->find($hubId);
+        } else {
+            $skipped++;
+            if (($hub['template'] ?? '') !== 'industries' && trim((string) ($hub['body_html'] ?? '')) === '') {
+                $repo->update((int) $hub['id'], [
+                    'template' => 'industries',
+                    'body_html' => IndustryCatalog::hubBodyHtml(),
+                ]);
+                $hub['template'] = 'industries';
+            }
+        }
+
+        $folders->syncLanding($hub, true);
+        $industriesFolder = $folders->forLanding((int) $hub['id']);
+        $folderId = $industriesFolder !== null ? (int) $industriesFolder['id'] : null;
+
+        foreach (IndustryCatalog::hubEntries() as $row) {
+            $isDedicated = !empty($row['slug']);
+            $slug = $isDedicated
+                ? (string) $row['slug']
+                : CmsPath::slugify((string) $row['name']);
+            if ($slug === '') {
+                continue;
+            }
+            $path = IndustryCatalog::path($slug);
+            if ($repo->findByPath($path) !== null) {
+                $skipped++;
+                continue;
+            }
+
+            if ($isDedicated) {
+                $page = IndustryCatalog::pageContent($slug);
+                $faqs = array_map(static fn (array $f): array => [
+                    'question' => (string) $f['q'],
+                    'answer' => (string) $f['a'],
+                ], $page['faq'] ?? []);
+                $createPage([
+                    'type' => 'page',
+                    'folder_id' => $folderId,
+                    'internal_name' => (string) $row['name'],
+                    'title' => (string) $row['name'],
+                    'h1' => (string) $page['h1'],
+                    'slug' => $slug,
+                    'path' => $path,
+                    'body_html' => IndustryCatalog::industryBodyHtml($slug),
+                    'excerpt' => (string) $row['summary'],
+                    'featured_image_url' => (string) ($row['image'] ?? ''),
+                    'featured_alt' => (string) ($row['image_alt'] ?? $row['name']),
+                    'template' => 'full-width',
+                    'faqs_json' => json_encode($faqs, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                    'sort_order' => (int) ($row['priority'] ?? 50),
+                ], $defaultSeo(
+                    (string) $page['h1'] . ' | Verma Accounting Ottawa',
+                    (string) $page['intro']
+                ));
+            } else {
+                $service = (string) ($row['service'] ?? '/services');
+                $createPage([
+                    'type' => 'page',
+                    'folder_id' => $folderId,
+                    'internal_name' => (string) $row['name'],
+                    'title' => (string) $row['name'],
+                    'h1' => (string) $row['name'],
+                    'slug' => $slug,
+                    'path' => $path,
+                    'body_html' => IndustryCatalog::relatedBodyHtml((string) $row['name'], (string) $row['summary'], $service),
+                    'excerpt' => (string) $row['summary'],
+                    'featured_image_url' => (string) ($row['image'] ?? ''),
+                    'featured_alt' => (string) ($row['image_alt'] ?? $row['name']),
+                    'template' => 'full-width',
+                    'faqs_json' => '[]',
+                    'sort_order' => 100 + (int) ($row['priority'] ?? 0),
+                ], $defaultSeo(
+                    (string) $row['name'] . ' | Verma Accounting',
+                    (string) $row['summary']
+                ));
+            }
+        }
+
+        foreach (['ottawa' => 'Ottawa', 'ontario' => 'Ontario'] as $citySlug => $cityLabel) {
+            $prefix = '/' . $citySlug;
+            $folder = $folders->findByPrefix($prefix);
+            if ($folder === null) {
+                $folders->create([
+                    'parent_id' => null,
+                    'name' => $cityLabel . ' location pages',
+                    'slug' => $citySlug,
+                    'url_prefix' => $prefix,
+                    'default_type' => 'page',
+                    'seo_defaults' => ['robots_index' => 'index'],
+                ]);
+            }
+        }
+
+        foreach (IndustryCatalog::locations() as $loc) {
+            $path = (string) $loc['path'];
+            if ($repo->findByPath($path) !== null) {
+                $skipped++;
+                continue;
+            }
+            $city = (string) $loc['city'];
+            $cityFolder = $folders->findByPrefix('/' . $city);
+            $createPage([
+                'type' => 'page',
+                'folder_id' => $cityFolder !== null ? (int) $cityFolder['id'] : null,
+                'internal_name' => (string) $loc['h1'],
+                'title' => (string) $loc['h1'],
+                'h1' => (string) $loc['h1'],
+                'slug' => (string) $loc['slug'],
+                'path' => $path,
+                'body_html' => IndustryCatalog::locationBodyHtml($loc),
+                'excerpt' => (string) ($loc['hub_blurb'] ?? $loc['description']),
+                'featured_image_url' => (string) ($loc['image'] ?? ''),
+                'featured_alt' => (string) ($loc['image_alt'] ?? $loc['h1']),
+                'template' => 'full-width',
+                'faqs_json' => '[]',
+                'sort_order' => 0,
+            ], $defaultSeo((string) $loc['title'], (string) $loc['description']));
+        }
+
+        if (class_exists('CmsNavigation')) {
+            CmsNavigation::place(IndustryCatalog::HUB_PATH, 'Industries We Serve', 'services');
+        }
+
+        if ($created > 0) {
+            CmsCache::flush();
+        }
+
+        return [
+            'hub_id' => (int) $hub['id'],
+            'folder_id' => $folderId,
+            'created' => $created,
+            'skipped' => $skipped,
+        ];
+    }
 }

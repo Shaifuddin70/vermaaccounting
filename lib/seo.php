@@ -92,6 +92,10 @@ function seo_meta_for_path(string $path): array
             'title' => 'Our Accounting Services in Ontario | Verma Accounting',
             'description' => 'Explore Verma Accounting services: personal and corporate tax, bookkeeping, payroll, business registration, and loans for Ontario clients.',
         ],
+        '/industries' => [
+            'title' => 'Industries We Serve | Accounting for Ottawa & Ontario Businesses',
+            'description' => 'Industry accounting and bookkeeping for trucking, real estate, construction, restaurants, cleaning, gig workers, retail, and more across Ottawa and Ontario.',
+        ],
     ];
 
     return $pages[$path] ?? $pages['/'];
